@@ -1,11 +1,86 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { createSession, getCookieOptions } from '@/lib/auth';
+import { loginSchema } from '@/lib/validation';
 import bcrypt from 'bcryptjs';
 import * as OTPAuth from 'otpauth';
+import { ZodError } from 'zod';
+
+const MAX_BODY_SIZE = 1024 * 1024;
+
+// Track failed login attempts in memory (for rate limiting)
+// In production, use Redis or database
+const failedAttempts = new Map<string, { count: number; lastAttempt: number }>();
+const MAX_FAILED_ATTEMPTS = 5;
+const LOCKOUT_DURATION_MS = 15 * 60 * 1000; // 15 minutes
+
+function getClientIP(request: Request): string {
+  // In a real deployment, get this from headers
+  return 'unknown';
+}
+
+function isLockedOut(identifier: string): boolean {
+  const attempt = failedAttempts.get(identifier);
+  if (!attempt) return false;
+  
+  if (attempt.count >= MAX_FAILED_ATTEMPTS) {
+    const timeSinceLastAttempt = Date.now() - attempt.lastAttempt;
+    if (timeSinceLastAttempt < LOCKOUT_DURATION_MS) {
+      return true;
+    }
+    // Reset after lockout period
+    failedAttempts.delete(identifier);
+  }
+  return false;
+}
+
+function recordFailedAttempt(identifier: string): void {
+  const existing = failedAttempts.get(identifier);
+  if (existing) {
+    existing.count++;
+    existing.lastAttempt = Date.now();
+  } else {
+    failedAttempts.set(identifier, { count: 1, lastAttempt: Date.now() });
+  }
+}
+
+function recordSuccessfulAttempt(identifier: string): void {
+  failedAttempts.delete(identifier);
+}
 
 export async function POST(request: Request) {
   try {
-    const { username, password, totpCode, recoveryCode } = await request.json();
+    // Check content length
+    const contentLength = request.headers.get('content-length');
+    if (contentLength && parseInt(contentLength) > MAX_BODY_SIZE) {
+      return NextResponse.json(
+        { error: 'Request body too large' },
+        { status: 413 }
+      );
+    }
+
+    // Parse request body
+    let body;
+    try {
+      body = await request.json();
+    } catch {
+      return NextResponse.json(
+        { error: 'Invalid JSON in request body' },
+        { status: 400 }
+      );
+    }
+
+    // Validate input
+    const validatedData = loginSchema.parse(body);
+    const { username, password, totpToken } = validatedData;
+
+    // Check for lockout (using username as identifier)
+    if (isLockedOut(username.toLowerCase())) {
+      return NextResponse.json(
+        { error: 'Account temporarily locked due to too many failed attempts. Please try again later.' },
+        { status: 429 }
+      );
+    }
 
     // Find user
     const user = await prisma.user.findUnique({
@@ -13,20 +88,28 @@ export async function POST(request: Request) {
     });
 
     if (!user) {
-      return NextResponse.json({ error: 'Invalid credentials' }, { status: 401 });
+      recordFailedAttempt(username.toLowerCase());
+      return NextResponse.json(
+        { error: 'Invalid credentials' },
+        { status: 401 }
+      );
     }
 
     // Verify password
     const isValid = await bcrypt.compare(password, user.password);
 
     if (!isValid) {
-      return NextResponse.json({ error: 'Invalid credentials' }, { status: 401 });
+      recordFailedAttempt(username.toLowerCase());
+      return NextResponse.json(
+        { error: 'Invalid credentials' },
+        { status: 401 }
+      );
     }
 
     // Check if TOTP is enabled
     if (user.totpEnabled && user.totpVerified && user.totpSecret) {
-      // If no TOTP code or recovery code provided, ask for it
-      if (!totpCode && !recoveryCode) {
+      // If no TOTP code provided, ask for it
+      if (!totpToken) {
         return NextResponse.json({ 
           requireTOTP: true,
           message: 'Two-factor authentication required'
@@ -34,46 +117,34 @@ export async function POST(request: Request) {
       }
 
       // Verify TOTP code
-      if (totpCode) {
-        const totp = new OTPAuth.TOTP({
-          issuer: 'StartPage',
-          label: user.username,
-          algorithm: 'SHA256',
-          digits: 6,
-          period: 30,
-          secret: OTPAuth.Secret.fromBase32(user.totpSecret),
-        });
+      const totp = new OTPAuth.TOTP({
+        issuer: 'StartPage',
+        label: user.username,
+        algorithm: 'SHA256',
+        digits: 6,
+        period: 30,
+        secret: OTPAuth.Secret.fromBase32(user.totpSecret),
+      });
 
-        const isTOTPValid = totp.validate({ token: totpCode, window: 1 }) !== null;
-        if (!isTOTPValid) {
-          return NextResponse.json({ error: 'Invalid authentication code' }, { status: 401 });
-        }
-      }
-      // Or verify recovery code
-      else if (recoveryCode && user.recoveryCode) {
-        const isRecoveryValid = await bcrypt.compare(recoveryCode.toUpperCase(), user.recoveryCode);
-        if (!isRecoveryValid) {
-          return NextResponse.json({ error: 'Invalid recovery code' }, { status: 401 });
-        }
+      const isTOTPValid = totp.validate({ token: totpToken, window: 1 }) !== null;
+      if (!isTOTPValid) {
+        recordFailedAttempt(username.toLowerCase());
+        return NextResponse.json(
+          { error: 'Invalid authentication code' },
+          { status: 401 }
+        );
       }
     }
 
+    // Clear failed attempts on successful login
+    recordSuccessfulAttempt(username.toLowerCase());
+
+    // Create session
+    const token = await createSession(user.id);
+    
     // Get session duration from settings
     const settings = await prisma.settings.findFirst();
     const sessionHours = settings?.sessionDurationHours || 24;
-
-    // Create session in database
-    const token = Buffer.from(`${user.username}:${Date.now()}:${Math.random()}`).toString('base64');
-    const expiresAt = new Date();
-    expiresAt.setHours(expiresAt.getHours() + sessionHours);
-    
-    await prisma.session.create({
-      data: {
-        token,
-        userId: user.id,
-        expiresAt,
-      },
-    });
     
     // Set HTTP-only cookie
     const response = NextResponse.json({ 
@@ -81,16 +152,27 @@ export async function POST(request: Request) {
       username: user.username 
     });
     
-    response.cookies.set('auth-token', token, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'strict',
-      maxAge: sessionHours * 60 * 60,
-    });
+    response.cookies.set('auth-token', token, getCookieOptions(sessionHours * 60 * 60));
 
     return response;
   } catch (error) {
+    if (error instanceof ZodError) {
+      return NextResponse.json(
+        { 
+          error: 'Validation failed',
+          details: error.issues.map(e => ({
+            field: e.path.join('.'),
+            message: e.message,
+          })),
+        },
+        { status: 400 }
+      );
+    }
+
     console.error('Login error:', error);
-    return NextResponse.json({ error: 'Login failed' }, { status: 500 });
+    return NextResponse.json(
+      { error: 'Login failed' },
+      { status: 500 }
+    );
   }
 }

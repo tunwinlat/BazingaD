@@ -1,10 +1,21 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { verifyAuth } from '@/lib/auth';
 
 export async function GET() {
   try {
-    // Get the first user
-    const user = await prisma.user.findFirst({
+    // Verify authentication
+    const auth = await verifyAuth();
+    if (!auth) {
+      return NextResponse.json(
+        { error: 'Unauthorized' },
+        { status: 401 }
+      );
+    }
+
+    // Get the authenticated user
+    const user = await prisma.user.findUnique({
+      where: { id: auth.userId },
       select: {
         username: true,
         totpEnabled: true,
@@ -13,7 +24,10 @@ export async function GET() {
     });
     
     if (!user) {
-      return NextResponse.json({ error: 'User not found' }, { status: 404 });
+      return NextResponse.json(
+        { error: 'User not found' },
+        { status: 404 }
+      );
     }
 
     return NextResponse.json({
@@ -23,6 +37,9 @@ export async function GET() {
     });
   } catch (error) {
     console.error('Auth status error:', error);
-    return NextResponse.json({ error: 'Failed to get status' }, { status: 500 });
+    return NextResponse.json(
+      { error: 'Failed to get status' },
+      { status: 500 }
+    );
   }
 }

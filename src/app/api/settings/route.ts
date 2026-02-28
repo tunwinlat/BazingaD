@@ -1,8 +1,13 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { verifyAuth } from '@/lib/auth';
+import { settingsUpdateSchema, passwordSchema } from '@/lib/validation';
 import bcrypt from 'bcryptjs';
+import { ZodError } from 'zod';
 
-// Get settings
+const MAX_BODY_SIZE = 1024 * 1024;
+
+// Get settings - public endpoint (no auth required for read)
 export async function GET() {
   try {
     let settings = await prisma.settings.findFirst();
@@ -30,55 +35,97 @@ export async function GET() {
     });
   } catch (error) {
     console.error('Settings fetch error:', error);
-    return NextResponse.json({ error: 'Failed to fetch settings' }, { status: 500 });
+    return NextResponse.json(
+      { error: 'Failed to fetch settings' },
+      { status: 500 }
+    );
   }
 }
 
-// Update settings
+// Update settings - requires authentication
 export async function PUT(request: Request) {
   try {
-    const { 
-      dashboardProtected, 
-      sessionDurationHours, 
-      dashboardPassword,
-      weatherEnabled,
-      weatherLatitude,
-      weatherLongitude,
-      weatherLocationName,
-      weatherUnits,
-    } = await request.json();
-    
+    // Check content length
+    const contentLength = request.headers.get('content-length');
+    if (contentLength && parseInt(contentLength) > MAX_BODY_SIZE) {
+      return NextResponse.json(
+        { error: 'Request body too large' },
+        { status: 413 }
+      );
+    }
+
+    // Verify authentication
+    const auth = await verifyAuth();
+    if (!auth) {
+      return NextResponse.json(
+        { error: 'Unauthorized' },
+        { status: 401 }
+      );
+    }
+
+    // Parse request body
+    let body;
+    try {
+      body = await request.json();
+    } catch {
+      return NextResponse.json(
+        { error: 'Invalid JSON in request body' },
+        { status: 400 }
+      );
+    }
+
+    // Validate input
+    const validatedData = settingsUpdateSchema.parse(body);
+
+    // If dashboard password is being set, validate it meets strong password requirements
+    if (validatedData.dashboardPassword) {
+      try {
+        passwordSchema.parse(validatedData.dashboardPassword);
+      } catch (passwordError) {
+        if (passwordError instanceof ZodError) {
+          return NextResponse.json(
+            { 
+              error: 'Password does not meet security requirements',
+              details: passwordError.issues.map(e => e.message),
+            },
+            { status: 400 }
+          );
+        }
+        throw passwordError;
+      }
+    }
+
     let settings = await prisma.settings.findFirst();
     
-    const updateData: any = {};
+    const updateData: Record<string, unknown> = {};
     
-    if (dashboardProtected !== undefined) {
-      updateData.dashboardProtected = dashboardProtected;
+    if (validatedData.dashboardProtected !== undefined) {
+      updateData.dashboardProtected = validatedData.dashboardProtected;
     }
     
-    if (sessionDurationHours !== undefined) {
-      updateData.sessionDurationHours = Math.max(1, Math.min(720, sessionDurationHours));
+    if (validatedData.sessionDurationHours !== undefined) {
+      updateData.sessionDurationHours = validatedData.sessionDurationHours;
     }
     
-    if (dashboardPassword) {
-      updateData.dashboardPassword = await bcrypt.hash(dashboardPassword, 10);
+    if (validatedData.dashboardPassword) {
+      updateData.dashboardPassword = await bcrypt.hash(validatedData.dashboardPassword, 12);
     }
 
     // Weather settings
-    if (weatherEnabled !== undefined) {
-      updateData.weatherEnabled = weatherEnabled;
+    if (validatedData.weatherEnabled !== undefined) {
+      updateData.weatherEnabled = validatedData.weatherEnabled;
     }
-    if (weatherLatitude !== undefined) {
-      updateData.weatherLatitude = weatherLatitude;
+    if (validatedData.weatherLatitude !== undefined) {
+      updateData.weatherLatitude = validatedData.weatherLatitude;
     }
-    if (weatherLongitude !== undefined) {
-      updateData.weatherLongitude = weatherLongitude;
+    if (validatedData.weatherLongitude !== undefined) {
+      updateData.weatherLongitude = validatedData.weatherLongitude;
     }
-    if (weatherLocationName !== undefined) {
-      updateData.weatherLocationName = weatherLocationName;
+    if (validatedData.weatherLocationName !== undefined) {
+      updateData.weatherLocationName = validatedData.weatherLocationName;
     }
-    if (weatherUnits !== undefined) {
-      updateData.weatherUnits = weatherUnits;
+    if (validatedData.weatherUnits !== undefined) {
+      updateData.weatherUnits = validatedData.weatherUnits;
     }
     
     if (settings) {
@@ -89,11 +136,13 @@ export async function PUT(request: Request) {
     } else {
       settings = await prisma.settings.create({
         data: {
-          dashboardProtected: dashboardProtected ?? false,
-          sessionDurationHours: sessionDurationHours ?? 24,
-          weatherEnabled: weatherEnabled ?? false,
-          weatherUnits: weatherUnits ?? 'metric',
-          ...(dashboardPassword && { dashboardPassword: await bcrypt.hash(dashboardPassword, 10) }),
+          dashboardProtected: validatedData.dashboardProtected ?? false,
+          sessionDurationHours: validatedData.sessionDurationHours ?? 24,
+          weatherEnabled: validatedData.weatherEnabled ?? false,
+          weatherUnits: validatedData.weatherUnits ?? 'metric',
+          ...(validatedData.dashboardPassword && { 
+            dashboardPassword: await bcrypt.hash(validatedData.dashboardPassword, 12) 
+          }),
         },
       });
     }
@@ -108,7 +157,23 @@ export async function PUT(request: Request) {
       weatherUnits: settings.weatherUnits,
     });
   } catch (error) {
+    if (error instanceof ZodError) {
+      return NextResponse.json(
+        { 
+          error: 'Validation failed',
+          details: error.issues.map(e => ({
+            field: e.path.join('.'),
+            message: e.message,
+          })),
+        },
+        { status: 400 }
+      );
+    }
+
     console.error('Settings update error:', error);
-    return NextResponse.json({ error: 'Failed to update settings' }, { status: 500 });
+    return NextResponse.json(
+      { error: 'Failed to update settings' },
+      { status: 500 }
+    );
   }
 }

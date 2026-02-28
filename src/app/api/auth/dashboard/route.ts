@@ -1,103 +1,142 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { verifyAuth, createSession, getCookieOptions } from '@/lib/auth';
 import bcrypt from 'bcryptjs';
 import { cookies } from 'next/headers';
+import { z } from 'zod';
+
+const MAX_BODY_SIZE = 1024 * 1024;
+
+const dashboardLoginSchema = z.object({
+  password: z.string().min(1, 'Password is required'),
+});
 
 // Check if dashboard is protected
 export async function GET() {
   try {
     const settings = await prisma.settings.findFirst();
     
-    // Check if user has dashboard access cookie
+    // Check if user has admin auth (admins always have dashboard access)
+    const auth = await verifyAuth();
+    const hasAdminAccess = !!auth;
+    
+    // Check dashboard-specific access
     const cookieStore = await cookies();
     const dashboardToken = cookieStore.get('dashboard-token')?.value;
     
-    let hasAccess = false;
+    let hasDashboardAccess = false;
     if (dashboardToken) {
       const session = await prisma.session.findUnique({
         where: { token: dashboardToken },
-        include: { user: true },
       });
       
       if (session && session.expiresAt > new Date()) {
-        hasAccess = true;
-      }
-    }
-    
-    // Also grant access if user has admin auth
-    const adminToken = cookieStore.get('auth-token')?.value;
-    if (adminToken) {
-      const adminSession = await prisma.session.findUnique({
-        where: { token: adminToken },
-      });
-      
-      if (adminSession && adminSession.expiresAt > new Date()) {
-        hasAccess = true;
+        hasDashboardAccess = true;
       }
     }
 
     return NextResponse.json({
       protected: settings?.dashboardProtected ?? false,
-      hasAccess,
+      hasAccess: hasAdminAccess || hasDashboardAccess,
+      isAdmin: hasAdminAccess,
     });
   } catch (error) {
     console.error('Dashboard auth check error:', error);
-    return NextResponse.json({ error: 'Failed to check auth' }, { status: 500 });
+    return NextResponse.json(
+      { error: 'Failed to check auth' },
+      { status: 500 }
+    );
   }
 }
 
 // Login to dashboard
 export async function POST(request: Request) {
   try {
-    const { password } = await request.json();
+    // Check content length
+    const contentLength = request.headers.get('content-length');
+    if (contentLength && parseInt(contentLength) > MAX_BODY_SIZE) {
+      return NextResponse.json(
+        { error: 'Request body too large' },
+        { status: 413 }
+      );
+    }
+
+    // Parse request body
+    let body;
+    try {
+      body = await request.json();
+    } catch {
+      return NextResponse.json(
+        { error: 'Invalid JSON in request body' },
+        { status: 400 }
+      );
+    }
+
+    // Validate input
+    const validatedData = dashboardLoginSchema.parse(body);
+    const { password } = validatedData;
     
     const settings = await prisma.settings.findFirst();
     
     if (!settings?.dashboardProtected) {
-      return NextResponse.json({ error: 'Dashboard is not protected' }, { status: 400 });
+      return NextResponse.json(
+        { error: 'Dashboard is not protected' },
+        { status: 400 }
+      );
     }
     
     if (!settings.dashboardPassword) {
-      return NextResponse.json({ error: 'No password set' }, { status: 500 });
+      return NextResponse.json(
+        { error: 'No password set' },
+        { status: 500 }
+      );
     }
     
     const isValid = await bcrypt.compare(password, settings.dashboardPassword);
     
     if (!isValid) {
-      return NextResponse.json({ error: 'Invalid password' }, { status: 401 });
+      return NextResponse.json(
+        { error: 'Invalid password' },
+        { status: 401 }
+      );
     }
-    
-    // Create session
-    const token = Buffer.from(`dashboard:${Date.now()}:${Math.random()}`).toString('base64');
-    const expiresAt = new Date();
-    expiresAt.setHours(expiresAt.getHours() + (settings.sessionDurationHours || 24));
     
     // Get first user for session relation
     const user = await prisma.user.findFirst();
-    if (user) {
-      await prisma.session.create({
-        data: {
-          token,
-          userId: user.id,
-          expiresAt,
-        },
-      });
+    if (!user) {
+      return NextResponse.json(
+        { error: 'No user found' },
+        { status: 500 }
+      );
     }
+
+    // Create session using auth utility
+    const token = await createSession(user.id);
     
     const response = NextResponse.json({ success: true });
     
-    // Set cookie
-    response.cookies.set('dashboard-token', token, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'strict',
-      maxAge: (settings.sessionDurationHours || 24) * 60 * 60,
-    });
+    // Set cookie with secure options
+    response.cookies.set('dashboard-token', token, getCookieOptions(
+      (settings.sessionDurationHours || 24) * 60 * 60
+    ));
     
     return response;
   } catch (error) {
+    if (error instanceof z.ZodError) {
+      return NextResponse.json(
+        { 
+          error: 'Validation failed',
+          details: error.issues.map(e => e.message),
+        },
+        { status: 400 }
+      );
+    }
+
     console.error('Dashboard login error:', error);
-    return NextResponse.json({ error: 'Login failed' }, { status: 500 });
+    return NextResponse.json(
+      { error: 'Login failed' },
+      { status: 500 }
+    );
   }
 }
 
@@ -115,15 +154,16 @@ export async function DELETE() {
     
     const response = NextResponse.json({ success: true });
     response.cookies.set('dashboard-token', '', {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'strict',
+      ...getCookieOptions(0),
       maxAge: 0,
     });
     
     return response;
   } catch (error) {
     console.error('Dashboard logout error:', error);
-    return NextResponse.json({ error: 'Logout failed' }, { status: 500 });
+    return NextResponse.json(
+      { error: 'Logout failed' },
+      { status: 500 }
+    );
   }
 }

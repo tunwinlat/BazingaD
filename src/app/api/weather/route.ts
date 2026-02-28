@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { verifyAuth } from '@/lib/auth';
 
 // Weather condition codes from Open-Meteo
 const weatherCodes: Record<number, { label: string; icon: string }> = {
@@ -46,7 +47,10 @@ export async function GET() {
     const settings = await prisma.settings.findFirst();
     
     if (!settings?.weatherEnabled || !settings.weatherLatitude || !settings.weatherLongitude) {
-      return NextResponse.json({ error: 'Weather not configured' }, { status: 404 });
+      return NextResponse.json(
+        { error: 'Weather not configured' },
+        { status: 404 }
+      );
     }
 
     const { weatherLatitude: lat, weatherLongitude: lon, weatherUnits: units, weatherLocationName } = settings;
@@ -65,31 +69,55 @@ export async function GET() {
       params.append('wind_speed_unit', 'mph');
     }
 
-    const response = await fetch(`https://api.open-meteo.com/v1/forecast?${params.toString()}`);
-    
-    if (!response.ok) {
-      throw new Error('Failed to fetch weather data');
+    // Add timeout to prevent hanging requests
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
+
+    try {
+      const response = await fetch(
+        `https://api.open-meteo.com/v1/forecast?${params.toString()}`,
+        { signal: controller.signal }
+      );
+      
+      clearTimeout(timeoutId);
+      
+      if (!response.ok) {
+        throw new Error('Failed to fetch weather data');
+      }
+
+      const data = await response.json();
+      const current = data.current;
+
+      // Format the response
+      const weatherCode = current.weather_code;
+      const weatherInfo = weatherCodes[weatherCode] || { label: 'Unknown', icon: '❓' };
+
+      return NextResponse.json({
+        temperature: Math.round(current.temperature_2m),
+        unit: units === 'imperial' ? '°F' : '°C',
+        condition: weatherInfo.label,
+        icon: weatherInfo.icon,
+        windSpeed: Math.round(current.wind_speed_10m),
+        windSpeedUnit: units === 'imperial' ? 'mph' : 'km/h',
+        windDirection: getWindDirection(current.wind_direction_10m),
+        locationName: weatherLocationName || 'Current Location',
+      });
+    } catch (fetchError) {
+      clearTimeout(timeoutId);
+      throw fetchError;
+    }
+  } catch (error) {
+    if (error instanceof Error && error.name === 'AbortError') {
+      return NextResponse.json(
+        { error: 'Weather request timed out' },
+        { status: 504 }
+      );
     }
 
-    const data = await response.json();
-    const current = data.current;
-
-    // Format the response
-    const weatherCode = current.weather_code;
-    const weatherInfo = weatherCodes[weatherCode] || { label: 'Unknown', icon: '❓' };
-
-    return NextResponse.json({
-      temperature: Math.round(current.temperature_2m),
-      unit: units === 'imperial' ? '°F' : '°C',
-      condition: weatherInfo.label,
-      icon: weatherInfo.icon,
-      windSpeed: Math.round(current.wind_speed_10m),
-      windSpeedUnit: units === 'imperial' ? 'mph' : 'km/h',
-      windDirection: getWindDirection(current.wind_direction_10m),
-      locationName: weatherLocationName || 'Current Location',
-    });
-  } catch (error) {
     console.error('Weather API error:', error);
-    return NextResponse.json({ error: 'Failed to fetch weather' }, { status: 500 });
+    return NextResponse.json(
+      { error: 'Failed to fetch weather' },
+      { status: 500 }
+    );
   }
 }
