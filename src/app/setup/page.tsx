@@ -52,8 +52,19 @@ export default function SetupPage() {
       return;
     }
 
-    if (formData.password.length < 6) {
-      setError('Password must be at least 6 characters');
+    if (formData.password.length < 8) {
+      setError('Password must be at least 8 characters');
+      return;
+    }
+
+    // Check password complexity
+    const hasUppercase = /[A-Z]/.test(formData.password);
+    const hasLowercase = /[a-z]/.test(formData.password);
+    const hasNumber = /[0-9]/.test(formData.password);
+    const hasSpecial = /[^A-Za-z0-9]/.test(formData.password);
+
+    if (!hasUppercase || !hasLowercase || !hasNumber || !hasSpecial) {
+      setError('Password must contain at least one uppercase letter, one lowercase letter, one number, and one special character');
       return;
     }
 
@@ -75,7 +86,12 @@ export default function SetupPage() {
         // Setup successful, redirect to login
         router.push('/login?setup=success');
       } else {
-        setError(data.error || 'Setup failed');
+        // Show detailed validation errors if available
+        if (data.details && Array.isArray(data.details)) {
+          setError(data.details.join(', '));
+        } else {
+          setError(data.error || 'Setup failed');
+        }
       }
     } catch (error) {
       setError('An error occurred during setup');
