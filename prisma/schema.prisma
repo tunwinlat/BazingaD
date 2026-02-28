@@ -1,0 +1,105 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id              String   @id @default(cuid())
+  username        String   @unique
+  password        String   // Hashed password
+  
+  // TOTP/2FA fields
+  totpSecret      String?  // Base32 encoded TOTP secret
+  totpEnabled     Boolean  @default(false)
+  totpVerified    Boolean  @default(false) // Has been verified once
+  recoveryCode    String?  // Hashed recovery code
+  
+  // Session management
+  passwordChangedAt DateTime @default(now())
+  
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  
+  sessions        Session[]
+  
+  @@map("users")
+}
+
+model Session {
+  id        String   @id @default(cuid())
+  token     String   @unique
+  userId    String
+  createdAt DateTime @default(now())
+  expiresAt DateTime
+  
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@map("sessions")
+}
+
+model Settings {
+  id                    String   @id @default(cuid())
+  
+  // Dashboard protection
+  dashboardProtected    Boolean  @default(false)
+  dashboardPassword     String?  // Hashed password for dashboard (if different from admin)
+  
+  // Session settings
+  sessionDurationHours  Int      @default(24) // Default 24 hours
+  
+  // Weather settings
+  weatherEnabled        Boolean  @default(false)
+  weatherLatitude       Float?   // Location latitude
+  weatherLongitude      Float?   // Location longitude
+  weatherLocationName   String?  // Display name for the location
+  weatherUnits          String   @default("metric") // "metric" or "imperial"
+  
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+  
+  @@map("settings")
+}
+
+model Category {
+  id        String   @id @default(cuid())
+  name      String
+  icon      String   @default("default")
+  sortOrder Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  blocks    Block[]
+  
+  @@map("categories")
+}
+
+model Block {
+  id          String   @id @default(cuid())
+  title       String
+  url         String
+  description String?
+  icon        String?
+  categoryId  String
+  sortOrder   Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  // Service monitoring fields
+  serviceUrl      String?
+  serviceType     String?
+  healthCheckUrl  String?
+  isMonitored     Boolean  @default(false)
+  lastStatus      String?  // "online", "offline", "unknown"
+  lastCheckedAt   DateTime?
+  
+  category Category @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  
+  @@map("blocks")
+}

@@ -1,36 +1,142 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# 🚀 Start Page Dashboard
 
-## Getting Started
+A modern, customizable browser start page with category-based organization, service monitoring, and an admin interface.
 
-First, run the development server:
+![Dashboard Preview](https://via.placeholder.com/800x400/0f0f1a/6366f1?text=Start+Page+Dashboard)
 
+## ✨ Features
+
+- 🎨 **Modern Glassmorphism Design** - Beautiful dark theme with animated gradients
+- 📂 **Categorized Blocks** - Organize your links by category
+- 🔤 **Alphabetical Sorting** - Blocks automatically sorted within each category
+- 🖼️ **Custom Icons** - Support for custom images or auto-fetched favicons
+- 📊 **Service Monitoring** - Monitor the health of your self-hosted services
+- ⚡ **Admin Interface** - Web UI to manage blocks and categories
+- 🐳 **Docker Ready** - Easy deployment with Docker Compose
+- ⌨️ **Keyboard Shortcuts** - Ctrl+K to focus search
+- 📱 **Responsive** - Works on all devices
+
+## 🚀 Quick Start
+
+### Using Docker Compose (Recommended)
+
+1. Clone the repository:
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+git clone <repository-url>
+cd startpage-dashboard
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+2. Start the application:
+```bash
+docker-compose up -d
+```
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+3. Open http://localhost:3000 in your browser
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+4. Access the admin panel at http://localhost:3000/admin
 
-## Learn More
+### Development
 
-To learn more about Next.js, take a look at the following resources:
+1. Install dependencies:
+```bash
+npm install
+```
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+2. Set up the database:
+```bash
+npx prisma migrate dev
+npx prisma db seed
+```
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+3. Run the development server:
+```bash
+npm run dev
+```
 
-## Deploy on Vercel
+4. Open http://localhost:3000
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## 📁 Project Structure
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+```
+startpage-dashboard/
+├── src/
+│   ├── app/              # Next.js app router
+│   │   ├── api/          # API routes
+│   │   ├── admin/        # Admin interface
+│   │   ├── globals.css   # Global styles
+│   │   ├── layout.tsx    # Root layout
+│   │   └── page.tsx      # Main dashboard
+│   ├── components/       # React components
+│   ├── lib/              # Utility functions
+│   └── types/            # TypeScript types
+├── prisma/
+│   ├── schema.prisma     # Database schema
+│   └── seed.ts           # Seed data
+├── docker-compose.yml    # Docker Compose config
+├── Dockerfile            # Docker image
+└── README.md             # This file
+```
+
+## 🔧 Configuration
+
+### Adding Blocks
+
+Visit `/admin` to manage blocks and categories through the web interface.
+
+### Service Monitoring
+
+When adding a block, you can enable monitoring by:
+1. Checking "Is Monitored"
+2. Providing a health check URL
+3. The dashboard will show a status indicator
+
+### Custom Icons
+
+You can provide custom icon URLs when creating blocks. If no icon is provided, the dashboard will automatically fetch the website's favicon.
+
+## 🔌 API Endpoints
+
+- `GET /api/categories` - List all categories with blocks
+- `POST /api/categories` - Create a new category
+- `PUT /api/categories/:id` - Update a category
+- `DELETE /api/categories/:id` - Delete a category
+
+- `GET /api/blocks` - List all blocks
+- `POST /api/blocks` - Create a new block
+- `PUT /api/blocks/:id` - Update a block
+- `DELETE /api/blocks/:id` - Delete a block
+
+- `GET /api/health/:id` - Check service health
+
+## 🐳 Docker Deployment
+
+### Build and run:
+```bash
+docker-compose up -d --build
+```
+
+### View logs:
+```bash
+docker-compose logs -f
+```
+
+### Stop:
+```bash
+docker-compose down
+```
+
+### Data persistence:
+The SQLite database is stored in `./data/prod.db` and persisted through Docker volumes.
+
+## 🛠️ Tech Stack
+
+- [Next.js 15](https://nextjs.org/) - React framework
+- [TypeScript](https://www.typescriptlang.org/) - Type safety
+- [Tailwind CSS](https://tailwindcss.com/) - Styling
+- [Prisma](https://prisma.io/) - Database ORM
+- [SQLite](https://sqlite.org/) - Database
+- [Lucide React](https://lucide.dev/) - Icons
+
+## 📝 License
+
+MIT License - feel free to use this project for personal or commercial purposes.
