@@ -8,11 +8,14 @@ import Header from '@/components/Header';
 import Dashboard from '@/components/Dashboard';
 import Footer from '@/components/Footer';
 import Weather from '@/components/Weather';
+import SearchBlocks from '@/components/SearchBlocks';
+import type { Category } from '@/types';
 
 export default function Home() {
   const router = useRouter();
   const [isProtected, setIsProtected] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [categories, setCategories] = useState<Category[]>([]);
 
   useEffect(() => {
     const checkProtection = async () => {
@@ -25,15 +28,28 @@ export default function Home() {
           router.push('/dashboard-login');
         } else {
           setIsProtected(data.protected);
-          setLoading(false);
         }
       } catch (error) {
         console.error('Auth check error:', error);
+      }
+    };
+
+    const fetchCategories = async () => {
+      try {
+        const response = await fetch('/api/categories');
+        if (response.ok) {
+          const data = await response.json();
+          setCategories(data);
+        }
+      } catch (error) {
+        console.error('Failed to fetch categories:', error);
+      } finally {
         setLoading(false);
       }
     };
 
     checkProtection();
+    fetchCategories();
   }, [router]);
 
   const handleLogout = async () => {
@@ -86,6 +102,9 @@ export default function Home() {
           <Footer />
         </div>
       </div>
+      
+      {/* Block Search */}
+      <SearchBlocks categories={categories} />
     </>
   );
 }

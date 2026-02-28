@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import { toast } from 'sonner';
 import { ArrowLeft, Plus, Trash2, Edit, X, RefreshCw, LogOut, Shield, Key, QrCode, Copy, Check, AlertTriangle, Lock, Settings2, Cloud, MapPin, Thermometer } from 'lucide-react';
 import type { Category, Block, CategoryFormData, BlockFormData } from '@/types';
 
@@ -75,6 +76,12 @@ export default function AdminPage() {
     password: '',
     code: '',
   });
+
+  // Loading states
+  const [isSavingCategory, setIsSavingCategory] = useState(false);
+  const [isSavingBlock, setIsSavingBlock] = useState(false);
+  const [isDeletingCategory, setIsDeletingCategory] = useState<string | null>(null);
+  const [isDeletingBlock, setIsDeletingBlock] = useState<string | null>(null);
 
   useEffect(() => {
     fetchData();
@@ -214,7 +221,7 @@ export default function AdminPage() {
         setTotpSetupData(data);
         setShowTOTPSetup(true);
       } else {
-        alert('Failed to setup TOTP');
+        toast.error('Failed to setup TOTP');
       }
     } catch (error) {
       console.error('TOTP setup error:', error);
@@ -231,14 +238,14 @@ export default function AdminPage() {
       });
 
       if (response.ok) {
-        alert('TOTP enabled successfully!');
+        toast.success('TOTP enabled successfully!');
         setShowTOTPSetup(false);
         setTotpSetupData(null);
         setTotpVerificationCode('');
         fetchAuthStatus();
       } else {
         const data = await response.json();
-        alert(data.error || 'Verification failed');
+        toast.error(data.error || 'Verification failed');
       }
     } catch (error) {
       console.error('TOTP verify error:', error);
@@ -255,13 +262,13 @@ export default function AdminPage() {
       });
 
       if (response.ok) {
-        alert('TOTP disabled successfully');
+        toast.success('TOTP disabled successfully');
         setShowDisableTOTP(false);
         setDisableTOTPForm({ password: '', code: '' });
         fetchAuthStatus();
       } else {
         const data = await response.json();
-        alert(data.error || 'Failed to disable TOTP');
+        toast.error(data.error || 'Failed to disable TOTP');
       }
     } catch (error) {
       console.error('Disable TOTP error:', error);
@@ -271,7 +278,7 @@ export default function AdminPage() {
   const handleChangePassword = async (e: React.FormEvent) => {
     e.preventDefault();
     if (passwordForm.newPassword !== passwordForm.confirmPassword) {
-      alert('New passwords do not match');
+      toast.error('New passwords do not match');
       return;
     }
     try {
@@ -285,12 +292,12 @@ export default function AdminPage() {
       });
 
       if (response.ok) {
-        alert('Password changed successfully');
+        toast.success('Password changed successfully');
         setShowPasswordChange(false);
         setPasswordForm({ currentPassword: '', newPassword: '', confirmPassword: '' });
       } else {
         const data = await response.json();
-        alert(data.error || 'Failed to change password');
+        toast.error(data.error || 'Failed to change password');
       }
     } catch (error) {
       console.error('Password change error:', error);
@@ -323,13 +330,13 @@ export default function AdminPage() {
       });
 
       if (response.ok) {
-        alert('Settings updated successfully');
+        toast.success('Settings updated successfully');
         setShowDashboardSettings(false);
         setDashboardPassword('');
         fetchSettings();
       } else {
         const data = await response.json();
-        alert(data.error || 'Failed to update settings');
+        toast.error(data.error || 'Failed to update settings');
       }
     } catch (error) {
       console.error('Settings update error:', error);
@@ -345,10 +352,10 @@ export default function AdminPage() {
       });
 
       if (response.ok) {
-        alert('All sessions logged out. You will be redirected to login.');
+        toast.success('All sessions logged out. You will be redirected to login.');
         router.push('/login');
       } else {
-        alert('Failed to logout sessions');
+        toast.error('Failed to logout sessions');
       }
     } catch (error) {
       console.error('Logout all error:', error);
@@ -411,10 +418,10 @@ export default function AdminPage() {
       });
 
       if (response.ok) {
-        alert('Weather settings saved');
+        toast.success('Weather settings saved');
         fetchSettings();
       } else {
-        alert('Failed to save weather settings');
+        toast.error('Failed to save weather settings');
       }
     } catch (error) {
       console.error('Weather settings save error:', error);
@@ -423,69 +430,103 @@ export default function AdminPage() {
 
   const handleSaveCategory = async (e: React.FormEvent) => {
     e.preventDefault();
+    setIsSavingCategory(true);
     try {
-      if (editingCategory) {
-        await fetch(`/api/categories/${editingCategory.id}`, {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(categoryForm),
-        });
-      } else {
-        await fetch('/api/categories', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(categoryForm),
-        });
+      const url = editingCategory ? `/api/categories/${editingCategory.id}` : '/api/categories';
+      const method = editingCategory ? 'PUT' : 'POST';
+      
+      const response = await fetch(url, {
+        method,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(categoryForm),
+      });
+
+      if (!response.ok) {
+        const data = await response.json();
+        throw new Error(data.error || 'Failed to save category');
       }
+
+      toast.success(editingCategory ? 'Category updated successfully' : 'Category created successfully');
       setShowCategoryForm(false);
       setEditingCategory(null);
       fetchData();
     } catch (error) {
       console.error('Failed to save category:', error);
+      toast.error(error instanceof Error ? error.message : 'Failed to save category');
+    } finally {
+      setIsSavingCategory(false);
     }
   };
 
   const handleSaveBlock = async (e: React.FormEvent) => {
     e.preventDefault();
+    setIsSavingBlock(true);
     try {
-      if (editingBlock) {
-        await fetch(`/api/blocks/${editingBlock.id}`, {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(blockForm),
-        });
-      } else {
-        await fetch('/api/blocks', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(blockForm),
-        });
+      const url = editingBlock ? `/api/blocks/${editingBlock.id}` : '/api/blocks';
+      const method = editingBlock ? 'PUT' : 'POST';
+      
+      const response = await fetch(url, {
+        method,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(blockForm),
+      });
+
+      if (!response.ok) {
+        const data = await response.json();
+        throw new Error(data.error || 'Failed to save block');
       }
+
+      toast.success(editingBlock ? 'Block updated successfully' : 'Block created successfully');
       setShowBlockForm(false);
       setEditingBlock(null);
       fetchData();
     } catch (error) {
       console.error('Failed to save block:', error);
+      toast.error(error instanceof Error ? error.message : 'Failed to save block');
+    } finally {
+      setIsSavingBlock(false);
     }
   };
 
   const handleDeleteCategory = async (id: string) => {
     if (!confirm('Delete this category? All blocks in it will be deleted too.')) return;
+    setIsDeletingCategory(id);
     try {
-      await fetch(`/api/categories/${id}`, { method: 'DELETE' });
+      const response = await fetch(`/api/categories/${id}`, { method: 'DELETE' });
+      
+      if (!response.ok) {
+        const data = await response.json();
+        throw new Error(data.error || 'Failed to delete category');
+      }
+
+      toast.success('Category deleted successfully');
       fetchData();
     } catch (error) {
       console.error('Failed to delete category:', error);
+      toast.error(error instanceof Error ? error.message : 'Failed to delete category');
+    } finally {
+      setIsDeletingCategory(null);
     }
   };
 
   const handleDeleteBlock = async (id: string) => {
     if (!confirm('Delete this block?')) return;
+    setIsDeletingBlock(id);
     try {
-      await fetch(`/api/blocks/${id}`, { method: 'DELETE' });
+      const response = await fetch(`/api/blocks/${id}`, { method: 'DELETE' });
+      
+      if (!response.ok) {
+        const data = await response.json();
+        throw new Error(data.error || 'Failed to delete block');
+      }
+
+      toast.success('Block deleted successfully');
       fetchData();
     } catch (error) {
       console.error('Failed to delete block:', error);
+      toast.error(error instanceof Error ? error.message : 'Failed to delete block');
+    } finally {
+      setIsDeletingBlock(null);
     }
   };
 
@@ -493,10 +534,10 @@ export default function AdminPage() {
     try {
       const res = await fetch(`/api/health/${blockId}`);
       const data = await res.json();
-      alert(`Status: ${data.status}${data.responseTime ? ` (${data.responseTime}ms)` : ''}`);
+      toast.success(`Status: ${data.status}${data.responseTime ? ` (${data.responseTime}ms)` : ''}`);
       fetchData();
     } catch (error) {
-      alert('Health check failed');
+      toast.error('Health check failed');
     }
   };
 
