@@ -146,9 +146,13 @@ export async function extendSession(token: string): Promise<void> {
 export function getCookieOptions(maxAgeSeconds?: number) {
   const isProduction = process.env.NODE_ENV === 'production';
   
+  // Check if we're running in a container without HTTPS
+  // In Docker, we typically don't have HTTPS, so we need to allow non-secure cookies
+  const isDocker = process.env.DOCKER_ENV === 'true' || !process.env.VERCEL;
+  
   return {
     httpOnly: true,
-    secure: isProduction, // Only secure in production
+    secure: isProduction && !isDocker, // Only secure in production if not in Docker
     sameSite: 'lax' as const, // Use lax to allow redirects to work
     path: '/',
     maxAge: maxAgeSeconds ?? SESSION_DURATION_SECONDS,

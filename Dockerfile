@@ -37,6 +37,7 @@ WORKDIR /app
 
 ENV NODE_ENV=production
 ENV DATABASE_URL="file:/app/data/prod.db"
+ENV DOCKER_ENV=true
 
 # Install wget for healthcheck
 RUN apk add --no-cache wget
