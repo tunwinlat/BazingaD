@@ -11,7 +11,3 @@ npm-debug.log
 data/*.db
 *.log
 README.md
-Dockerfile
-docker-compose.yml
-.dockerignore
-docker-entrypoint.sh
