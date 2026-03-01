@@ -479,6 +479,11 @@ export default function AdminPage() {
 
       if (!response.ok) {
         const data = await response.json();
+        console.log('Error response:', data);
+        if (data.details && Array.isArray(data.details)) {
+          const details = data.details.map((d: {field: string, message: string}) => `${d.field}: ${d.message}`).join(', ');
+          throw new Error(`${data.error}: ${details}`);
+        }
         throw new Error(data.error || 'Failed to save block');
       }
 

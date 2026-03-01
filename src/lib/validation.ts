@@ -40,10 +40,15 @@ export const blockCreateSchema = z.object({
   sortOrder: z.number().int().default(0),
   serviceUrl: z.string()
     .max(2048, 'Service URL must not exceed 2048 characters')
-    .url('Invalid service URL format')
     .optional()
     .nullable()
-    .transform(val => val?.trim() || null),
+    .transform(val => {
+      if (!val || val.trim() === '') return null;
+      return val.trim();
+    })
+    .refine(val => val === null || val === undefined || /^https?:\/\/.+/.test(val), {
+      message: 'Invalid service URL format'
+    }),
   serviceType: z.string()
     .max(50, 'Service type must not exceed 50 characters')
     .optional()
@@ -51,10 +56,15 @@ export const blockCreateSchema = z.object({
     .transform(val => val?.trim() || null),
   healthCheckUrl: z.string()
     .max(2048, 'Health check URL must not exceed 2048 characters')
-    .url('Invalid health check URL format')
     .optional()
     .nullable()
-    .transform(val => val?.trim() || null),
+    .transform(val => {
+      if (!val || val.trim() === '') return null;
+      return val.trim();
+    })
+    .refine(val => val === null || val === undefined || /^https?:\/\/.+/.test(val), {
+      message: 'Invalid health check URL format'
+    }),
   isMonitored: z.boolean().default(false),
 });
 
