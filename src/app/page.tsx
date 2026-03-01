@@ -8,7 +8,7 @@ import Header from '@/components/Header';
 import Dashboard from '@/components/Dashboard';
 import Footer from '@/components/Footer';
 import Weather from '@/components/Weather';
-import SearchBlocks from '@/components/SearchBlocks';
+
 import type { Category } from '@/types';
 
 export default function Home() {
@@ -97,14 +97,13 @@ export default function Home() {
           {/* Weather Widget */}
           <Weather />
           
-          <Header />
+          <Header categories={categories} />
           <Dashboard />
           <Footer />
         </div>
       </div>
       
-      {/* Block Search */}
-      <SearchBlocks categories={categories} />
+
     </>
   );
 }
