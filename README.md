@@ -20,10 +20,31 @@ A modern, customizable browser start page with category-based organization, serv
 
 ### Using Docker Compose (Recommended)
 
-1. Clone the repository:
-```bash
-git clone <repository-url>
-cd startpage-dashboard
+The easiest way to run Start Page Dashboard is using the pre-built Docker image from Docker Hub.
+
+1. Create a `docker-compose.yml` file:
+```yaml
+version: '3.8'
+
+services:
+  startpage:
+    image: twlatx/startpage-dashboard:latest
+    container_name: startpage-dashboard
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=production
+      - DATABASE_URL=file:/app/data/prod.db
+      - NEXT_PUBLIC_APP_NAME=Start Page Dashboard
+    volumes:
+      - ./data:/app/data
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3000/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
 ```
 
 2. Start the application:
@@ -34,6 +55,21 @@ docker-compose up -d
 3. Open http://localhost:3000 in your browser
 
 4. Access the admin panel at http://localhost:3000/admin
+
+### Building from Source
+
+If you prefer to build the Docker image yourself:
+
+1. Clone the repository:
+```bash
+git clone <repository-url>
+cd startpage-dashboard
+```
+
+2. Build and start the application:
+```bash
+docker-compose up -d --build
+```
 
 ### Development
 
@@ -110,7 +146,27 @@ You can provide custom icon URLs when creating blocks. If no icon is provided, t
 
 ## 🐳 Docker Deployment
 
-### Build and run:
+### Using Pre-built Image (Recommended)
+
+Pull and run the official image from Docker Hub:
+
+```bash
+# Pull the latest image
+docker pull twlatx/startpage-dashboard:latest
+
+# Run with docker run
+docker run -d \
+  --name startpage-dashboard \
+  -p 3000:3000 \
+  -v ./data:/app/data \
+  -e NODE_ENV=production \
+  -e NEXT_PUBLIC_APP_NAME="Start Page Dashboard" \
+  --restart unless-stopped \
+  twlatx/startpage-dashboard:latest
+```
+
+### Building from Source
+
 ```bash
 docker-compose up -d --build
 ```
