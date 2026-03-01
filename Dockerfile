@@ -53,8 +53,9 @@ COPY package*.json ./
 COPY prisma ./prisma/
 RUN npx prisma generate
 
-# Copy compiled seed script
+# Copy compiled seed script and check-and-seed script
 COPY --from=builder /app/dist/seed.js ./prisma/
+COPY check-and-seed.js ./
 
 # Copy built application
 COPY --from=builder /app/.next ./.next
