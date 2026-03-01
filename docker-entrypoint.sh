@@ -1,6 +1,9 @@
 #!/bin/sh
 set -e
 
+# Create data directory if it doesn't exist (for volume mounts)
+mkdir -p /app/data
+
 # Run database migrations
 echo "📦 Running database migrations..."
 npx prisma migrate deploy
