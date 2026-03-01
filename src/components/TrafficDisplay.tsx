@@ -13,6 +13,7 @@ interface TrafficData {
     staticDuration: number;
   } | null;
   cached: boolean;
+  cacheAge?: number; // Age in minutes
   error?: string;
 }
 
@@ -197,8 +198,15 @@ export default function TrafficDisplay({ settings }: TrafficDisplayProps) {
 
         {/* Cache indicator */}
         {trafficData.cached && (
-          <span className="text-xs text-white/30" title="Using cached data">
-            cached
+          <span 
+            className="text-xs text-white/30" 
+            title={`Cached ${trafficData.cacheAge ?? '?'} minutes ago`}
+          >
+            {trafficData.cacheAge !== undefined && trafficData.cacheAge > 30 ? (
+              <span style={{ color: '#f87171' }}>stale ({trafficData.cacheAge}m)</span>
+            ) : (
+              `cached (${trafficData.cacheAge ?? '?'}m)`
+            )}
           </span>
         )}
       </div>

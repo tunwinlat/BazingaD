@@ -12,6 +12,7 @@ interface TrafficResponse {
   homeToWork: RouteData | null;
   workToHome: RouteData | null;
   cached: boolean;
+  cacheAge?: number; // Age in minutes for debugging
   error?: string;
   errorCode?: string;
 }
@@ -129,16 +130,23 @@ export async function GET() {
       );
     }
 
-    // Check cache
+    // Check cache - get the most recent entry
     const cache = await prisma.trafficCache.findFirst({
       orderBy: { cachedAt: 'desc' },
     });
 
-    const now = Date.now();
-    const cacheAge = cache ? now - cache.cachedAt.getTime() : Infinity;
+    // Use UTC time for consistent comparison
+    const now = new Date();
+    const cacheTime = cache ? new Date(cache.cachedAt) : null;
+    const cacheAgeMs = cacheTime ? now.getTime() - cacheTime.getTime() : Infinity;
+    const cacheAgeMinutes = Math.floor(cacheAgeMs / 60000);
+    const isCacheValid = cache && cacheAgeMs < CACHE_DURATION_MS;
 
-    // Return cached data if valid
-    if (cache && cacheAge < CACHE_DURATION_MS) {
+    console.log(`[Traffic API] Cache check: ${cache ? 'found' : 'not found'}, age: ${cacheAgeMinutes} minutes, valid: ${isCacheValid}`);
+
+    // Return cached data if valid (less than 30 minutes old)
+    if (isCacheValid && cache) {
+      console.log(`[Traffic API] Returning cached data (age: ${cacheAgeMinutes} min)`);
       const response: TrafficResponse = {
         homeToWork: {
           duration: cache.homeToWorkDuration,
@@ -149,9 +157,12 @@ export async function GET() {
           staticDuration: cache.workToHomeStatic,
         },
         cached: true,
+        cacheAge: cacheAgeMinutes,
       };
       return NextResponse.json(response);
     }
+
+    console.log(`[Traffic API] Cache expired or not found, fetching fresh data...`);
 
     // Fetch fresh data from Google Routes API
     try {
@@ -172,40 +183,35 @@ export async function GET() {
         ),
       ]);
 
-      // Update cache
-      if (cache) {
-        await prisma.trafficCache.update({
-          where: { id: cache.id },
-          data: {
-            homeToWorkDuration: homeToWork.duration,
-            homeToWorkStatic: homeToWork.staticDuration,
-            workToHomeDuration: workToHome.duration,
-            workToHomeStatic: workToHome.staticDuration,
-            cachedAt: new Date(),
-          },
-        });
-      } else {
-        await prisma.trafficCache.create({
-          data: {
-            homeToWorkDuration: homeToWork.duration,
-            homeToWorkStatic: homeToWork.staticDuration,
-            workToHomeDuration: workToHome.duration,
-            workToHomeStatic: workToHome.staticDuration,
-          },
-        });
-      }
+      // Update cache - delete old entries and create new one
+      // This ensures we only keep the latest cache entry
+      await prisma.trafficCache.deleteMany({});
+      
+      await prisma.trafficCache.create({
+        data: {
+          homeToWorkDuration: homeToWork.duration,
+          homeToWorkStatic: homeToWork.staticDuration,
+          workToHomeDuration: workToHome.duration,
+          workToHomeStatic: workToHome.staticDuration,
+          cachedAt: new Date(),
+        },
+      });
+
+      console.log(`[Traffic API] Fresh data cached successfully`);
 
       const response: TrafficResponse = {
         homeToWork,
         workToHome,
         cached: false,
+        cacheAge: 0,
       };
       return NextResponse.json(response);
     } catch (apiError) {
-      const errorMessage = apiError instanceof Error ? apiError.message : 'Unknown error';
+      console.error('[Traffic API] Error fetching from Google:', apiError);
       
-      // If we have stale cache, return it with a warning
+      // If we have any cache (even stale), return it with a warning
       if (cache) {
+        console.log(`[Traffic API] Returning stale cache due to API error`);
         const response: TrafficResponse = {
           homeToWork: {
             duration: cache.homeToWorkDuration,
@@ -216,12 +222,14 @@ export async function GET() {
             staticDuration: cache.workToHomeStatic,
           },
           cached: true,
-          error: `Using stale cache. ${errorMessage}`,
+          cacheAge: cacheAgeMinutes,
+          error: `Using stale cache (${cacheAgeMinutes} min old). ${apiError instanceof Error ? apiError.message : 'Unknown error'}`,
         };
         return NextResponse.json(response);
       }
 
       // Parse error code from message
+      const errorMessage = apiError instanceof Error ? apiError.message : 'Unknown error';
       const errorCode = errorMessage.includes(':') 
         ? errorMessage.split(':')[0] 
         : 'UNKNOWN_ERROR';
@@ -235,7 +243,7 @@ export async function GET() {
       );
     }
   } catch (error) {
-    console.error('Traffic API error:', error);
+    console.error('[Traffic API] Unexpected error:', error);
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }
