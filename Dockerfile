@@ -5,7 +5,7 @@ WORKDIR /app
 
 # Install dependencies
 COPY package*.json ./
-RUN npm ci
+RUN npm install -g npm@11.11.0 && npm ci
 
 # Copy prisma schema
 COPY prisma ./prisma/
@@ -28,7 +28,7 @@ FROM node:20-alpine AS deps
 WORKDIR /app
 
 COPY package*.json ./
-RUN npm ci --only=production
+RUN npm install -g npm@11.11.0 && npm ci --only=production
 
 # Production stage
 FROM node:20-alpine AS runner
