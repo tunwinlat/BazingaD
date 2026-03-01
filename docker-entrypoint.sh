@@ -13,5 +13,7 @@ su -s /bin/sh nextjs -c "npx prisma migrate deploy"
 echo "🌱 Checking if seed is needed..."
 su -s /bin/sh nextjs -c "node check-and-seed.js"
 
-# Execute the main command as nextjs user
-exec su -s /bin/sh nextjs -c "$@"
+echo "🚀 Starting application..."
+
+# Switch to nextjs user and execute the main command
+exec su -s /bin/sh nextjs -c "cd /app && $*"
