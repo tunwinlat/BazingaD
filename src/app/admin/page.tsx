@@ -602,12 +602,24 @@ export default function AdminPage() {
         // Force favicon update
         window.location.reload();
       } else {
-        const errorData = await response.json();
-        toast.error(errorData.error || 'Failed to save general settings');
-        console.error('Save error:', errorData);
+        let errorMessage = 'Failed to save general settings';
+        try {
+          const errorData = await response.json();
+          errorMessage = errorData.error || errorMessage;
+          console.error('Save error:', errorData);
+        } catch (e) {
+          // Response wasn't JSON
+          const text = await response.text();
+          console.error('Save error (non-JSON):', text);
+          if (response.status === 429) {
+            errorMessage = 'Too many requests. Please wait a moment before trying again.';
+          }
+        }
+        toast.error(errorMessage);
       }
     } catch (error) {
       console.error('General settings save error:', error);
+      toast.error('Network error. Please check your connection.');
     }
   };
 

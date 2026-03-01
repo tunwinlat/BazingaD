@@ -78,8 +78,7 @@ export async function middleware(request: NextRequest) {
       rateLimitType = 'login';
     } else if (
       pathname.includes('/auth/password') ||
-      pathname.includes('/auth/totp') ||
-      pathname.includes('/settings')
+      pathname.includes('/auth/totp')
     ) {
       rateLimitType = 'sensitive';
     } else if (pathname.includes('/health')) {
