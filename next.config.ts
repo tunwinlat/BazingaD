@@ -1,9 +1,6 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  // Security headers are handled by middleware.ts
-  // This ensures they apply to all routes including API routes
-  
   // Disable powered by header
   poweredByHeader: false,
   
@@ -14,6 +11,21 @@ const nextConfig: NextConfig = {
   images: {
     formats: ['image/avif', 'image/webp'],
     remotePatterns: [],
+  },
+  
+  // Custom headers to add security headers and remove informational ones
+  async headers() {
+    return [
+      {
+        source: '/:path*',
+        headers: [
+          {
+            key: 'X-DNS-Prefetch-Control',
+            value: 'on',
+          },
+        ],
+      },
+    ];
   },
   
   // Experimental features

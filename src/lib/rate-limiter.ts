@@ -17,11 +17,11 @@ const rateLimiters = {
     duration: 60, // 1 minute
   }),
   
-  // Sensitive operations (password change, TOTP setup): 10 per hour
+  // Sensitive operations (password change, TOTP setup): 30 per minute
   sensitive: new RateLimiterMemory({
     keyPrefix: 'sensitive',
-    points: 10,
-    duration: 60 * 60, // 1 hour
+    points: 30,
+    duration: 60, // 1 minute
   }),
   
   // Health check: 10 per minute
