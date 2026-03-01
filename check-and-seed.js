@@ -17,7 +17,6 @@ async function checkAndSeed() {
 checkAndSeed()
   .then(() => {
     console.log('✅ Database ready!');
-    process.exit(0);
   })
   .catch(e => {
     console.error(e);
