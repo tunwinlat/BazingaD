@@ -7,7 +7,7 @@ import Background from '@/components/Background';
 import Header from '@/components/Header';
 import Dashboard from '@/components/Dashboard';
 import Footer from '@/components/Footer';
-import Weather from '@/components/Weather';
+import InfoBar from '@/components/InfoBar';
 
 import type { Category } from '@/types';
 
@@ -94,8 +94,8 @@ export default function Home() {
             </div>
           )}
           
-          {/* Weather Widget */}
-          <Weather />
+          {/* Info Bar - Weather & Traffic */}
+          <InfoBar />
           
           <Header categories={categories} />
           <Dashboard />

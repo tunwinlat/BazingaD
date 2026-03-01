@@ -12,7 +12,7 @@ export default function AdminPage() {
   const [categories, setCategories] = useState<Category[]>([]);
   const [blocks, setBlocks] = useState<Block[]>([]);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<'general' | 'categories' | 'blocks' | 'security' | 'integrations'>('blocks');
+  const [activeTab, setActiveTab] = useState<'general' | 'categories' | 'blocks' | 'security' | 'integrations' | 'traffic'>('blocks');
   
   // Security states
   const [authStatus, setAuthStatus] = useState<{ username: string; totpEnabled: boolean } | null>(null);
@@ -75,6 +75,17 @@ export default function AdminPage() {
   });
   const [faviconPreview, setFaviconPreview] = useState<string | null>(null);
 
+  // Traffic settings
+  const [trafficSettings, setTrafficSettings] = useState({
+    enabled: false,
+    apiKey: '',
+    homeAddress: '',
+    workAddress: '',
+    travelMode: 'DRIVE' as 'DRIVE' | 'BICYCLE' | 'WALK' | 'TWO_WHEELER' | 'TRANSIT',
+    units: 'metric' as 'metric' | 'imperial',
+  });
+  const [showTrafficApiKey, setShowTrafficApiKey] = useState(false);
+
   // Weather settings
   const [locationLoading, setLocationLoading] = useState(false);
   const [locationError, setLocationError] = useState('');
@@ -108,6 +119,7 @@ export default function AdminPage() {
     fetchSettings();
     fetchSessions();
     fetchGeneralSettings();
+    fetchTrafficSettings();
   }, []);
 
   useEffect(() => {
@@ -250,6 +262,25 @@ export default function AdminPage() {
       }
     } catch (error) {
       console.error('Failed to fetch general settings:', error);
+    }
+  };
+
+  const fetchTrafficSettings = async () => {
+    try {
+      const response = await fetch('/api/settings/traffic');
+      if (response.ok) {
+        const data = await response.json();
+        setTrafficSettings({
+          enabled: data.enabled ?? false,
+          apiKey: data.apiKey || '',
+          homeAddress: data.homeAddress || '',
+          workAddress: data.workAddress || '',
+          travelMode: data.travelMode || 'DRIVE',
+          units: data.units || 'metric',
+        });
+      }
+    } catch (error) {
+      console.error('Failed to fetch traffic settings:', error);
     }
   };
 
@@ -563,6 +594,34 @@ export default function AdminPage() {
     }
   };
 
+  const handleSaveTrafficSettings = async () => {
+    try {
+      const response = await fetch('/api/settings/traffic', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          enabled: trafficSettings.enabled,
+          apiKey: trafficSettings.apiKey,
+          homeAddress: trafficSettings.homeAddress,
+          workAddress: trafficSettings.workAddress,
+          travelMode: trafficSettings.travelMode,
+          units: trafficSettings.units,
+        }),
+      });
+
+      if (response.ok) {
+        toast.success('Traffic settings saved');
+        fetchTrafficSettings();
+      } else {
+        const errorData = await response.json();
+        toast.error(errorData.error || 'Failed to save traffic settings');
+        console.error('Save error:', errorData);
+      }
+    } catch (error) {
+      console.error('Traffic settings save error:', error);
+    }
+  };
+
   const handleSaveCategory = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSavingCategory(true);
@@ -789,6 +848,16 @@ export default function AdminPage() {
           >
             <Cloud className="w-4 h-4" />
             Integrations
+          </button>
+          <button
+            onClick={() => setActiveTab('traffic')}
+            className="px-4 py-2 rounded-lg transition-colors flex items-center gap-2"
+            style={{ 
+              backgroundColor: activeTab === 'traffic' ? '#6366f1' : 'rgba(255,255,255,0.05)',
+            }}
+          >
+            <MapPin className="w-4 h-4" />
+            Traffic
           </button>
         </div>
 
@@ -1377,6 +1446,182 @@ export default function AdminPage() {
                       style={{ backgroundColor: '#6366f1' }}
                     >
                       Save Weather Settings
+                    </button>
+                  </>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {activeTab === 'traffic' && (
+          <div>
+            <h2 className="text-xl font-semibold mb-6">Traffic Information</h2>
+            
+            <div className="rounded-xl p-6" style={{ backgroundColor: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)' }}>
+              <div className="flex items-center gap-3 mb-4">
+                <div className="w-10 h-10 rounded-lg flex items-center justify-center" style={{ backgroundColor: 'rgba(16, 185, 129, 0.2)' }}>
+                  <MapPin className="w-5 h-5 text-green-400" />
+                </div>
+                <div>
+                  <h3 className="font-semibold">Google Routes API</h3>
+                  <p className="text-sm text-white/60">Display commute time information on your dashboard</p>
+                </div>
+                {trafficSettings.enabled && (
+                  <span className="ml-auto px-3 py-1 rounded-full text-xs" style={{ backgroundColor: 'rgba(16, 185, 129, 0.2)', color: '#34d399' }}>
+                    Enabled
+                  </span>
+                )}
+              </div>
+
+              {/* Free Tier Notice */}
+              <div className="mb-6 p-4 rounded-lg" style={{ backgroundColor: 'rgba(59, 130, 246, 0.1)', border: '1px solid rgba(59, 130, 246, 0.2)' }}>
+                <h4 className="font-medium text-blue-400 mb-2 flex items-center gap-2">
+                  <AlertTriangle className="w-4 h-4" />
+                  API Usage & Pricing
+                </h4>
+                <p className="text-sm text-white/70 mb-2">
+                  Google Routes API includes a free tier of <strong>10,000 requests per month</strong>. 
+                  Beyond that, charges apply. This app caches results for 30 minutes to minimize API calls.
+                </p>
+                <p className="text-sm text-white/50">
+                  API calls are only made when the dashboard tab is active and the cache has expired.
+                </p>
+              </div>
+
+              <div className="space-y-4">
+                {/* Enable Toggle */}
+                <div className="flex items-center gap-3 p-4 rounded-lg" style={{ backgroundColor: 'rgba(255,255,255,0.03)' }}>
+                  <input
+                    type="checkbox"
+                    id="trafficEnabled"
+                    checked={trafficSettings.enabled}
+                    onChange={(e) => setTrafficSettings({ ...trafficSettings, enabled: e.target.checked })}
+                    className="w-5 h-5 rounded border-white/20"
+                  />
+                  <label htmlFor="trafficEnabled" className="flex-1">
+                    <span className="font-medium">Enable Traffic Display</span>
+                    <p className="text-sm text-white/50">Show commute time widget on the dashboard</p>
+                  </label>
+                </div>
+
+                {trafficSettings.enabled && (
+                  <>
+                    {/* API Key */}
+                    <div className="p-4 rounded-lg space-y-4" style={{ backgroundColor: 'rgba(255,255,255,0.03)' }}>
+                      <h4 className="font-medium flex items-center gap-2">
+                        <Key className="w-4 h-4" />
+                        API Configuration
+                      </h4>
+                      
+                      <div>
+                        <label className="block text-sm text-white/70 mb-1">
+                          Google Routes API Key
+                          <a 
+                            href="https://developers.google.com/maps/documentation/routes/get-api-key" 
+                            target="_blank" 
+                            rel="noopener noreferrer"
+                            className="ml-2 text-xs text-blue-400 hover:underline"
+                          >
+                            Get API Key →
+                          </a>
+                        </label>
+                        <div className="flex gap-2">
+                          <input
+                            type={showTrafficApiKey ? 'text' : 'password'}
+                            value={trafficSettings.apiKey}
+                            onChange={(e) => setTrafficSettings({ ...trafficSettings, apiKey: e.target.value })}
+                            placeholder="Enter your Google Routes API key"
+                            className="flex-1 px-3 py-2 rounded-lg border outline-none focus:border-indigo-500 text-sm"
+                            style={{ backgroundColor: 'rgba(255,255,255,0.05)', borderColor: 'rgba(255,255,255,0.1)', color: 'white' }}
+                          />
+                          <button
+                            onClick={() => setShowTrafficApiKey(!showTrafficApiKey)}
+                            className="px-3 py-2 rounded-lg transition-colors"
+                            style={{ backgroundColor: 'rgba(255,255,255,0.1)' }}
+                          >
+                            {showTrafficApiKey ? 'Hide' : 'Show'}
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Addresses */}
+                    <div className="p-4 rounded-lg space-y-4" style={{ backgroundColor: 'rgba(255,255,255,0.03)' }}>
+                      <h4 className="font-medium flex items-center gap-2">
+                        <MapPin className="w-4 h-4" />
+                        Locations
+                      </h4>
+                      
+                      <div>
+                        <label className="block text-sm text-white/70 mb-1">Home Address</label>
+                        <input
+                          type="text"
+                          value={trafficSettings.homeAddress}
+                          onChange={(e) => setTrafficSettings({ ...trafficSettings, homeAddress: e.target.value })}
+                          placeholder="e.g., 123 Main St, New York, NY"
+                          className="w-full px-3 py-2 rounded-lg border outline-none focus:border-indigo-500 text-sm"
+                          style={{ backgroundColor: 'rgba(255,255,255,0.05)', borderColor: 'rgba(255,255,255,0.1)', color: 'white' }}
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-sm text-white/70 mb-1">Work Address</label>
+                        <input
+                          type="text"
+                          value={trafficSettings.workAddress}
+                          onChange={(e) => setTrafficSettings({ ...trafficSettings, workAddress: e.target.value })}
+                          placeholder="e.g., 456 Office Blvd, New York, NY"
+                          className="w-full px-3 py-2 rounded-lg border outline-none focus:border-indigo-500 text-sm"
+                          style={{ backgroundColor: 'rgba(255,255,255,0.05)', borderColor: 'rgba(255,255,255,0.1)', color: 'white' }}
+                        />
+                      </div>
+                    </div>
+
+                    {/* Travel Mode */}
+                    <div className="flex items-center gap-3 p-4 rounded-lg" style={{ backgroundColor: 'rgba(255,255,255,0.03)' }}>
+                      <div className="flex-1">
+                        <label className="font-medium">Travel Mode</label>
+                        <p className="text-sm text-white/50">Choose your preferred mode of transportation</p>
+                      </div>
+                      <select
+                        value={trafficSettings.travelMode}
+                        onChange={(e) => setTrafficSettings({ ...trafficSettings, travelMode: e.target.value as typeof trafficSettings.travelMode })}
+                        className="px-3 py-2 rounded-lg border outline-none focus:border-indigo-500"
+                        style={{ backgroundColor: 'rgba(255,255,255,0.05)', borderColor: 'rgba(255,255,255,0.1)', color: 'white' }}
+                      >
+                        <option value="DRIVE" style={{ backgroundColor: '#1a1a2e', color: 'white' }}>Drive</option>
+                        <option value="BICYCLE" style={{ backgroundColor: '#1a1a2e', color: 'white' }}>Bicycle</option>
+                        <option value="WALK" style={{ backgroundColor: '#1a1a2e', color: 'white' }}>Walk</option>
+                        <option value="TWO_WHEELER" style={{ backgroundColor: '#1a1a2e', color: 'white' }}>Two Wheeler</option>
+                        <option value="TRANSIT" style={{ backgroundColor: '#1a1a2e', color: 'white' }}>Transit</option>
+                      </select>
+                    </div>
+
+                    {/* Units */}
+                    <div className="flex items-center gap-3 p-4 rounded-lg" style={{ backgroundColor: 'rgba(255,255,255,0.03)' }}>
+                      <div className="flex-1">
+                        <label className="font-medium">Units</label>
+                        <p className="text-sm text-white/50">Choose your preferred unit system</p>
+                      </div>
+                      <select
+                        value={trafficSettings.units}
+                        onChange={(e) => setTrafficSettings({ ...trafficSettings, units: e.target.value as 'metric' | 'imperial' })}
+                        className="px-3 py-2 rounded-lg border outline-none focus:border-indigo-500"
+                        style={{ backgroundColor: 'rgba(255,255,255,0.05)', borderColor: 'rgba(255,255,255,0.1)', color: 'white' }}
+                      >
+                        <option value="metric" style={{ backgroundColor: '#1a1a2e', color: 'white' }}>Metric (km)</option>
+                        <option value="imperial" style={{ backgroundColor: '#1a1a2e', color: 'white' }}>Imperial (miles)</option>
+                      </select>
+                    </div>
+
+                    {/* Save Button */}
+                    <button
+                      onClick={handleSaveTrafficSettings}
+                      className="w-full px-4 py-2 rounded-lg transition-colors"
+                      style={{ backgroundColor: '#6366f1' }}
+                    >
+                      Save Traffic Settings
                     </button>
                   </>
                 )}
