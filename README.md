@@ -6,14 +6,14 @@ A modern, customizable browser start page with category-based organization, serv
 
 ## ✨ Features
 
-- 🎨 **Modern Glassmorphism Design** - Beautiful dark theme with animated gradients
+- 🎨 **20 Beautiful Themes** - Choose from Midnight Dark, Ocean Blue, Forest Green, Cyberpunk, Dracula, Nord, and more
 - 📂 **Categorized Blocks** - Organize your links by category
 - 🔤 **Alphabetical Sorting** - Blocks automatically sorted within each category
 - 🖼️ **Custom Icons** - Support for custom images or auto-fetched favicons
 - 📊 **Service Monitoring** - Monitor the health of your self-hosted services
 - 🌤️ **Weather Display** - Show current weather with location search
 - 🚗 **Traffic Information** - Real-time commute times with color-coded status
-- ⚙️ **General Settings** - Customize site title and favicon
+- ⚙️ **General Settings** - Customize site title, favicon, and theme
 - 🔐 **Security** - 2FA/TOTP support, session management, rate limiting
 - ⚡ **Admin Interface** - Web UI to manage all settings
 - 🐳 **Docker Ready** - Easy deployment with Docker Compose
@@ -157,6 +157,27 @@ You can provide custom icon URLs when creating blocks. If no icon is provided, t
 Customize your dashboard appearance:
 - **Site Title** - Change the browser tab title
 - **Favicon** - Upload a custom favicon (SVG format supported)
+- **Theme** - Choose from 20 beautiful color themes:
+  - Midnight Dark (default)
+  - Ocean Blue
+  - Forest Green
+  - Sunset Orange
+  - Sakura Pink
+  - Cyberpunk
+  - Monokai
+  - Dracula
+  - Nord
+  - Solarized Dark
+  - Gruvbox Dark
+  - Tokyo Night
+  - One Dark
+  - Catppuccin Mocha
+  - Rosé Pine
+  - Material Dark
+  - High Contrast
+  - Coffee
+  - Lavender
+  - Crimson
 
 ## 🔐 Security Features
 
