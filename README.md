@@ -1,6 +1,6 @@
 # 🚀 Start Page Dashboard
 
-A modern, customizable browser start page with category-based organization, service monitoring, and an admin interface.
+A modern, customizable browser start page with category-based organization, service monitoring, weather, traffic information, and an admin interface.
 
 ![Dashboard Preview](https://via.placeholder.com/800x400/0f0f1a/6366f1?text=Start+Page+Dashboard)
 
@@ -11,7 +11,11 @@ A modern, customizable browser start page with category-based organization, serv
 - 🔤 **Alphabetical Sorting** - Blocks automatically sorted within each category
 - 🖼️ **Custom Icons** - Support for custom images or auto-fetched favicons
 - 📊 **Service Monitoring** - Monitor the health of your self-hosted services
-- ⚡ **Admin Interface** - Web UI to manage blocks and categories
+- 🌤️ **Weather Display** - Show current weather with location search
+- 🚗 **Traffic Information** - Real-time commute times with color-coded status
+- ⚙️ **General Settings** - Customize site title and favicon
+- 🔐 **Security** - 2FA/TOTP support, session management, rate limiting
+- ⚡ **Admin Interface** - Web UI to manage all settings
 - 🐳 **Docker Ready** - Easy deployment with Docker Compose
 - ⌨️ **Keyboard Shortcuts** - Ctrl+K to focus search
 - 📱 **Responsive** - Works on all devices
@@ -126,12 +130,45 @@ When adding a block, you can enable monitoring by:
 2. Providing a health check URL
 3. The dashboard will show a status indicator
 
+### Weather Integration
+
+1. Go to Admin → Integrations tab
+2. Enable Weather Display
+3. Search for your location or enter coordinates manually
+4. Choose metric or imperial units
+
+### Traffic Information
+
+1. Go to Admin → Traffic tab
+2. Enable Traffic Display
+3. Enter your [Google Routes API key](https://developers.google.com/maps/documentation/routes/get-api-key)
+4. Set your Home and Work addresses
+5. Select your preferred travel mode (Drive, Transit, Bicycle, Walk, Two Wheeler)
+6. Choose metric or imperial units
+
+**Note:** Google Routes API includes a free tier of 10,000 requests per month. The app caches results for 30 minutes and only fetches when the tab is active to minimize API usage.
+
 ### Custom Icons
 
 You can provide custom icon URLs when creating blocks. If no icon is provided, the dashboard will automatically fetch the website's favicon.
 
+### General Settings
+
+Customize your dashboard appearance:
+- **Site Title** - Change the browser tab title
+- **Favicon** - Upload a custom favicon (SVG format supported)
+
+## 🔐 Security Features
+
+- **Two-Factor Authentication (2FA)** - TOTP-based 2FA support
+- **Session Management** - View and revoke active sessions
+- **Rate Limiting** - Protection against brute force attacks
+- **Security Headers** - X-Frame-Options, CSP, HSTS, and more
+- **Dashboard Protection** - Optional password protection for the dashboard
+
 ## 🔌 API Endpoints
 
+### Categories & Blocks
 - `GET /api/categories` - List all categories with blocks
 - `POST /api/categories` - Create a new category
 - `PUT /api/categories/:id` - Update a category
@@ -142,6 +179,17 @@ You can provide custom icon URLs when creating blocks. If no icon is provided, t
 - `PUT /api/blocks/:id` - Update a block
 - `DELETE /api/blocks/:id` - Delete a block
 
+### Settings
+- `GET /api/settings` - Get general settings
+- `PUT /api/settings` - Update settings
+- `GET /api/settings/general` - Get site title and favicon
+- `PUT /api/settings/general` - Update site title and favicon
+- `GET /api/settings/traffic` - Get traffic settings
+- `PUT /api/settings/traffic` - Update traffic settings
+
+### Data
+- `GET /api/weather` - Get current weather
+- `GET /api/traffic` - Get traffic information (with caching)
 - `GET /api/health/:id` - Check service health
 
 ## 🐳 Docker Deployment
@@ -192,6 +240,8 @@ The SQLite database is stored in `./data/prod.db` and persisted through Docker v
 - [Prisma](https://prisma.io/) - Database ORM
 - [SQLite](https://sqlite.org/) - Database
 - [Lucide React](https://lucide.dev/) - Icons
+- [bcrypt](https://www.npmjs.com/package/bcrypt) - Password hashing
+- [rate-limiter-flexible](https://www.npmjs.com/package/rate-limiter-flexible) - Rate limiting
 
 ## 📝 License
 
