@@ -88,7 +88,11 @@ export default function SetupPage() {
       } else {
         // Show detailed validation errors if available
         if (data.details && Array.isArray(data.details)) {
-          setError(data.details.join(', '));
+          // Handle array of objects with field and message
+          const errorMessages = data.details.map((d: {field?: string; message?: string} | string) => 
+            typeof d === 'string' ? d : d.message
+          );
+          setError(errorMessages.join(', '));
         } else {
           setError(data.error || 'Setup failed');
         }

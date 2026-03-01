@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { setupSchema, usernameSchema, passwordSchema } from '@/lib/validation';
+import { usernameSchema, passwordSchema } from '@/lib/validation';
 import bcrypt from 'bcryptjs';
 import { ZodError } from 'zod';
 
@@ -51,11 +51,10 @@ export async function POST(request: Request) {
       );
     }
 
-    // Validate input with strong password policy
-    const validatedData = setupSchema.parse(body);
-    const { username, password } = validatedData;
+    // Validate input - extract fields from body
+    const { username, password } = body;
 
-    // Additional validation (schema already validates, but double-check)
+    // Validate username and password
     try {
       usernameSchema.parse(username);
       passwordSchema.parse(password);
@@ -64,7 +63,10 @@ export async function POST(request: Request) {
         return NextResponse.json(
           { 
             error: 'Validation failed',
-            details: validationError.issues.map(e => e.message),
+            details: validationError.issues.map(e => ({
+              field: e.path.join('.'),
+              message: e.message,
+            })),
           },
           { status: 400 }
         );

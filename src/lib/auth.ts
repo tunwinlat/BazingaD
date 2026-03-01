@@ -5,6 +5,7 @@ import { prisma } from './prisma';
 // Session configuration
 const SESSION_DURATION_HOURS = 24;
 const SESSION_DURATION_MS = SESSION_DURATION_HOURS * 60 * 60 * 1000;
+const SESSION_DURATION_SECONDS = SESSION_DURATION_HOURS * 60 * 60;
 
 /**
  * Generate a cryptographically secure session token
@@ -140,15 +141,16 @@ export async function extendSession(token: string): Promise<void> {
 
 /**
  * Get secure cookie options based on environment
+ * @param maxAge - Max age in seconds (not milliseconds)
  */
-export function getCookieOptions(maxAge?: number) {
+export function getCookieOptions(maxAgeSeconds?: number) {
   const isProduction = process.env.NODE_ENV === 'production';
   
   return {
     httpOnly: true,
     secure: isProduction, // Only secure in production
-    sameSite: 'strict' as const,
+    sameSite: 'lax' as const, // Use lax to allow redirects to work
     path: '/',
-    maxAge: maxAge ?? SESSION_DURATION_MS,
+    maxAge: maxAgeSeconds ?? SESSION_DURATION_SECONDS,
   };
 }

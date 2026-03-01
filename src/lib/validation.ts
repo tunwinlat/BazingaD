@@ -115,7 +115,8 @@ export const loginSchema = z.object({
   totpToken: z.string()
     .length(6, 'TOTP token must be 6 digits')
     .regex(/^\d{6}$/, 'TOTP token must contain only digits')
-    .optional(),
+    .optional()
+    .or(z.literal('')), // Allow empty string as well
 });
 
 // Setup schema

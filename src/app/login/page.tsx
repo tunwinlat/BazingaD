@@ -67,7 +67,7 @@ function LoginForm() {
         if (useRecoveryCode) {
           payload.recoveryCode = formData.recoveryCode;
         } else {
-          payload.totpCode = formData.totpCode;
+          payload.totpToken = formData.totpCode;
         }
       }
 
@@ -78,6 +78,7 @@ function LoginForm() {
       });
 
       const data = await response.json();
+      console.log('Login response:', response.status, data);
 
       if (response.status === 202 && data.requireTOTP) {
         // TOTP required
@@ -88,11 +89,22 @@ function LoginForm() {
 
       if (response.ok) {
         // Login successful, redirect to admin
-        router.push('/admin');
+        console.log('Login successful, redirecting to admin...');
+        // Use window.location for full page reload to ensure cookie is sent
+        window.location.href = '/admin';
       } else {
-        setError(data.error || 'Login failed');
+        // Show detailed validation errors if available
+        if (data.details && Array.isArray(data.details)) {
+          const errorMessages = data.details.map((d: {field?: string; message?: string} | string) => 
+            typeof d === 'string' ? d : d.message
+          );
+          setError(errorMessages.join(', '));
+        } else {
+          setError(data.error || 'Login failed');
+        }
       }
     } catch (error) {
+      console.error('Login error:', error);
       setError('An error occurred during login');
     } finally {
       setSubmitting(false);

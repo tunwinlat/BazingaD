@@ -1,6 +1,5 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
-import { verifyAuthFromRequest } from './lib/auth';
 import { rateLimitMiddleware } from './lib/rate-limiter';
 
 // Security headers to add to all responses
@@ -48,47 +47,30 @@ export async function middleware(request: NextRequest) {
     if (rateLimitResponse) {
       return rateLimitResponse;
     }
-  }
-  
-  // Check authentication for admin routes
-  if (pathname.startsWith('/admin')) {
-    const auth = await verifyAuthFromRequest(request);
     
-    if (!auth) {
-      // Not authenticated, redirect to login
-      const response = NextResponse.redirect(new URL('/login', request.url));
-      
-      // Clear invalid auth cookie if present
-      response.cookies.delete('auth-token');
-      
-      return response;
-    }
-  }
-  
-  // Check authentication for protected API routes
-  const protectedApiRoutes = [
-    '/api/blocks',
-    '/api/categories',
-    '/api/settings',
-    '/api/weather',
-  ];
-  
-  const isProtectedApiRoute = protectedApiRoutes.some(route => 
-    pathname.startsWith(route)
-  );
-  
-  if (isProtectedApiRoute && request.method !== 'GET') {
-    const auth = await verifyAuthFromRequest(request);
+    // For API routes, let the request through and add security headers to the response
+    const response = NextResponse.next();
     
-    if (!auth) {
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 401 }
+    // Add security headers
+    Object.entries(securityHeaders).forEach(([key, value]) => {
+      response.headers.set(key, value);
+    });
+    
+    // Add CSP header
+    response.headers.set('Content-Security-Policy', cspHeader);
+    
+    // Add HSTS header in production
+    if (process.env.NODE_ENV === 'production') {
+      response.headers.set(
+        'Strict-Transport-Security',
+        'max-age=31536000; includeSubDomains; preload'
       );
     }
+    
+    return response;
   }
   
-  // Create response with security headers
+  // For non-API routes, add security headers
   const response = NextResponse.next();
   
   // Add security headers
@@ -113,7 +95,11 @@ export async function middleware(request: NextRequest) {
 export const config = {
   matcher: [
     '/admin/:path*',
-    '/api/:path*',
-    '/((?!_next/static|_next/image|favicon.ico|public).*)',
+    '/api/blocks/:path*',
+    '/api/categories/:path*',
+    '/api/settings/:path*',
+    '/api/weather/:path*',
+    '/api/health/:path*',
+    '/((?!_next/static|_next/image|favicon.ico|public|api/auth).*)',
   ],
 };

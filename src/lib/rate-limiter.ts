@@ -50,8 +50,9 @@ function getClientIP(request: NextRequest): string {
     return realIP;
   }
   
-  // Fallback to a default if we can't determine IP
-  return 'unknown';
+  // Use a unique identifier per request if we can't determine IP
+  // This prevents rate limiting all requests when IP is unknown
+  return request.headers.get('user-agent') || 'default';
 }
 
 /**

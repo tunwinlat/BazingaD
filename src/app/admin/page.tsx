@@ -153,6 +153,9 @@ export default function AdminPage() {
       if (response.ok) {
         const data = await response.json();
         setAuthStatus(data);
+      } else if (response.status === 401) {
+        // Not authenticated, redirect to login
+        router.push('/login');
       }
     } catch (error) {
       console.error('Failed to fetch auth status:', error);
