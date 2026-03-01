@@ -71,6 +71,17 @@ export default function AdminPage() {
   // Weather settings
   const [locationLoading, setLocationLoading] = useState(false);
   const [locationError, setLocationError] = useState('');
+  const [locationSearchQuery, setLocationSearchQuery] = useState('');
+  const [locationSearchResults, setLocationSearchResults] = useState<Array<{
+    name: string;
+    admin1?: string;
+    country?: string;
+    latitude: number;
+    longitude: number;
+    displayName: string;
+  }>>([]);
+  const [locationSearchLoading, setLocationSearchLoading] = useState(false);
+  const [showLocationResults, setShowLocationResults] = useState(false);
 
   // Disable TOTP form
   const [disableTOTPForm, setDisableTOTPForm] = useState({
@@ -407,6 +418,47 @@ export default function AdminPage() {
       },
       { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
     );
+  };
+
+  // Location search handler
+  const handleLocationSearch = async () => {
+    if (!locationSearchQuery.trim() || locationSearchQuery.trim().length < 2) {
+      setLocationError('Please enter at least 2 characters');
+      return;
+    }
+
+    setLocationSearchLoading(true);
+    setLocationError('');
+    setShowLocationResults(false);
+
+    try {
+      const response = await fetch(`/api/geocode?q=${encodeURIComponent(locationSearchQuery.trim())}`);
+      const data = await response.json();
+
+      if (response.ok && data.results) {
+        setLocationSearchResults(data.results);
+        setShowLocationResults(true);
+      } else {
+        setLocationError(data.error || 'No locations found');
+      }
+    } catch (error) {
+      setLocationError('Failed to search location');
+    } finally {
+      setLocationSearchLoading(false);
+    }
+  };
+
+  const handleSelectLocation = (location: typeof locationSearchResults[0]) => {
+    setSettings({
+      ...settings,
+      weatherLatitude: location.latitude,
+      weatherLongitude: location.longitude,
+      weatherLocationName: location.displayName,
+    });
+    setLocationSearchQuery('');
+    setLocationSearchResults([]);
+    setShowLocationResults(false);
+    setLocationError('');
   };
 
   const handleSaveWeatherSettings = async () => {
@@ -1089,6 +1141,64 @@ export default function AdminPage() {
                         <MapPin className="w-4 h-4" />
                         Location
                       </h4>
+
+                      {/* Search Location */}
+                      <div className="space-y-2">
+                        <label className="block text-sm text-white/70">Search Location</label>
+                        <div className="flex gap-2">
+                          <input
+                            type="text"
+                            value={locationSearchQuery}
+                            onChange={(e) => setLocationSearchQuery(e.target.value)}
+                            onKeyDown={(e) => e.key === 'Enter' && handleLocationSearch()}
+                            placeholder="e.g., London, New York, Tokyo"
+                            className="flex-1 px-3 py-2 rounded-lg border outline-none focus:border-indigo-500 text-sm"
+                            style={{ backgroundColor: 'rgba(255,255,255,0.05)', borderColor: 'rgba(255,255,255,0.1)', color: 'white' }}
+                          />
+                          <button
+                            onClick={handleLocationSearch}
+                            disabled={locationSearchLoading}
+                            className="px-4 py-2 rounded-lg transition-colors disabled:opacity-50"
+                            style={{ backgroundColor: 'rgba(99, 102, 241, 0.2)', color: '#818cf8' }}
+                          >
+                            {locationSearchLoading ? (
+                              <RefreshCw className="w-4 h-4 animate-spin" />
+                            ) : (
+                              'Search'
+                            )}
+                          </button>
+                        </div>
+
+                        {/* Search Results */}
+                        {showLocationResults && locationSearchResults.length > 0 && (
+                          <div 
+                            className="rounded-lg overflow-hidden"
+                            style={{ backgroundColor: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)' }}
+                          >
+                            {locationSearchResults.map((location, index) => (
+                              <button
+                                key={index}
+                                onClick={() => handleSelectLocation(location)}
+                                className="w-full px-3 py-2 text-left text-sm hover:bg-white/5 transition-colors border-b border-white/5 last:border-0"
+                              >
+                                <span className="text-white">{location.name}</span>
+                                {location.admin1 && (
+                                  <span className="text-white/60">, {location.admin1}</span>
+                                )}
+                                {location.country && (
+                                  <span className="text-white/40">, {location.country}</span>
+                                )}
+                              </button>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+
+                      <div className="flex items-center gap-2">
+                        <div className="flex-1 h-px bg-white/10" />
+                        <span className="text-xs text-white/40">or</span>
+                        <div className="flex-1 h-px bg-white/10" />
+                      </div>
 
                       {/* Get Location Button */}
                       <button
