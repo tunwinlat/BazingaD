@@ -51,7 +51,7 @@ export async function PUT(request: Request) {
     }
 
     // Get or create settings
-    const existingSettings = await prisma.settings.findFirst();
+    let existingSettings = await prisma.settings.findFirst();
     
     if (existingSettings) {
       await prisma.settings.update({
@@ -62,19 +62,30 @@ export async function PUT(request: Request) {
         },
       });
     } else {
-      await prisma.settings.create({
+      // Create with default values first, then update if needed
+      existingSettings = await prisma.settings.create({
         data: {
-          siteTitle: siteTitle?.trim() || 'Start Page',
-          favicon: favicon || null,
+          siteTitle: 'Start Page',
+          favicon: null,
         },
       });
+      // If we have values to set, update the newly created record
+      if (siteTitle !== undefined || favicon !== undefined) {
+        await prisma.settings.update({
+          where: { id: existingSettings.id },
+          data: {
+            ...(siteTitle !== undefined && { siteTitle: siteTitle.trim() || 'Start Page' }),
+            ...(favicon !== undefined && { favicon }),
+          },
+        });
+      }
     }
 
     return NextResponse.json({ success: true });
   } catch (error) {
     console.error('Error updating general settings:', error);
     return NextResponse.json(
-      { error: 'Failed to update settings' },
+      { error: 'Failed to update settings', details: error instanceof Error ? error.message : String(error) },
       { status: 500 }
     );
   }

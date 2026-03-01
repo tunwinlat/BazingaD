@@ -554,7 +554,9 @@ export default function AdminPage() {
         // Force favicon update
         window.location.reload();
       } else {
-        toast.error('Failed to save general settings');
+        const errorData = await response.json();
+        toast.error(errorData.error || 'Failed to save general settings');
+        console.error('Save error:', errorData);
       }
     } catch (error) {
       console.error('General settings save error:', error);
