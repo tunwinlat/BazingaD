@@ -19,6 +19,9 @@ COPY . .
 # Build the application
 RUN npm run build
 
+# Compile seed script to JavaScript
+RUN npx tsx prisma/seed.ts --check 2>/dev/null || npx tsc prisma/seed.ts --outDir /app/dist --esModuleInterop --module commonjs --target es2020 --moduleResolution node
+
 # Production dependencies stage
 FROM node:20-alpine AS deps
 
@@ -49,6 +52,9 @@ COPY package*.json ./
 # Copy prisma files
 COPY prisma ./prisma/
 RUN npx prisma generate
+
+# Copy compiled seed script
+COPY --from=builder /app/dist/seed.js ./prisma/
 
 # Copy built application
 COPY --from=builder /app/.next ./.next
