@@ -23,8 +23,12 @@ export async function GET() {
 // Update general settings
 export async function PUT(request: Request) {
   try {
+    console.log('PUT /api/settings/general called');
+    
     // Verify authentication
     const auth = await verifyAuth();
+    console.log('Auth result:', auth);
+    
     if (!auth) {
       return NextResponse.json(
         { error: 'Unauthorized' },
@@ -33,6 +37,7 @@ export async function PUT(request: Request) {
     }
 
     const body = await request.json();
+    console.log('Request body:', body);
     const { siteTitle, favicon } = body;
 
     // Validate inputs
