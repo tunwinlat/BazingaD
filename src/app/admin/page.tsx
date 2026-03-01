@@ -1206,6 +1206,7 @@ export default function AdminPage() {
                         placeholder={settings.dashboardProtected ? 'Enter new password (leave blank to keep current)' : 'Enter password'}
                         minLength={4}
                       />
+                      <p className="text-xs text-white/40 mt-1">Minimum 4 characters</p>
                     </div>
                   )}
 

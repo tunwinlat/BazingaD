@@ -17,9 +17,9 @@ const nextConfig: NextConfig = {
   // Enable React strict mode for better development
   reactStrictMode: true,
   
-  // Optimize package imports for faster builds
-  experimental: {
-    optimizePackageImports: ['lucide-react', '@prisma/client'],
+  // Turbopack configuration
+  turbopack: {
+    // Empty config to enable Turbopack explicitly
   },
   
   // Custom headers for security and caching
@@ -44,27 +44,6 @@ const nextConfig: NextConfig = {
         ],
       },
     ];
-  },
-  
-  // Webpack optimization
-  webpack: (config, { dev, isServer }) => {
-    // Optimize bundle size in production
-    if (!dev && !isServer) {
-      config.optimization = {
-        ...config.optimization,
-        splitChunks: {
-          chunks: 'all',
-          cacheGroups: {
-            vendor: {
-              test: /[\\/]node_modules[\\/]/,
-              name: 'vendors',
-              chunks: 'all',
-            },
-          },
-        },
-      };
-    }
-    return config;
   },
 };
 

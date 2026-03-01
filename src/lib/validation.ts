@@ -93,7 +93,7 @@ export const categoryUpdateSchema = categoryCreateSchema.partial().extend({
 export const settingsUpdateSchema = z.object({
   dashboardProtected: z.boolean().optional(),
   dashboardPassword: z.string()
-    .min(8, 'Password must be at least 8 characters')
+    .min(4, 'Password must be at least 4 characters')
     .max(128, 'Password must not exceed 128 characters')
     .optional()
     .nullable(),

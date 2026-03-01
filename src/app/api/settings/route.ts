@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { verifyAuth } from '@/lib/auth';
-import { settingsUpdateSchema, passwordSchema } from '@/lib/validation';
+import { settingsUpdateSchema } from '@/lib/validation';
 import bcrypt from 'bcryptjs';
 import { ZodError } from 'zod';
 
@@ -76,24 +76,6 @@ export async function PUT(request: Request) {
 
     // Validate input
     const validatedData = settingsUpdateSchema.parse(body);
-
-    // If dashboard password is being set, validate it meets strong password requirements
-    if (validatedData.dashboardPassword) {
-      try {
-        passwordSchema.parse(validatedData.dashboardPassword);
-      } catch (passwordError) {
-        if (passwordError instanceof ZodError) {
-          return NextResponse.json(
-            { 
-              error: 'Password does not meet security requirements',
-              details: passwordError.issues.map(e => e.message),
-            },
-            { status: 400 }
-          );
-        }
-        throw passwordError;
-      }
-    }
 
     let settings = await prisma.settings.findFirst();
     
