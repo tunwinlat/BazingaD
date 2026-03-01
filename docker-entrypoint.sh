@@ -11,7 +11,7 @@ su -s /bin/sh nextjs -c "npx prisma migrate deploy"
 
 # Seed database if empty
 echo "🌱 Checking if seed is needed..."
-su -s /bin/sh nextjs -c "node -e '
+su -s /bin/sh nextjs -c 'node -e "
 const { PrismaClient } = require(\"@prisma/client\");
 const prisma = new PrismaClient();
 
@@ -24,14 +24,14 @@ async function checkAndSeed() {
   } else {
     console.log(\"Database already seeded.\");
   }
-  await prisma["\$" + "disconnect"]();
+  await prisma[\"\\$disconnect\"]();
 }
 
 checkAndSeed().catch(e => {
   console.error(e);
   process.exit(1);
 });
-'"
+"'
 
 echo "✅ Database ready!"
 
