@@ -72,8 +72,10 @@ export default function AdminPage() {
   const [generalSettings, setGeneralSettings] = useState({
     siteTitle: 'Start Page',
     favicon: null as string | null,
+    theme: 'default',
   });
   const [faviconPreview, setFaviconPreview] = useState<string | null>(null);
+  const [availableThemes, setAvailableThemes] = useState<Array<{ id: string; name: string }>>([]);
 
   // Traffic settings
   const [trafficSettings, setTrafficSettings] = useState({
@@ -119,6 +121,7 @@ export default function AdminPage() {
     fetchSettings();
     fetchSessions();
     fetchGeneralSettings();
+    fetchThemes();
     fetchTrafficSettings();
   }, []);
 
@@ -257,11 +260,24 @@ export default function AdminPage() {
         setGeneralSettings({
           siteTitle: data.siteTitle || 'Start Page',
           favicon: data.favicon || null,
+          theme: data.theme || 'default',
         });
         setFaviconPreview(data.favicon || null);
       }
     } catch (error) {
       console.error('Failed to fetch general settings:', error);
+    }
+  };
+
+  const fetchThemes = async () => {
+    try {
+      const response = await fetch('/api/themes');
+      if (response.ok) {
+        const data = await response.json();
+        setAvailableThemes(data);
+      }
+    } catch (error) {
+      console.error('Failed to fetch themes:', error);
     }
   };
 
@@ -576,6 +592,7 @@ export default function AdminPage() {
         body: JSON.stringify({
           siteTitle: generalSettings.siteTitle,
           favicon: generalSettings.favicon,
+          theme: generalSettings.theme,
         }),
       });
 
@@ -1718,6 +1735,24 @@ export default function AdminPage() {
                       </button>
                     )}
                   </div>
+                </div>
+
+                {/* Theme Selector */}
+                <div>
+                  <label className="block text-sm text-white/70 mb-2">Dashboard Theme</label>
+                  <select
+                    value={generalSettings.theme}
+                    onChange={(e) => setGeneralSettings({ ...generalSettings, theme: e.target.value })}
+                    className="w-full px-3 py-2 rounded-lg border outline-none focus:border-indigo-500 text-sm"
+                    style={{ backgroundColor: 'rgba(255,255,255,0.05)', borderColor: 'rgba(255,255,255,0.1)', color: 'white' }}
+                  >
+                    {availableThemes.map((theme) => (
+                      <option key={theme.id} value={theme.id} style={{ backgroundColor: '#1a1a2e', color: 'white' }}>
+                        {theme.name}
+                      </option>
+                    ))}
+                  </select>
+                  <p className="text-xs text-white/40 mt-1">Choose a color theme for your dashboard</p>
                 </div>
 
                 {/* Save Button */}

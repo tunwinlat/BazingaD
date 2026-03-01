@@ -33,22 +33,22 @@ function EmptyState() {
     <div className="flex flex-col items-center justify-center py-20 text-center">
       <div
         className="w-24 h-24 rounded-2xl flex items-center justify-center mb-6"
-        style={{ backgroundColor: 'rgba(99, 102, 241, 0.1)' }}
+        style={{ backgroundColor: 'var(--theme-surface)' }}
       >
         <span className="text-4xl">🚀</span>
       </div>
-      <h2 className="text-2xl font-semibold text-white mb-2">
+      <h2 className="text-2xl font-semibold mb-2" style={{ color: 'var(--theme-text)' }}>
         Welcome to your Start Page!
       </h2>
-      <p className="text-white/60 max-w-md mb-8">
+      <p className="max-w-md mb-8" style={{ color: 'var(--theme-text-muted)' }}>
         Your dashboard is empty. Add your first categories and blocks to get started with your personalized start page.
       </p>
       <Link
         href="/admin"
         className="flex items-center gap-2 px-6 py-3 rounded-xl font-medium transition-all hover:scale-105"
         style={{
-          backgroundColor: 'rgba(99, 102, 241, 0.9)',
-          boxShadow: '0 4px 20px rgba(99, 102, 241, 0.3)',
+          backgroundColor: 'var(--theme-primary)',
+          boxShadow: '0 4px 20px var(--theme-surface)',
         }}
       >
         <Plus className="w-5 h-5" />

@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { verifyAuth } from '@/lib/auth';
+import { themes } from '@/lib/themes';
 
 // Get general settings
 export async function GET() {
@@ -10,6 +11,7 @@ export async function GET() {
     return NextResponse.json({
       siteTitle: settings?.siteTitle || 'Start Page',
       favicon: settings?.favicon || null,
+      theme: settings?.theme || 'default',
     });
   } catch (error) {
     console.error('Error fetching general settings:', error);
@@ -38,7 +40,7 @@ export async function PUT(request: Request) {
 
     const body = await request.json();
     console.log('Request body:', body);
-    const { siteTitle, favicon } = body;
+    const { siteTitle, favicon, theme } = body;
 
     // Validate inputs
     if (siteTitle !== undefined && (typeof siteTitle !== 'string' || siteTitle.length > 100)) {
@@ -55,6 +57,17 @@ export async function PUT(request: Request) {
       );
     }
 
+    // Validate theme
+    if (theme !== undefined) {
+      const validThemes = themes.map(t => t.id);
+      if (!validThemes.includes(theme)) {
+        return NextResponse.json(
+          { error: 'Invalid theme' },
+          { status: 400 }
+        );
+      }
+    }
+
     // Get or create settings
     let existingSettings = await prisma.settings.findFirst();
     
@@ -64,6 +77,7 @@ export async function PUT(request: Request) {
         data: {
           ...(siteTitle !== undefined && { siteTitle: siteTitle.trim() || 'Start Page' }),
           ...(favicon !== undefined && { favicon }),
+          ...(theme !== undefined && { theme }),
         },
       });
     } else {
@@ -72,15 +86,17 @@ export async function PUT(request: Request) {
         data: {
           siteTitle: 'Start Page',
           favicon: null,
+          theme: 'default',
         },
       });
       // If we have values to set, update the newly created record
-      if (siteTitle !== undefined || favicon !== undefined) {
+      if (siteTitle !== undefined || favicon !== undefined || theme !== undefined) {
         await prisma.settings.update({
           where: { id: existingSettings.id },
           data: {
             ...(siteTitle !== undefined && { siteTitle: siteTitle.trim() || 'Start Page' }),
             ...(favicon !== undefined && { favicon }),
+            ...(theme !== undefined && { theme }),
           },
         });
       }

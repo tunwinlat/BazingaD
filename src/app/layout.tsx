@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import { Toaster } from "sonner";
 import DynamicFavicon from "@/components/DynamicFavicon";
+import ThemeProvider from "@/components/ThemeProvider";
 import "./globals.css";
 
 const inter = Inter({
@@ -25,20 +26,23 @@ export default function RootLayout({
         <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
       </head>
       <body
-        className={`${inter.variable} font-sans antialiased bg-[#0f0f1a] text-white`}
+        className={`${inter.variable} font-sans antialiased text-white`}
+        style={{ background: 'var(--theme-background-gradient, linear-gradient(135deg, #0f0f1a 0%, #1a1a2e 50%, #16213e 100%))' }}
       >
-        <DynamicFavicon />
-        {children}
-        <Toaster 
-          position="top-right"
-          toastOptions={{
-            style: {
-              background: 'rgba(30, 30, 50, 0.95)',
-              border: '1px solid rgba(255, 255, 255, 0.1)',
-              color: 'white',
-            },
-          }}
-        />
+        <ThemeProvider>
+          <DynamicFavicon />
+          {children}
+          <Toaster 
+            position="top-right"
+            toastOptions={{
+              style: {
+                background: 'rgba(30, 30, 50, 0.95)',
+                border: '1px solid rgba(255, 255, 255, 0.1)',
+                color: 'white',
+              },
+            }}
+          />
+        </ThemeProvider>
       </body>
     </html>
   );

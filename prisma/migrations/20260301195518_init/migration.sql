@@ -27,6 +27,7 @@ CREATE TABLE "settings" (
     "id" TEXT NOT NULL PRIMARY KEY,
     "siteTitle" TEXT NOT NULL DEFAULT 'Start Page',
     "favicon" TEXT,
+    "theme" TEXT NOT NULL DEFAULT 'default',
     "dashboardProtected" BOOLEAN NOT NULL DEFAULT false,
     "dashboardPassword" TEXT,
     "sessionDurationHours" INTEGER NOT NULL DEFAULT 24,
@@ -35,6 +36,12 @@ CREATE TABLE "settings" (
     "weatherLongitude" REAL,
     "weatherLocationName" TEXT,
     "weatherUnits" TEXT NOT NULL DEFAULT 'metric',
+    "trafficEnabled" BOOLEAN NOT NULL DEFAULT false,
+    "trafficApiKey" TEXT,
+    "trafficHomeAddress" TEXT,
+    "trafficWorkAddress" TEXT,
+    "trafficTravelMode" TEXT NOT NULL DEFAULT 'DRIVE',
+    "trafficUnits" TEXT NOT NULL DEFAULT 'metric',
     "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" DATETIME NOT NULL
 );
@@ -67,6 +74,16 @@ CREATE TABLE "blocks" (
     "lastStatus" TEXT,
     "lastCheckedAt" DATETIME,
     CONSTRAINT "blocks_categoryId_fkey" FOREIGN KEY ("categoryId") REFERENCES "categories" ("id") ON DELETE CASCADE ON UPDATE CASCADE
+);
+
+-- CreateTable
+CREATE TABLE "traffic_cache" (
+    "id" TEXT NOT NULL PRIMARY KEY,
+    "homeToWorkDuration" INTEGER NOT NULL,
+    "homeToWorkStatic" INTEGER NOT NULL,
+    "workToHomeDuration" INTEGER NOT NULL,
+    "workToHomeStatic" INTEGER NOT NULL,
+    "cachedAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
 -- CreateIndex
