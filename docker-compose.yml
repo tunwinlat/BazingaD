@@ -2,7 +2,7 @@ version: '3.8'
 
 services:
   startpage:
-    build: .
+    image: twlatx/startpage-dashboard:latest
     container_name: startpage-dashboard
     ports:
       - "3000:3000"
