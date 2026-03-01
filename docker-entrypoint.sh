@@ -11,18 +11,18 @@ su -s /bin/sh nextjs -c "npx prisma migrate deploy"
 
 # Seed database if empty
 echo "🌱 Checking if seed is needed..."
-su -s /bin/sh nextjs -c "node -e \"
-const { PrismaClient } = require('@prisma/client');
+su -s /bin/sh nextjs -c 'node -e "
+const { PrismaClient } = require("@prisma/client");
 const prisma = new PrismaClient();
 
 async function checkAndSeed() {
   const count = await prisma.category.count();
   if (count === 0) {
-    console.log('No categories found, running seed...');
-    const { execSync } = require('child_process');
-    execSync('node prisma/seed.js', { stdio: 'inherit' });
+    console.log("No categories found, running seed...");
+    const { execSync } = require("child_process");
+    execSync("node prisma/seed.js", { stdio: "inherit" });
   } else {
-    console.log('Database already seeded.');
+    console.log("Database already seeded.");
   }
   await prisma.\$disconnect();
 }
@@ -31,7 +31,7 @@ checkAndSeed().catch(e => {
   console.error(e);
   process.exit(1);
 });
-\""
+"'
 
 echo "✅ Database ready!"
 
