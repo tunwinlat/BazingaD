@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
-import { ArrowLeft, Plus, Trash2, Edit, X, RefreshCw, LogOut, Shield, Key, QrCode, Copy, Check, AlertTriangle, Lock, Settings2, Cloud, MapPin, Thermometer } from 'lucide-react';
+import { ArrowLeft, Plus, Trash2, Edit, X, RefreshCw, LogOut, Shield, Key, QrCode, Copy, Check, AlertTriangle, Lock, Settings2, Cloud, MapPin, Thermometer, Globe, Upload, RotateCcw } from 'lucide-react';
 import type { Category, Block, CategoryFormData, BlockFormData } from '@/types';
 
 export default function AdminPage() {
@@ -12,7 +12,7 @@ export default function AdminPage() {
   const [categories, setCategories] = useState<Category[]>([]);
   const [blocks, setBlocks] = useState<Block[]>([]);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<'categories' | 'blocks' | 'security' | 'integrations'>('blocks');
+  const [activeTab, setActiveTab] = useState<'general' | 'categories' | 'blocks' | 'security' | 'integrations'>('blocks');
   
   // Security states
   const [authStatus, setAuthStatus] = useState<{ username: string; totpEnabled: boolean } | null>(null);
@@ -68,6 +68,13 @@ export default function AdminPage() {
   const [dashboardPassword, setDashboardPassword] = useState('');
   const [activeSessions, setActiveSessions] = useState(0);
 
+  // General settings
+  const [generalSettings, setGeneralSettings] = useState({
+    siteTitle: 'Start Page',
+    favicon: null as string | null,
+  });
+  const [faviconPreview, setFaviconPreview] = useState<string | null>(null);
+
   // Weather settings
   const [locationLoading, setLocationLoading] = useState(false);
   const [locationError, setLocationError] = useState('');
@@ -100,6 +107,7 @@ export default function AdminPage() {
     fetchAuthStatus();
     fetchSettings();
     fetchSessions();
+    fetchGeneralSettings();
   }, []);
 
   useEffect(() => {
@@ -226,6 +234,22 @@ export default function AdminPage() {
       }
     } catch (error) {
       console.error('Failed to fetch sessions:', error);
+    }
+  };
+
+  const fetchGeneralSettings = async () => {
+    try {
+      const response = await fetch('/api/settings/general');
+      if (response.ok) {
+        const data = await response.json();
+        setGeneralSettings({
+          siteTitle: data.siteTitle || 'Start Page',
+          favicon: data.favicon || null,
+        });
+        setFaviconPreview(data.favicon || null);
+      }
+    } catch (error) {
+      console.error('Failed to fetch general settings:', error);
     }
   };
 
@@ -486,6 +510,57 @@ export default function AdminPage() {
     }
   };
 
+  // General settings handlers
+  const handleFaviconUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Only allow SVG files for security
+    if (file.type !== 'image/svg+xml') {
+      toast.error('Please upload an SVG file');
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const result = event.target?.result as string;
+      if (result) {
+        setFaviconPreview(result);
+        setGeneralSettings({ ...generalSettings, favicon: result });
+      }
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleResetFavicon = () => {
+    setFaviconPreview(null);
+    setGeneralSettings({ ...generalSettings, favicon: null });
+  };
+
+  const handleSaveGeneralSettings = async () => {
+    try {
+      const response = await fetch('/api/settings/general', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          siteTitle: generalSettings.siteTitle,
+          favicon: generalSettings.favicon,
+        }),
+      });
+
+      if (response.ok) {
+        toast.success('General settings saved');
+        fetchGeneralSettings();
+        // Force favicon update
+        window.location.reload();
+      } else {
+        toast.error('Failed to save general settings');
+      }
+    } catch (error) {
+      console.error('General settings save error:', error);
+    }
+  };
+
   const handleSaveCategory = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSavingCategory(true);
@@ -682,6 +757,16 @@ export default function AdminPage() {
             }}
           >
             Categories ({categories.length})
+          </button>
+          <button
+            onClick={() => setActiveTab('general')}
+            className="px-4 py-2 rounded-lg transition-colors flex items-center gap-2"
+            style={{ 
+              backgroundColor: activeTab === 'general' ? '#6366f1' : 'rgba(255,255,255,0.05)',
+            }}
+          >
+            <Settings2 className="w-4 h-4" />
+            General
           </button>
           <button
             onClick={() => setActiveTab('security')}
@@ -1293,6 +1378,109 @@ export default function AdminPage() {
                     </button>
                   </>
                 )}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {activeTab === 'general' && (
+          <div>
+            <h2 className="text-xl font-semibold mb-6">General Settings</h2>
+            
+            {/* Site Identity */}
+            <div className="rounded-xl p-6 mb-6" style={{ backgroundColor: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)' }}>
+              <div className="flex items-center gap-3 mb-4">
+                <div className="w-10 h-10 rounded-lg flex items-center justify-center" style={{ backgroundColor: 'rgba(99, 102, 241, 0.2)' }}>
+                  <Globe className="w-5 h-5 text-indigo-400" />
+                </div>
+                <div>
+                  <h3 className="font-semibold">Site Identity</h3>
+                  <p className="text-sm text-white/60">Customize your start page title and icon</p>
+                </div>
+              </div>
+
+              <div className="space-y-4">
+                {/* Site Title */}
+                <div>
+                  <label className="block text-sm text-white/70 mb-1">Site Title</label>
+                  <input
+                    type="text"
+                    value={generalSettings.siteTitle}
+                    onChange={(e) => setGeneralSettings({ ...generalSettings, siteTitle: e.target.value })}
+                    className="w-full px-3 py-2 rounded-lg border outline-none focus:border-indigo-500 text-sm"
+                    style={{ backgroundColor: 'rgba(255,255,255,0.05)', borderColor: 'rgba(255,255,255,0.1)', color: 'white' }}
+                    placeholder="Start Page"
+                    maxLength={100}
+                  />
+                  <p className="text-xs text-white/40 mt-1">This appears in the browser tab</p>
+                </div>
+
+                {/* Favicon */}
+                <div>
+                  <label className="block text-sm text-white/70 mb-2">Favicon</label>
+                  
+                  {/* Current Favicon Preview */}
+                  <div className="flex items-center gap-4 mb-3">
+                    <div 
+                      className="w-16 h-16 rounded-lg flex items-center justify-center"
+                      style={{ backgroundColor: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)' }}
+                    >
+                      {faviconPreview ? (
+                        <img 
+                          src={faviconPreview} 
+                          alt="Favicon preview" 
+                          className="w-10 h-10 object-contain"
+                        />
+                      ) : (
+                        <span className="text-2xl">🚀</span>
+                      )}
+                    </div>
+                    <div className="flex-1">
+                      <p className="text-sm text-white/70">
+                        {faviconPreview ? 'Custom favicon' : 'Default favicon'}
+                      </p>
+                      <p className="text-xs text-white/40">
+                        Upload an SVG file (max 50KB)
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Upload Controls */}
+                  <div className="flex gap-2">
+                    <label className="flex items-center gap-2 px-4 py-2 rounded-lg transition-colors cursor-pointer"
+                      style={{ backgroundColor: 'rgba(99, 102, 241, 0.2)', color: '#818cf8' }}
+                    >
+                      <Upload className="w-4 h-4" />
+                      <span className="text-sm">Upload SVG</span>
+                      <input
+                        type="file"
+                        accept=".svg,image/svg+xml"
+                        onChange={handleFaviconUpload}
+                        className="hidden"
+                      />
+                    </label>
+                    
+                    {faviconPreview && (
+                      <button
+                        onClick={handleResetFavicon}
+                        className="flex items-center gap-2 px-4 py-2 rounded-lg transition-colors"
+                        style={{ backgroundColor: 'rgba(255,255,255,0.1)', color: 'white' }}
+                      >
+                        <RotateCcw className="w-4 h-4" />
+                        <span className="text-sm">Reset to Default</span>
+                      </button>
+                    )}
+                  </div>
+                </div>
+
+                {/* Save Button */}
+                <button
+                  onClick={handleSaveGeneralSettings}
+                  className="w-full px-4 py-2 rounded-lg transition-colors"
+                  style={{ backgroundColor: '#6366f1' }}
+                >
+                  Save General Settings
+                </button>
               </div>
             </div>
           </div>

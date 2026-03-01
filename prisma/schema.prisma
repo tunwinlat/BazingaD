@@ -47,6 +47,10 @@ model Session {
 model Settings {
   id                    String   @id @default(cuid())
   
+  // General settings
+  siteTitle             String   @default("Start Page") // Site title
+  favicon               String?  // Base64 encoded favicon SVG or data URL
+  
   // Dashboard protection
   dashboardProtected    Boolean  @default(false)
   dashboardPassword     String?  // Hashed password for dashboard (if different from admin)

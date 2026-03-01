@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import { Toaster } from "sonner";
+import DynamicFavicon from "@/components/DynamicFavicon";
 import "./globals.css";
 
 const inter = Inter({
@@ -20,9 +21,13 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" className="dark">
+      <head>
+        <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+      </head>
       <body
         className={`${inter.variable} font-sans antialiased bg-[#0f0f1a] text-white`}
       >
+        <DynamicFavicon />
         {children}
         <Toaster 
           position="top-right"
