@@ -1,6 +1,6 @@
 'use client';
 
-import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
+import { createContext, useContext, useEffect, useState, useCallback, ReactNode, useMemo } from 'react';
 import { themes, getThemeById, Theme } from '@/lib/themes';
 
 interface ThemeContextType {
@@ -27,8 +27,8 @@ export default function ThemeProvider({ children }: ThemeProviderProps) {
   const [theme, setThemeState] = useState<Theme>(themes[0]);
   const [isLoading, setIsLoading] = useState(true);
 
-  // Apply theme CSS variables
-  const applyTheme = (theme: Theme) => {
+  // Apply theme CSS variables - memoized to prevent recalculation
+  const applyTheme = useCallback((theme: Theme) => {
     const root = document.documentElement;
     
     root.style.setProperty('--theme-background', theme.colors.background);
@@ -43,13 +43,23 @@ export default function ThemeProvider({ children }: ThemeProviderProps) {
     
     // Apply background gradient to body
     document.body.style.background = theme.colors.backgroundGradient;
-  };
+  }, []);
 
-  // Fetch theme from settings
+  // Fetch theme from settings - only on mount
   useEffect(() => {
+    let isMounted = true;
+    
     const fetchTheme = async () => {
       try {
-        const response = await fetch('/api/settings/general');
+        const response = await fetch('/api/settings/general', {
+          // Add cache headers to prevent unnecessary refetches
+          headers: {
+            'Cache-Control': 'max-age=60',
+          },
+        });
+        
+        if (!isMounted) return;
+        
         if (response.ok) {
           const data = await response.json();
           const themeId = data.theme || 'default';
@@ -60,21 +70,34 @@ export default function ThemeProvider({ children }: ThemeProviderProps) {
       } catch (error) {
         console.error('Failed to fetch theme:', error);
       } finally {
-        setIsLoading(false);
+        if (isMounted) {
+          setIsLoading(false);
+        }
       }
     };
 
     fetchTheme();
-  }, []);
+    
+    return () => {
+      isMounted = false;
+    };
+  }, [applyTheme]);
 
-  const setTheme = (themeId: string) => {
+  const setTheme = useCallback((themeId: string) => {
     const newTheme = getThemeById(themeId);
     setThemeState(newTheme);
     applyTheme(newTheme);
-  };
+  }, [applyTheme]);
+
+  // Memoize context value to prevent unnecessary re-renders
+  const contextValue = useMemo(() => ({
+    theme,
+    setTheme,
+    isLoading,
+  }), [theme, setTheme, isLoading]);
 
   return (
-    <ThemeContext.Provider value={{ theme, setTheme, isLoading }}>
+    <ThemeContext.Provider value={contextValue}>
       {children}
     </ThemeContext.Provider>
   );

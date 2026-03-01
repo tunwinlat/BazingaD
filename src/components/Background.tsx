@@ -1,28 +1,47 @@
 'use client';
 
-export default function Background() {
-  return (
-    <div className="fixed inset-0 -z-10 overflow-hidden" style={{ backgroundColor: '#0f0f1a' }}>
-      {/* Gradient sphere 1 */}
+import { memo } from 'react';
+import { useTheme } from './ThemeProvider';
+
+// Memoized background component to prevent unnecessary re-renders
+const Background = memo(function Background() {
+  const { theme, isLoading } = useTheme();
+
+  // Show a placeholder while theme is loading
+  if (isLoading) {
+    return (
       <div 
-        className="absolute rounded-full animate-float"
+        className="fixed inset-0 -z-10 overflow-hidden" 
+        style={{ backgroundColor: '#0f0f1a' }}
+      />
+    );
+  }
+
+  return (
+    <div 
+      className="fixed inset-0 -z-10 overflow-hidden transition-colors duration-1000" 
+      style={{ backgroundColor: theme.colors.background }}
+    >
+      {/* Gradient sphere 1 - Top Right */}
+      <div 
+        className="absolute rounded-full animate-float transition-all duration-1000"
         style={{
           width: '600px',
           height: '600px',
-          background: 'linear-gradient(135deg, #6366f1 0%, #8b5cf6 50%, #a855f7 100%)',
+          background: theme.orbs.color1,
           top: '-200px',
           right: '-100px',
           filter: 'blur(80px)',
           opacity: 0.5,
         }}
       />
-      {/* Gradient sphere 2 */}
+      {/* Gradient sphere 2 - Bottom Left */}
       <div 
-        className="absolute rounded-full animate-float"
+        className="absolute rounded-full animate-float transition-all duration-1000"
         style={{
           width: '500px',
           height: '500px',
-          background: 'linear-gradient(135deg, #3b82f6 0%, #06b6d4 50%, #10b981 100%)',
+          background: theme.orbs.color2,
           bottom: '-150px',
           left: '-100px',
           filter: 'blur(80px)',
@@ -30,13 +49,13 @@ export default function Background() {
           animationDelay: '-7s',
         }}
       />
-      {/* Gradient sphere 3 */}
+      {/* Gradient sphere 3 - Center */}
       <div 
-        className="absolute rounded-full animate-float"
+        className="absolute rounded-full animate-float transition-all duration-1000"
         style={{
           width: '400px',
           height: '400px',
-          background: 'linear-gradient(135deg, #f59e0b 0%, #ef4444 50%, #ec4899 100%)',
+          background: theme.orbs.color3,
           top: '50%',
           left: '50%',
           transform: 'translate(-50%, -50%)',
@@ -47,4 +66,6 @@ export default function Background() {
       />
     </div>
   );
-}
+});
+
+export default Background;

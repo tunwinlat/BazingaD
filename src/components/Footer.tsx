@@ -1,50 +1,20 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { X, Search, Command, ArrowUp, ArrowDown, CornerDownLeft, Lock } from 'lucide-react';
+import { useState } from 'react';
+import { X, Command, ArrowUp, ArrowDown, CornerDownLeft } from 'lucide-react';
 
 export default function Footer() {
   const [showShortcuts, setShowShortcuts] = useState(false);
 
-  // Listen for '?' key to show shortcuts
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      // Show shortcuts on '?' key (but not when typing in inputs)
-      if (e.key === '?' && !['INPUT', 'TEXTAREA'].includes((e.target as HTMLElement).tagName)) {
-        e.preventDefault();
-        setShowShortcuts(true);
-      }
-      // Close on Escape
-      if (e.key === 'Escape') {
-        setShowShortcuts(false);
-      }
-    };
-
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, []);
-
   return (
     <>
       <footer className="text-center py-6 mt-8">
-        <div className="flex flex-col sm:flex-row items-center justify-center gap-4 text-white/50 text-sm">
-          <p className="flex items-center gap-1">
-            <Search className="w-3.5 h-3.5" />
-            <kbd className="bg-white/5 border border-white/10 rounded px-1.5 py-0.5 text-xs">Ctrl</kbd>
-            <span>+</span>
-            <kbd className="bg-white/5 border border-white/10 rounded px-1.5 py-0.5 text-xs">K</kbd>
-            <span className="ml-1">to search blocks</span>
-          </p>
-          <span className="hidden sm:inline text-white/20">|</span>
-          <button
-            onClick={() => setShowShortcuts(true)}
-            className="flex items-center gap-1 hover:text-white/70 transition-colors"
-          >
-            <Command className="w-3.5 h-3.5" />
-            <kbd className="bg-white/5 border border-white/10 rounded px-1.5 py-0.5 text-xs">?</kbd>
-            <span className="ml-1">for all shortcuts</span>
-          </button>
-        </div>
+        <button
+          onClick={() => setShowShortcuts(true)}
+          className="text-white/50 text-sm hover:text-white/70 transition-colors"
+        >
+          Keyboard shortcuts
+        </button>
       </footer>
 
       {/* Keyboard Shortcuts Modal */}
@@ -82,14 +52,6 @@ export default function Footer() {
                 </h3>
                 <div className="space-y-2">
                   <div className="flex items-center justify-between">
-                    <span>Open block search</span>
-                    <div className="flex items-center gap-1">
-                      <kbd className="px-2 py-1 rounded bg-white/10 text-xs">Ctrl</kbd>
-                      <span className="text-white/40">+</span>
-                      <kbd className="px-2 py-1 rounded bg-white/10 text-xs">K</kbd>
-                    </div>
-                  </div>
-                  <div className="flex items-center justify-between">
                     <span>Close search</span>
                     <kbd className="px-2 py-1 rounded bg-white/10 text-xs">Esc</kbd>
                   </div>
@@ -120,11 +82,7 @@ export default function Footer() {
                 </h3>
                 <div className="space-y-2">
                   <div className="flex items-center justify-between">
-                    <span>Show keyboard shortcuts</span>
-                    <kbd className="px-2 py-1 rounded bg-white/10 text-xs">?</kbd>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span>Focus Google search</span>
+                    <span>Focus search</span>
                     <kbd className="px-2 py-1 rounded bg-white/10 text-xs">/</kbd>
                   </div>
                 </div>
@@ -138,7 +96,7 @@ export default function Footer() {
                 <div className="space-y-2">
                   <div className="flex items-center justify-between">
                     <span>Open admin panel</span>
-                    <span className="text-sm text-white/40">Click settings icon</span>
+                    <span className="text-sm text-white/40">Click Admin button (top right)</span>
                   </div>
                 </div>
               </div>

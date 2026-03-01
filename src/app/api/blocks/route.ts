@@ -1,29 +1,24 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { verifyAuth } from '@/lib/auth';
-import { blockCreateSchema } from '@/lib/validation';
-import { ZodError } from 'zod';
+import { categoriesCache } from '@/lib/cache';
 
-// Size limit for request body (1MB)
-const MAX_BODY_SIZE = 1024 * 1024;
-
+// GET /api/blocks - List all blocks
 export async function GET() {
   try {
     const blocks = await prisma.block.findMany({
-      orderBy: { sortOrder: 'asc' },
-      include: {
-        category: {
-          select: {
-            id: true,
-            name: true,
-            icon: true,
-          },
-        },
+      orderBy: {
+        sortOrder: 'asc',
       },
     });
-    return NextResponse.json(blocks);
+
+    return NextResponse.json(blocks, {
+      headers: {
+        'Cache-Control': 'private, max-age=60',
+      },
+    });
   } catch (error) {
-    console.error('Error fetching blocks:', error);
+    console.error('Failed to fetch blocks:', error);
     return NextResponse.json(
       { error: 'Failed to fetch blocks' },
       { status: 500 }
@@ -31,83 +26,66 @@ export async function GET() {
   }
 }
 
+// POST /api/blocks - Create a new block
 export async function POST(request: Request) {
   try {
-    // Check content length to prevent large payload attacks
-    const contentLength = request.headers.get('content-length');
-    if (contentLength && parseInt(contentLength) > MAX_BODY_SIZE) {
-      return NextResponse.json(
-        { error: 'Request body too large' },
-        { status: 413 }
-      );
-    }
-
-    // Verify authentication
     const auth = await verifyAuth();
     if (!auth) {
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 401 }
-      );
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    // Parse and validate request body
-    let body;
-    try {
-      body = await request.json();
-      console.log('Received body:', JSON.stringify(body, null, 2));
-    } catch {
+    const body = await request.json();
+    const { 
+      title, 
+      url, 
+      description, 
+      icon, 
+      categoryId,
+      sortOrder,
+      serviceUrl,
+      serviceType,
+      healthCheckUrl,
+      isMonitored 
+    } = body;
+
+    if (!title?.trim() || !url?.trim() || !categoryId) {
       return NextResponse.json(
-        { error: 'Invalid JSON in request body' },
+        { error: 'Title, URL, and category are required' },
         { status: 400 }
       );
     }
 
-    // Validate input
-    const validatedData = blockCreateSchema.parse(body);
-
-    // Verify category exists
-    const category = await prisma.category.findUnique({
-      where: { id: validatedData.categoryId },
-    });
-
-    if (!category) {
+    // Validate URL format
+    try {
+      new URL(url);
+    } catch {
       return NextResponse.json(
-        { error: 'Category not found' },
-        { status: 404 }
+        { error: 'Invalid URL format' },
+        { status: 400 }
       );
     }
 
-    // Create block
     const block = await prisma.block.create({
-      data: validatedData,
-      include: {
-        category: {
-          select: {
-            id: true,
-            name: true,
-            icon: true,
-          },
-        },
+      data: {
+        title: title.trim(),
+        url: url.trim(),
+        description: description?.trim() || null,
+        icon: icon?.trim() || null,
+        categoryId,
+        sortOrder: sortOrder ?? 0,
+        serviceUrl: serviceUrl?.trim() || null,
+        serviceType: serviceType?.trim() || null,
+        healthCheckUrl: healthCheckUrl?.trim() || null,
+        isMonitored: isMonitored ?? false,
       },
     });
 
+    // Invalidate categories cache since blocks are included
+    categoriesCache.delete('categories_with_blocks');
+
     return NextResponse.json(block, { status: 201 });
   } catch (error) {
-    if (error instanceof ZodError) {
-      return NextResponse.json(
-        { 
-          error: 'Validation failed',
-          details: error.issues.map(e => ({
-            field: e.path.join('.'),
-            message: e.message,
-          })),
-        },
-        { status: 400 }
-      );
-    }
-
-    console.error('Error creating block:', error);
+    console.error('Failed to create block:', error);
     return NextResponse.json(
       { error: 'Failed to create block' },
       { status: 500 }

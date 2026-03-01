@@ -1,33 +1,33 @@
 import { RateLimiterMemory, RateLimiterRes } from 'rate-limiter-flexible';
 import { NextRequest, NextResponse } from 'next/server';
 
-// Rate limiters for different endpoints
+// Rate limiters for different endpoints with optimized settings
 const rateLimiters = {
-  // Login attempts: 5 per 15 minutes per IP
+  // Login attempts: 5 per 15 minutes per IP - strict to prevent brute force
   login: new RateLimiterMemory({
     keyPrefix: 'login',
     points: 5,
     duration: 15 * 60, // 15 minutes
   }),
   
-  // API general: 100 per minute per IP
+  // API general: 100 per minute per IP - generous for normal usage
   api: new RateLimiterMemory({
     keyPrefix: 'api',
     points: 100,
     duration: 60, // 1 minute
   }),
   
-  // Sensitive operations (password change, TOTP setup): 30 per minute
+  // Sensitive operations (password change, TOTP setup): 10 per minute
   sensitive: new RateLimiterMemory({
     keyPrefix: 'sensitive',
-    points: 30,
+    points: 10,
     duration: 60, // 1 minute
   }),
   
-  // Health check: 10 per minute
+  // Health check: 30 per minute - allow frequent health checks
   health: new RateLimiterMemory({
     keyPrefix: 'health',
-    points: 10,
+    points: 30,
     duration: 60, // 1 minute
   }),
 };
@@ -35,7 +35,7 @@ const rateLimiters = {
 export type RateLimitType = keyof typeof rateLimiters;
 
 /**
- * Get client IP from request
+ * Get client IP from request with fallback strategies
  */
 function getClientIP(request: NextRequest): string {
   // Try various headers to get the real client IP
@@ -77,7 +77,7 @@ export async function checkRateLimit(
 }
 
 /**
- * Middleware wrapper for rate limiting
+ * Middleware wrapper for rate limiting with optimized headers
  */
 export async function rateLimitMiddleware(
   request: NextRequest,
@@ -97,6 +97,7 @@ export async function rateLimitMiddleware(
           'X-RateLimit-Limit': String(rateLimiters[type].points),
           'X-RateLimit-Remaining': '0',
           'X-RateLimit-Reset': String(Math.ceil(Date.now() / 1000) + retryAfter),
+          'Cache-Control': 'no-store',
         },
       }
     );

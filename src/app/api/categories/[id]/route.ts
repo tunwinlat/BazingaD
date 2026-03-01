@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { verifyAuth } from '@/lib/auth';
 import { categoryUpdateSchema } from '@/lib/validation';
+import { categoriesCache } from '@/lib/cache';
 import { ZodError } from 'zod';
 
 const MAX_BODY_SIZE = 1024 * 1024;
@@ -88,6 +89,9 @@ export async function PUT(
       },
     });
 
+    // Invalidate cache
+    categoriesCache.delete('categories_with_blocks');
+
     return NextResponse.json(category);
   } catch (error) {
     if (error instanceof ZodError) {
@@ -154,6 +158,9 @@ export async function DELETE(
     await prisma.category.delete({
       where: { id },
     });
+
+    // Invalidate cache
+    categoriesCache.delete('categories_with_blocks');
 
     return NextResponse.json({ success: true });
   } catch (error) {

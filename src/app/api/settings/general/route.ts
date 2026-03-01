@@ -2,16 +2,45 @@ import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { verifyAuth } from '@/lib/auth';
 import { themes } from '@/lib/themes';
+import { settingsCache } from '@/lib/cache';
+
+const CACHE_KEY = 'general_settings';
 
 // Get general settings
 export async function GET() {
   try {
+    // Check cache first
+    const cached = settingsCache.get<{
+      siteTitle: string;
+      favicon: string | null;
+      theme: string;
+    }>(CACHE_KEY);
+    
+    if (cached) {
+      return NextResponse.json(cached, {
+        headers: {
+          'X-Cache': 'HIT',
+          'Cache-Control': 'private, max-age=60',
+        },
+      });
+    }
+
     const settings = await prisma.settings.findFirst();
     
-    return NextResponse.json({
+    const result = {
       siteTitle: settings?.siteTitle || 'Start Page',
       favicon: settings?.favicon || null,
       theme: settings?.theme || 'default',
+    };
+
+    // Store in cache
+    settingsCache.set(CACHE_KEY, result, 60);
+    
+    return NextResponse.json(result, {
+      headers: {
+        'X-Cache': 'MISS',
+        'Cache-Control': 'private, max-age=60',
+      },
     });
   } catch (error) {
     console.error('Error fetching general settings:', error);
@@ -25,11 +54,8 @@ export async function GET() {
 // Update general settings
 export async function PUT(request: Request) {
   try {
-    console.log('PUT /api/settings/general called');
-    
     // Verify authentication
     const auth = await verifyAuth();
-    console.log('Auth result:', auth);
     
     if (!auth) {
       return NextResponse.json(
@@ -39,7 +65,6 @@ export async function PUT(request: Request) {
     }
 
     const body = await request.json();
-    console.log('Request body:', body);
     const { siteTitle, favicon, theme } = body;
 
     // Validate inputs
@@ -81,32 +106,23 @@ export async function PUT(request: Request) {
         },
       });
     } else {
-      // Create with default values first, then update if needed
       existingSettings = await prisma.settings.create({
         data: {
-          siteTitle: 'Start Page',
-          favicon: null,
-          theme: 'default',
+          siteTitle: siteTitle?.trim() || 'Start Page',
+          favicon: favicon || null,
+          theme: theme || 'default',
         },
       });
-      // If we have values to set, update the newly created record
-      if (siteTitle !== undefined || favicon !== undefined || theme !== undefined) {
-        await prisma.settings.update({
-          where: { id: existingSettings.id },
-          data: {
-            ...(siteTitle !== undefined && { siteTitle: siteTitle.trim() || 'Start Page' }),
-            ...(favicon !== undefined && { favicon }),
-            ...(theme !== undefined && { theme }),
-          },
-        });
-      }
     }
+
+    // Invalidate cache
+    settingsCache.delete(CACHE_KEY);
 
     return NextResponse.json({ success: true });
   } catch (error) {
     console.error('Error updating general settings:', error);
     return NextResponse.json(
-      { error: 'Failed to update settings', details: error instanceof Error ? error.message : String(error) },
+      { error: 'Failed to update settings' },
       { status: 500 }
     );
   }

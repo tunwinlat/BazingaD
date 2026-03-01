@@ -599,8 +599,10 @@ export default function AdminPage() {
       if (response.ok) {
         toast.success('General settings saved');
         fetchGeneralSettings();
-        // Force favicon update
-        window.location.reload();
+        // Navigate to start page after a short delay so toast can be seen
+        setTimeout(() => {
+          router.push('/');
+        }, 1500);
       } else {
         let errorMessage = 'Failed to save general settings';
         try {

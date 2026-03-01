@@ -7,13 +7,22 @@ const nextConfig: NextConfig = {
   // Compress responses
   compress: true,
   
-  // Configure images
+  // Configure images with optimization
   images: {
     formats: ['image/avif', 'image/webp'],
     remotePatterns: [],
+    minimumCacheTTL: 60,
   },
   
-  // Custom headers to add security headers and remove informational ones
+  // Enable React strict mode for better development
+  reactStrictMode: true,
+  
+  // Optimize package imports for faster builds
+  experimental: {
+    optimizePackageImports: ['lucide-react', '@prisma/client'],
+  },
+  
+  // Custom headers for security and caching
   async headers() {
     return [
       {
@@ -25,12 +34,37 @@ const nextConfig: NextConfig = {
           },
         ],
       },
+      {
+        source: '/api/:path*',
+        headers: [
+          {
+            key: 'Cache-Control',
+            value: 'no-store, max-age=0',
+          },
+        ],
+      },
     ];
   },
   
-  // Experimental features
-  experimental: {
-    // Enable if needed
+  // Webpack optimization
+  webpack: (config, { dev, isServer }) => {
+    // Optimize bundle size in production
+    if (!dev && !isServer) {
+      config.optimization = {
+        ...config.optimization,
+        splitChunks: {
+          chunks: 'all',
+          cacheGroups: {
+            vendor: {
+              test: /[\\/]node_modules[\\/]/,
+              name: 'vendors',
+              chunks: 'all',
+            },
+          },
+        },
+      };
+    }
+    return config;
   },
 };
 

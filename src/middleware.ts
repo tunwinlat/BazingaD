@@ -11,13 +11,17 @@ const securityHeaders = {
   'Permissions-Policy': 'camera=(), microphone=(), geolocation=()',
 };
 
+// Cache control headers for static assets
+const staticAssetHeaders = {
+  'Cache-Control': 'public, max-age=31536000, immutable',
+};
+
 /**
  * Build CSP header
  * Uses strict policy in production, relaxed in development for Next.js compatibility
  */
 function buildCSPHeader(isDev: boolean): string {
   if (isDev) {
-    // Relaxed CSP for development - allows Next.js dev features
     return `
       default-src 'self';
       script-src 'self' 'unsafe-eval' 'unsafe-inline';
@@ -31,9 +35,6 @@ function buildCSPHeader(isDev: boolean): string {
     `.replace(/\s+/g, ' ').trim();
   }
   
-  // Production CSP - stricter but still allows necessary inline scripts
-  // Note: For full CSP without unsafe-inline, you need to configure Next.js
-  // to use nonces via experimental features or use a build-time hash approach
   return `
     default-src 'self';
     script-src 'self' 'unsafe-inline';
@@ -51,7 +52,6 @@ function buildCSPHeader(isDev: boolean): string {
  * Strip Next.js internal headers that reveal implementation details
  */
 function stripNextJsHeaders(response: NextResponse): void {
-  // Remove headers that reveal Next.js internal mechanisms
   const headersToRemove = [
     'x-nextjs-cache',
     'x-nextjs-prerender',
@@ -66,9 +66,27 @@ function stripNextJsHeaders(response: NextResponse): void {
   });
 }
 
+/**
+ * Check if request is for a static asset
+ */
+function isStaticAsset(pathname: string): boolean {
+  return pathname.startsWith('/_next/') || 
+         pathname.startsWith('/static/') ||
+         /\.(?:jpg|jpeg|gif|png|svg|ico|css|js|woff|woff2|ttf|eot)$/.test(pathname);
+}
+
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
   const isDev = process.env.NODE_ENV !== 'production';
+  
+  // Handle static assets - add long-term caching
+  if (isStaticAsset(pathname)) {
+    const response = NextResponse.next();
+    Object.entries(staticAssetHeaders).forEach(([key, value]) => {
+      response.headers.set(key, value);
+    });
+    return response;
+  }
   
   // Apply rate limiting to API routes
   if (pathname.startsWith('/api/')) {
@@ -90,13 +108,16 @@ export async function middleware(request: NextRequest) {
       return rateLimitResponse;
     }
     
-    // For API routes, let the request through and add security headers to the response
+    // For API routes, let the request through and add security headers
     const response = NextResponse.next();
     
     // Add security headers
     Object.entries(securityHeaders).forEach(([key, value]) => {
       response.headers.set(key, value);
     });
+    
+    // Add CSP header
+    response.headers.set('Content-Security-Policy', buildCSPHeader(isDev));
     
     // Strip Next.js internal headers
     stripNextJsHeaders(response);

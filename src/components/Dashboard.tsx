@@ -1,13 +1,13 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback, memo, useMemo } from 'react';
 import { Plus } from 'lucide-react';
 import Link from 'next/link';
 import CategorySection from './CategorySection';
 import type { Category } from '@/types';
 
-// Loading skeleton for categories
-function CategorySkeleton() {
+// Memoized loading skeleton
+const CategorySkeleton = memo(function CategorySkeleton() {
   return (
     <div className="mb-8">
       <div className="flex items-center gap-3 mb-4">
@@ -25,10 +25,10 @@ function CategorySkeleton() {
       </div>
     </div>
   );
-}
+});
 
-// Empty state component
-function EmptyState() {
+// Memoized empty state
+const EmptyState = memo(function EmptyState() {
   return (
     <div className="flex flex-col items-center justify-center py-20 text-center">
       <div
@@ -56,10 +56,15 @@ function EmptyState() {
       </Link>
     </div>
   );
+});
+
+// Memoized error state
+interface ErrorStateProps {
+  error: string;
+  onRetry: () => void;
 }
 
-// Error state component
-function ErrorState({ error, onRetry }: { error: string; onRetry: () => void }) {
+const ErrorState = memo(function ErrorState({ error, onRetry }: ErrorStateProps) {
   return (
     <div className="flex flex-col items-center justify-center py-20 text-center">
       <div
@@ -84,18 +89,23 @@ function ErrorState({ error, onRetry }: { error: string; onRetry: () => void }) 
       </button>
     </div>
   );
-}
+});
 
+// Main Dashboard component
 export default function Dashboard() {
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const fetchCategories = async () => {
+  const fetchCategories = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
-      const response = await fetch('/api/categories');
+      const response = await fetch('/api/categories', {
+        headers: {
+          'Cache-Control': 'max-age=60',
+        },
+      });
       if (!response.ok) throw new Error('Failed to fetch');
       const data = await response.json();
       setCategories(data);
@@ -104,11 +114,18 @@ export default function Dashboard() {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
   useEffect(() => {
     fetchCategories();
-  }, []);
+  }, [fetchCategories]);
+
+  // Memoize category sections to prevent unnecessary re-renders
+  const categorySections = useMemo(() => {
+    return categories.map((category, index) => (
+      <CategorySection key={category.id} category={category} index={index} />
+    ));
+  }, [categories]);
 
   if (loading) {
     return (
@@ -137,9 +154,7 @@ export default function Dashboard() {
 
   return (
     <main className="flex-1 flex flex-col gap-8">
-      {categories.map((category, index) => (
-        <CategorySection key={category.id} category={category} index={index} />
-      ))}
+      {categorySections}
     </main>
   );
 }
