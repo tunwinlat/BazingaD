@@ -7,11 +7,11 @@ chown -R nextjs:nodejs /app/data
 
 # Run database migrations as nextjs user
 echo "📦 Running database migrations..."
-su nextjs -c "npx prisma migrate deploy"
+su -s /bin/sh nextjs -c "npx prisma migrate deploy"
 
 # Seed database if empty
 echo "🌱 Checking if seed is needed..."
-su nextjs -c "node -e \"
+su -s /bin/sh nextjs -c "node -e \"
 const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient();
 
@@ -36,4 +36,4 @@ checkAndSeed().catch(e => {
 echo "✅ Database ready!"
 
 # Execute the main command as nextjs user
-exec su nextjs -c "$@"
+exec su -s /bin/sh nextjs -c "$@"
