@@ -1,16 +1,17 @@
 #!/bin/sh
 set -e
 
-# Create data directory if it doesn't exist (for volume mounts)
+# Create data directory if it doesn't exist (for volume mounts) and fix permissions
 mkdir -p /app/data
+chown -R nextjs:nodejs /app/data
 
-# Run database migrations
+# Run database migrations as nextjs user
 echo "📦 Running database migrations..."
-npx prisma migrate deploy
+su nextjs -c "npx prisma migrate deploy"
 
 # Seed database if empty
 echo "🌱 Checking if seed is needed..."
-node -e "
+su nextjs -c "node -e \"
 const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient();
 
@@ -30,9 +31,9 @@ checkAndSeed().catch(e => {
   console.error(e);
   process.exit(1);
 });
-"
+\""
 
 echo "✅ Database ready!"
 
-# Execute the main command
-exec "$@"
+# Execute the main command as nextjs user
+exec su nextjs -c "$@"

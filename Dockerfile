@@ -60,12 +60,6 @@ COPY --from=builder /app/dist/seed.js ./prisma/
 COPY --from=builder /app/.next ./.next
 COPY --from=builder /app/public ./public
 
-# Create data directory and set permissions
-RUN mkdir -p /app/data && chown -R nextjs:nodejs /app/data
-
-# Switch to non-root user
-USER nextjs
-
 # Expose port
 EXPOSE 3000
 
@@ -73,11 +67,9 @@ EXPOSE 3000
 HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
   CMD wget --no-verbose --tries=1 --spider http://localhost:3000/api/health || exit 1
 
-# Start script
-COPY --chown=nextjs:nodejs docker-entrypoint.sh /usr/local/bin/
-USER root
+# Start script - run as root to fix permissions, then switch to nextjs
+COPY docker-entrypoint.sh /usr/local/bin/
 RUN chmod +x /usr/local/bin/docker-entrypoint.sh
-USER nextjs
 
 ENTRYPOINT ["docker-entrypoint.sh"]
 CMD ["node", "node_modules/.bin/next", "start"]
