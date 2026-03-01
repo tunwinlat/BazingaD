@@ -28,6 +28,7 @@ export interface BlockFormData {
   description?: string;
   icon?: string;
   categoryId: string;
+  sortOrder: number;
   serviceUrl?: string;
   serviceType?: string;
   healthCheckUrl?: string;
