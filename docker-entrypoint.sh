@@ -24,7 +24,7 @@ async function checkAndSeed() {
   } else {
     console.log(\"Database already seeded.\");
   }
-  await prisma.\\$disconnect();
+  await prisma["\$" + "disconnect"]();
 }
 
 checkAndSeed().catch(e => {
