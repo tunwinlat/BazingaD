@@ -140,6 +140,7 @@ export async function PUT(request: Request) {
     });
   } catch (error) {
     if (error instanceof ZodError) {
+      console.error('Validation error details:', JSON.stringify(error.issues, null, 2));
       return NextResponse.json(
         { 
           error: 'Validation failed',

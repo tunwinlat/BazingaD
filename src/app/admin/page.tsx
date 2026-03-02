@@ -424,7 +424,11 @@ export default function AdminPage() {
         fetchSettings();
       } else {
         const data = await response.json();
-        toast.error(data.error || 'Failed to update settings');
+        console.error('Settings update failed:', data);
+        const errorMsg = data.details 
+          ? `${data.error}: ${data.details.map((d: {message: string}) => d.message).join(', ')}`
+          : data.error || 'Failed to update settings';
+        toast.error(errorMsg);
       }
     } catch (error) {
       console.error('Settings update error:', error);
