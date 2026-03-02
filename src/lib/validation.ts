@@ -97,7 +97,7 @@ export const settingsUpdateSchema = z.object({
     .max(128, 'Password must not exceed 128 characters')
     .optional()
     .nullable(),
-  sessionDurationHours: z.number().int().min(1).max(4320).optional(), // Max 6 months (6 * 30 * 24)
+  sessionDurationHours: z.number().int().min(1).max(8760, 'Session duration cannot exceed 12 months').optional(), // Max 12 months (365 * 24)
   weatherEnabled: z.boolean().optional(),
   weatherLatitude: z.number().min(-90).max(90).optional().nullable(),
   weatherLongitude: z.number().min(-180).max(180).optional().nullable(),
