@@ -110,14 +110,17 @@ export async function POST(request: Request) {
       );
     }
 
-    // Create session using auth utility
-    const token = await createSession(user.id);
+    // Get session duration from settings
+    const sessionDurationHours = settings.sessionDurationHours || 24;
+    
+    // Create session using auth utility with the configured duration
+    const token = await createSession(user.id, sessionDurationHours);
     
     const response = NextResponse.json({ success: true });
     
     // Set cookie with secure options
     response.cookies.set('dashboard-token', token, getCookieOptions(
-      (settings.sessionDurationHours || 24) * 60 * 60
+      sessionDurationHours * 60 * 60
     ));
     
     return response;

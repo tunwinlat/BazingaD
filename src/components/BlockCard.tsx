@@ -1,4 +1,4 @@
-import { getInitials, getDomain, getFavicon } from '@/lib/utils';
+import { getInitials, getDomain, getBlockIcon } from '@/lib/utils';
 import type { Block } from '@/types';
 
 interface BlockCardProps {
@@ -6,7 +6,7 @@ interface BlockCardProps {
 }
 
 export default function BlockCard({ block }: BlockCardProps) {
-  const iconUrl = block.icon || getFavicon(block.url);
+  const iconUrl = getBlockIcon(block);
   const initials = getInitials(block.title);
   const domain = getDomain(block.url);
 
@@ -32,31 +32,25 @@ export default function BlockCard({ block }: BlockCardProps) {
       />
       
       <div 
-        className="relative w-12 h-12 rounded-xl mb-3 flex items-center justify-center text-2xl transition-transform duration-300 group-hover:scale-110 overflow-hidden"
+        className="relative w-12 h-12 rounded-xl mb-3 flex items-center justify-center transition-transform duration-300 group-hover:scale-110 overflow-hidden shadow-lg"
       >
-        {iconUrl ? (
-          <img
-            src={iconUrl}
-            alt={block.title}
-            className="w-full h-full object-contain rounded-xl"
-            onError={(e) => {
-              const target = e.target as HTMLImageElement;
-              target.style.display = 'none';
-              const parent = target.parentElement!;
-              parent.style.background = 'linear-gradient(135deg, var(--theme-primary) 0%, var(--theme-accent) 100%)';
-              parent.style.color = 'white';
-              parent.classList.add('font-semibold', 'text-lg');
-              parent.textContent = initials;
-            }}
-          />
-        ) : (
-          <div 
-            className="w-full h-full rounded-xl flex items-center justify-center text-white font-semibold text-lg"
-            style={{ background: 'linear-gradient(135deg, var(--theme-primary) 0%, var(--theme-accent) 100%)' }}
-          >
-            {initials}
-          </div>
-        )}
+        {/* Base gradient icon */}
+        <img
+          src={iconUrl}
+          alt=""
+          className="absolute inset-0 w-full h-full object-cover"
+          aria-hidden="true"
+        />
+        
+        {/* Initials overlay */}
+        <span 
+          className="relative z-10 text-white font-bold text-sm tracking-wider drop-shadow-md"
+          style={{ 
+            textShadow: '0 1px 3px rgba(0,0,0,0.3)',
+          }}
+        >
+          {initials}
+        </span>
       </div>
       
       <div className="relative z-10">

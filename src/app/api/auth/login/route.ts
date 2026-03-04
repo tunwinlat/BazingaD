@@ -139,12 +139,12 @@ export async function POST(request: Request) {
     // Clear failed attempts on successful login
     recordSuccessfulAttempt(username.toLowerCase());
 
-    // Create session
-    const token = await createSession(user.id);
-    
     // Get session duration from settings
     const settings = await prisma.settings.findFirst();
     const sessionHours = settings?.sessionDurationHours || 24;
+    
+    // Create session with the configured duration
+    const token = await createSession(user.id, sessionHours);
     
     // Set HTTP-only cookie
     const response = NextResponse.json({ 

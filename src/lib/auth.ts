@@ -7,6 +7,9 @@ const SESSION_DURATION_HOURS = 24;
 const SESSION_DURATION_MS = SESSION_DURATION_HOURS * 60 * 60 * 1000;
 const SESSION_DURATION_SECONDS = SESSION_DURATION_HOURS * 60 * 60;
 
+// Maximum session duration: 12 months (in hours)
+export const MAX_SESSION_DURATION_HOURS = 8760; // 365 * 24
+
 /**
  * Generate a cryptographically secure session token
  * Uses Web Crypto API for Edge runtime compatibility
@@ -93,10 +96,20 @@ export async function verifyAuthFromRequest(request: NextRequest): Promise<{ use
 
 /**
  * Create a new session for a user
+ * @param userId - The user ID to create the session for
+ * @param durationHours - Optional custom session duration in hours (defaults to 24 hours, max 12 months)
  */
-export async function createSession(userId: string): Promise<string> {
+export async function createSession(userId: string, durationHours?: number): Promise<string> {
   const token = generateSessionToken();
-  const expiresAt = new Date(Date.now() + SESSION_DURATION_MS);
+  
+  // Use provided duration or default, clamped to maximum
+  const effectiveDurationHours = Math.min(
+    durationHours ?? SESSION_DURATION_HOURS,
+    MAX_SESSION_DURATION_HOURS
+  );
+  const durationMs = effectiveDurationHours * 60 * 60 * 1000;
+  
+  const expiresAt = new Date(Date.now() + durationMs);
   
   await prisma.session.create({
     data: {
