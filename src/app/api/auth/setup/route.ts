@@ -33,24 +33,65 @@ export async function GET() {
   }
 }
 
+async function createAdminUser(username: string, password: string) {
+  // Check for existing username (case-insensitive)
+  const existingUser = await prisma.user.findFirst({
+    where: {
+      username: {
+        equals: username.toLowerCase(),
+      },
+    },
+  });
+
+  if (existingUser) {
+    return NextResponse.json(
+      { error: 'Username already exists' },
+      { status: 409 }
+    );
+  }
+
+  // Hash password with higher cost factor
+  const hashedPassword = await bcrypt.hash(password, 12);
+
+  // Create user
+  await prisma.user.create({
+    data: {
+      username,
+      password: hashedPassword,
+    },
+  });
+
+  // Mark setup as complete in memory
+  isSetupComplete = true;
+
+  return null;
+}
+
+async function validateSetupRequest(request: Request) {
+  const contentLength = request.headers.get('content-length');
+  if (contentLength && parseInt(contentLength) > MAX_BODY_SIZE) {
+    return NextResponse.json(
+      { error: 'Request body too large' },
+      { status: 413 }
+    );
+  }
+
+  const setupDone = await checkSetupComplete();
+  if (setupDone) {
+    return NextResponse.json(
+      { error: 'Setup already completed' },
+      { status: 400 }
+    );
+  }
+
+  return null;
+}
+
 export async function POST(request: Request) {
   try {
-    // Check content length
-    const contentLength = request.headers.get('content-length');
-    if (contentLength && parseInt(contentLength) > MAX_BODY_SIZE) {
-      return NextResponse.json(
-        { error: 'Request body too large' },
-        { status: 413 }
-      );
-    }
-
-    // Check if setup is already done
-    const setupDone = await checkSetupComplete();
-    if (setupDone) {
-      return NextResponse.json(
-        { error: 'Setup already completed' },
-        { status: 400 }
-      );
+    const validationErrorResponse = await validateSetupRequest(request);
+    if (validationErrorResponse) {
+      return validationErrorResponse;
     }
 
     // Parse request body
@@ -68,59 +109,18 @@ export async function POST(request: Request) {
     const { username, password } = body;
 
     // Validate username and password
-    try {
-      usernameSchema.parse(username);
-      passwordSchema.parse(password);
-    } catch (validationError) {
-      if (validationError instanceof ZodError) {
-        return NextResponse.json(
-          { 
-            error: 'Validation failed',
-            details: validationError.issues.map(e => ({
-              field: e.path.join('.'),
-              message: e.message,
-            })),
-          },
-          { status: 400 }
-        );
-      }
-      throw validationError;
+    usernameSchema.parse(username);
+    passwordSchema.parse(password);
+
+    const response = await createAdminUser(username, password);
+    if (response) {
+      return response;
     }
-
-    // Check for existing username (case-insensitive)
-    const existingUser = await prisma.user.findFirst({
-      where: {
-        username: {
-          equals: username.toLowerCase(),
-        },
-      },
-    });
-
-    if (existingUser) {
-      return NextResponse.json(
-        { error: 'Username already exists' },
-        { status: 409 }
-      );
-    }
-
-    // Hash password with higher cost factor
-    const hashedPassword = await bcrypt.hash(password, 12);
-
-    // Create user
-    const user = await prisma.user.create({
-      data: {
-        username,
-        password: hashedPassword,
-      },
-    });
-
-    // Mark setup as complete in memory
-    isSetupComplete = true;
 
     return NextResponse.json({ 
       success: true, 
       message: 'Admin user created successfully',
-      username: user.username 
+      username: username
     }, { status: 201 });
   } catch (error) {
     if (error instanceof ZodError) {
