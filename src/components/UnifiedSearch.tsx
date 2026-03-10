@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef, useMemo } from 'react';
 import { Search, ExternalLink, Globe } from 'lucide-react';
-import type { Category, Block } from '@/types';
+import type { Category } from '@/types';
 
 interface UnifiedSearchProps {
   categories: Category[];
@@ -17,16 +17,12 @@ export default function UnifiedSearch({ categories }: UnifiedSearchProps) {
 
   // Flatten all blocks for searching
   const allBlocks = useMemo(() => {
-    const blocks: (Block & { categoryName: string })[] = [];
-    categories.forEach((category) => {
-      category.blocks?.forEach((block) => {
-        blocks.push({
-          ...block,
-          categoryName: category.name,
-        });
-      });
-    });
-    return blocks;
+    return categories.flatMap(category =>
+      (category.blocks || []).map(block => ({
+        ...block,
+        categoryName: category.name,
+      }))
+    );
   }, [categories]);
 
   // Filter blocks based on query
@@ -46,6 +42,7 @@ export default function UnifiedSearch({ categories }: UnifiedSearchProps) {
 
   // Reset selected index when results change
   useEffect(() => {
+    // We intentionally reset selected index when query or results change
     setSelectedIndex(0);
   }, [filteredBlocks.length, query]);
 
