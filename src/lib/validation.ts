@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { isSafeUrl } from './security';
 
 // Password validation schema with strong requirements
 export const passwordSchema = z.string()
@@ -25,7 +26,10 @@ export const blockCreateSchema = z.object({
     .min(1, 'URL is required')
     .max(2048, 'URL must not exceed 2048 characters')
     .url('Invalid URL format')
-    .transform(val => val.trim()),
+    .transform(val => val.trim())
+    .refine(val => isSafeUrl(val), {
+      message: 'URL is not allowed for security reasons'
+    }),
   description: z.string()
     .max(500, 'Description must not exceed 500 characters')
     .optional()
@@ -48,6 +52,9 @@ export const blockCreateSchema = z.object({
     })
     .refine(val => val === null || val === undefined || /^https?:\/\/.+/.test(val), {
       message: 'Invalid service URL format'
+    })
+    .refine(val => val === null || val === undefined || isSafeUrl(val), {
+      message: 'Service URL is not allowed for security reasons'
     }),
   serviceType: z.string()
     .max(50, 'Service type must not exceed 50 characters')
@@ -64,6 +71,9 @@ export const blockCreateSchema = z.object({
     })
     .refine(val => val === null || val === undefined || /^https?:\/\/.+/.test(val), {
       message: 'Invalid health check URL format'
+    })
+    .refine(val => val === null || val === undefined || isSafeUrl(val), {
+      message: 'Health check URL is not allowed for security reasons'
     }),
   isMonitored: z.boolean().default(false),
 });

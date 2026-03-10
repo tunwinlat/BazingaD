@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { verifyAuth } from '@/lib/auth';
 import { categoriesCache } from '@/lib/cache';
+import { blockCreateSchema } from '@/lib/validation';
 
 // GET /api/blocks - List all blocks
 export async function GET() {
@@ -35,49 +36,17 @@ export async function POST(request: Request) {
     }
 
     const body = await request.json();
-    const { 
-      title, 
-      url, 
-      description, 
-      icon, 
-      categoryId,
-      sortOrder,
-      serviceUrl,
-      serviceType,
-      healthCheckUrl,
-      isMonitored 
-    } = body;
+    const validated = blockCreateSchema.safeParse(body);
 
-    if (!title?.trim() || !url?.trim() || !categoryId) {
+    if (!validated.success) {
       return NextResponse.json(
-        { error: 'Title, URL, and category are required' },
-        { status: 400 }
-      );
-    }
-
-    // Validate URL format
-    try {
-      new URL(url);
-    } catch {
-      return NextResponse.json(
-        { error: 'Invalid URL format' },
+        { error: validated.error.errors[0].message },
         { status: 400 }
       );
     }
 
     const block = await prisma.block.create({
-      data: {
-        title: title.trim(),
-        url: url.trim(),
-        description: description?.trim() || null,
-        icon: icon?.trim() || null,
-        categoryId,
-        sortOrder: sortOrder ?? 0,
-        serviceUrl: serviceUrl?.trim() || null,
-        serviceType: serviceType?.trim() || null,
-        healthCheckUrl: healthCheckUrl?.trim() || null,
-        isMonitored: isMonitored ?? false,
-      },
+      data: validated.data,
     });
 
     // Invalidate categories cache since blocks are included
