@@ -6,11 +6,24 @@ import { ZodError } from 'zod';
 
 const MAX_BODY_SIZE = 1024 * 1024;
 
+let isSetupComplete = false;
+
+async function checkSetupComplete() {
+  if (isSetupComplete) {
+    return true;
+  }
+  const userCount = await prisma.user.count();
+  if (userCount > 0) {
+    isSetupComplete = true;
+  }
+  return isSetupComplete;
+}
+
 export async function GET() {
   try {
     // Check if any user exists
-    const userCount = await prisma.user.count();
-    return NextResponse.json({ needsSetup: userCount === 0 });
+    const setupDone = await checkSetupComplete();
+    return NextResponse.json({ needsSetup: !setupDone });
   } catch (error) {
     console.error('Setup check error:', error);
     return NextResponse.json(
@@ -32,8 +45,8 @@ export async function POST(request: Request) {
     }
 
     // Check if setup is already done
-    const existingUsers = await prisma.user.count();
-    if (existingUsers > 0) {
+    const setupDone = await checkSetupComplete();
+    if (setupDone) {
       return NextResponse.json(
         { error: 'Setup already completed' },
         { status: 400 }
@@ -100,6 +113,9 @@ export async function POST(request: Request) {
         password: hashedPassword,
       },
     });
+
+    // Mark setup as complete in memory
+    isSetupComplete = true;
 
     return NextResponse.json({ 
       success: true, 
