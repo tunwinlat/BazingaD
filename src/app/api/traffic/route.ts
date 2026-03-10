@@ -142,11 +142,9 @@ export async function GET() {
     const cacheAgeMinutes = Math.floor(cacheAgeMs / 60000);
     const isCacheValid = cache && cacheAgeMs < CACHE_DURATION_MS;
 
-    console.log(`[Traffic API] Cache check: ${cache ? 'found' : 'not found'}, age: ${cacheAgeMinutes} minutes, valid: ${isCacheValid}`);
 
     // Return cached data if valid (less than 30 minutes old)
     if (isCacheValid && cache) {
-      console.log(`[Traffic API] Returning cached data (age: ${cacheAgeMinutes} min)`);
       const response: TrafficResponse = {
         homeToWork: {
           duration: cache.homeToWorkDuration,
@@ -162,7 +160,6 @@ export async function GET() {
       return NextResponse.json(response);
     }
 
-    console.log(`[Traffic API] Cache expired or not found, fetching fresh data...`);
 
     // Fetch fresh data from Google Routes API
     try {
@@ -197,7 +194,6 @@ export async function GET() {
         },
       });
 
-      console.log(`[Traffic API] Fresh data cached successfully`);
 
       const response: TrafficResponse = {
         homeToWork,
@@ -211,7 +207,6 @@ export async function GET() {
       
       // If we have any cache (even stale), return it with a warning
       if (cache) {
-        console.log(`[Traffic API] Returning stale cache due to API error`);
         const response: TrafficResponse = {
           homeToWork: {
             duration: cache.homeToWorkDuration,
