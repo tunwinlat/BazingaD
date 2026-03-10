@@ -7,8 +7,6 @@ async function checkAndSeed() {
   const count = await prisma.category.count();
   if (count === 0) {
     execSync('node prisma/seed.js', { stdio: 'inherit' });
-  } else {
-    console.log('Database already seeded.');
   }
   await prisma.$disconnect();
 }
