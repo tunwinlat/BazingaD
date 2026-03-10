@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { createSession, getCookieOptions } from '@/lib/auth';
+import { settingsCache } from '@/lib/cache';
 import { loginSchema } from '@/lib/validation';
 import bcrypt from 'bcryptjs';
 import * as OTPAuth from 'otpauth';
@@ -22,7 +23,7 @@ function getClientIP(request: Request): string {
 function isLockedOut(identifier: string): boolean {
   const attempt = failedAttempts.get(identifier);
   if (!attempt) return false;
-  
+
   if (attempt.count >= MAX_FAILED_ATTEMPTS) {
     const timeSinceLastAttempt = Date.now() - attempt.lastAttempt;
     if (timeSinceLastAttempt < LOCKOUT_DURATION_MS) {
@@ -110,7 +111,7 @@ export async function POST(request: Request) {
     if (user.totpEnabled && user.totpVerified && user.totpSecret) {
       // If no TOTP code provided, ask for it
       if (!totpToken) {
-        return NextResponse.json({ 
+        return NextResponse.json({
           requireTOTP: true,
           message: 'Two-factor authentication required'
         }, { status: 202 });
@@ -140,25 +141,41 @@ export async function POST(request: Request) {
     recordSuccessfulAttempt(username.toLowerCase());
 
     // Get session duration from settings
-    const settings = await prisma.settings.findFirst();
-    const sessionHours = settings?.sessionDurationHours || 24;
-    
+    let sessionHours = 24;
+    const CACHE_KEY = 'general_settings';
+
+    // Try to get from cache first
+    const cachedSettings = settingsCache.get<{ sessionDurationHours?: number }>(CACHE_KEY);
+
+    if (cachedSettings && cachedSettings.sessionDurationHours !== undefined) {
+      sessionHours = cachedSettings.sessionDurationHours;
+    } else {
+      // Fallback to database
+      const settings = await prisma.settings.findFirst();
+      sessionHours = settings?.sessionDurationHours || 24;
+
+      // Update cache with the full settings object
+      if (settings) {
+        settingsCache.set(CACHE_KEY, settings, 60);
+      }
+    }
+
     // Create session with the configured duration
     const token = await createSession(user.id, sessionHours);
-    
+
     // Set HTTP-only cookie
-    const response = NextResponse.json({ 
-      success: true, 
-      username: user.username 
+    const response = NextResponse.json({
+      success: true,
+      username: user.username
     });
-    
+
     response.cookies.set('auth-token', token, getCookieOptions(sessionHours * 60 * 60));
 
     return response;
   } catch (error) {
     if (error instanceof ZodError) {
       return NextResponse.json(
-        { 
+        {
           error: 'Validation failed',
           details: error.issues.map(e => ({
             field: e.path.join('.'),
