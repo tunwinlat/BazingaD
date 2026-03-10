@@ -7,18 +7,79 @@ import { ZodError } from 'zod';
 
 const MAX_BODY_SIZE = 1024 * 1024;
 
+/**
+ * Validates the content length of the request to prevent overly large payloads.
+ */
+function checkContentLength(request: Request): NextResponse | null {
+  const contentLength = request.headers.get('content-length');
+  if (contentLength && parseInt(contentLength) > MAX_BODY_SIZE) {
+    return NextResponse.json(
+      { error: 'Request body too large' },
+      { status: 413 }
+    );
+  }
+  return null;
+}
+
+/**
+ * Parses the request body as JSON safely.
+ */
+async function parseRequestBody(request: Request): Promise<unknown | NextResponse> {
+  try {
+    return await request.json();
+  } catch {
+    return NextResponse.json(
+      { error: 'Invalid JSON in request body' },
+      { status: 400 }
+    );
+  }
+}
+
+/**
+ * Validates the TOTP code against the user's secret.
+ */
+function verifyTotpCode(username: string, secretBase32: string, code: string): boolean {
+  const totp = new OTPAuth.TOTP({
+    issuer: 'StartPage',
+    label: username,
+    algorithm: 'SHA256',
+    digits: 6,
+    period: 30,
+    secret: OTPAuth.Secret.fromBase32(secretBase32),
+  });
+
+  return totp.validate({ token: code, window: 1 }) !== null;
+}
+
+/**
+ * Handles errors during the TOTP verification process.
+ */
+function handleError(error: unknown): NextResponse {
+  if (error instanceof ZodError) {
+    return NextResponse.json(
+      {
+        error: 'Validation failed',
+        details: error.issues.map(e => ({
+          field: e.path.join('.'),
+          message: e.message,
+        })),
+      },
+      { status: 400 }
+    );
+  }
+
+  console.error('TOTP verify error:', error);
+  return NextResponse.json(
+    { error: 'Verification failed' },
+    { status: 500 }
+  );
+}
+
 export async function POST(request: Request) {
   try {
-    // Check content length
-    const contentLength = request.headers.get('content-length');
-    if (contentLength && parseInt(contentLength) > MAX_BODY_SIZE) {
-      return NextResponse.json(
-        { error: 'Request body too large' },
-        { status: 413 }
-      );
-    }
+    const contentLengthError = checkContentLength(request);
+    if (contentLengthError) return contentLengthError;
 
-    // Verify authentication
     const auth = await verifyAuth();
     if (!auth) {
       return NextResponse.json(
@@ -27,22 +88,11 @@ export async function POST(request: Request) {
       );
     }
 
-    // Parse request body
-    let body;
-    try {
-      body = await request.json();
-    } catch {
-      return NextResponse.json(
-        { error: 'Invalid JSON in request body' },
-        { status: 400 }
-      );
-    }
+    const body = await parseRequestBody(request);
+    if (body instanceof NextResponse) return body;
 
-    // Validate input
-    const validatedData = totpVerifySchema.parse(body);
-    const { token: code } = validatedData;
+    const { token: code } = totpVerifySchema.parse(body);
 
-    // Get the authenticated user
     const user = await prisma.user.findUnique({
       where: { id: auth.userId },
     });
@@ -54,21 +104,9 @@ export async function POST(request: Request) {
       );
     }
 
-    // Create TOTP object
-    const totp = new OTPAuth.TOTP({
-      issuer: 'StartPage',
-      label: user.username,
-      algorithm: 'SHA256',
-      digits: 6,
-      period: 30,
-      secret: OTPAuth.Secret.fromBase32(user.totpSecret),
-    });
-
-    // Verify the code
-    const isValid = totp.validate({ token: code, window: 1 }) !== null;
+    const isValid = verifyTotpCode(user.username, user.totpSecret, code);
 
     if (isValid) {
-      // Enable TOTP
       await prisma.user.update({
         where: { id: user.id },
         data: {
@@ -81,30 +119,13 @@ export async function POST(request: Request) {
         success: true, 
         message: 'TOTP enabled successfully' 
       });
-    } else {
-      return NextResponse.json(
-        { error: 'Invalid code' },
-        { status: 400 }
-      );
-    }
-  } catch (error) {
-    if (error instanceof ZodError) {
-      return NextResponse.json(
-        { 
-          error: 'Validation failed',
-          details: error.issues.map(e => ({
-            field: e.path.join('.'),
-            message: e.message,
-          })),
-        },
-        { status: 400 }
-      );
     }
 
-    console.error('TOTP verify error:', error);
     return NextResponse.json(
-      { error: 'Verification failed' },
-      { status: 500 }
+      { error: 'Invalid code' },
+      { status: 400 }
     );
+  } catch (error) {
+    return handleError(error);
   }
 }
