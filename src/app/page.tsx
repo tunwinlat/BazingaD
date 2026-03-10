@@ -4,6 +4,7 @@ import { redirect } from 'next/navigation';
 import { cookies } from 'next/headers';
 import { prisma } from '@/lib/prisma';
 import { verifyAuth } from '@/lib/auth';
+import { settingsCache } from '@/lib/cache';
 import Background from '@/components/Background';
 import Header from '@/components/Header';
 import Dashboard from '@/components/Dashboard';
@@ -12,10 +13,17 @@ import InfoBar from '@/components/InfoBar';
 import DashboardHeader from '@/components/DashboardHeader';
 
 async function checkDashboardAccess() {
-  const settings = await prisma.settings.findFirst();
+  const CACHE_KEY = "dashboard_access_settings";
+  let isProtected = settingsCache.get<{ dashboardProtected: boolean }>(CACHE_KEY)?.dashboardProtected;
+
+  if (isProtected === undefined) {
+    const settings = await prisma.settings.findFirst();
+    isProtected = settings?.dashboardProtected ?? false;
+    settingsCache.set(CACHE_KEY, { dashboardProtected: isProtected }, 60);
+  }
   
   // If not protected, allow access
-  if (!settings?.dashboardProtected) {
+  if (!isProtected) {
     return { protected: false, hasAccess: true };
   }
   
