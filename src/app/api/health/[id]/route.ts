@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { isSafeUrl } from '@/lib/security';
 
 export async function GET(
   request: Request,
@@ -13,6 +14,11 @@ export async function GET(
 
     if (!block || !block.healthCheckUrl) {
       return NextResponse.json({ error: 'Block not found or no health check URL' }, { status: 404 });
+    }
+
+    // SSRF Protection: Validate the health check URL
+    if (!isSafeUrl(block.healthCheckUrl)) {
+      return NextResponse.json({ error: 'Invalid or unsafe health check URL' }, { status: 400 });
     }
 
     const startTime = Date.now();

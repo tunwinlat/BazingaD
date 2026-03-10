@@ -159,16 +159,16 @@ export const generateBlockIcon = (url: string): string => {
   try {
     const domain = getDomain(url);
     const hash = getHash(domain);
-    
+
     // Select gradient and pattern based on hash
     const gradientPair = GRADIENT_PAIRS[hash % GRADIENT_PAIRS.length];
     const patternFn = PATTERNS[Math.floor((hash / GRADIENT_PAIRS.length) % PATTERNS.length)];
-    
+
     const svgContent = patternFn(gradientPair);
-    
+
     // Build complete SVG
     const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">${svgContent}</svg>`;
-    
+
     // Return as data URI
     return `data:image/svg+xml,${encodeURIComponent(svg)}`;
   } catch {
@@ -210,7 +210,7 @@ export const getBlockIcon = (block: { icon?: string | null; url: string }): stri
   if (block.icon) {
     return block.icon;
   }
-  
+
   // Otherwise generate a unique icon based on the URL
   return generateBlockIcon(block.url);
 };
