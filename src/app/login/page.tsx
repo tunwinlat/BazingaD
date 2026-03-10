@@ -78,7 +78,6 @@ function LoginForm() {
       });
 
       const data = await response.json();
-      console.log('Login response:', response.status, data);
 
       if (response.status === 202 && data.requireTOTP) {
         // TOTP required
@@ -89,7 +88,6 @@ function LoginForm() {
 
       if (response.ok) {
         // Login successful, redirect to admin
-        console.log('Login successful, redirecting to admin...');
         // Use window.location for full page reload to ensure cookie is sent
         window.location.href = '/admin';
       } else {
