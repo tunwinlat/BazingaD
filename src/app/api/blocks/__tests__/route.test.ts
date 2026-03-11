@@ -29,10 +29,10 @@ vi.mock('@/lib/validation', () => ({
   blockCreateSchema: {
     safeParse: vi.fn((body) => {
       if (!body.title || !body.url || !body.categoryId) {
-        return { success: false, error: { errors: [{ message: 'Missing fields' }] } };
+        return { success: false, error: { issues: [{ message: 'Missing fields' }] } };
       }
       if (body.url.includes('localhost')) {
-        return { success: false, error: { errors: [{ message: 'URL is not allowed for security reasons' }] } };
+        return { success: false, error: { issues: [{ message: 'URL is not allowed for security reasons' }] } };
       }
       return { success: true, data: body };
     }),
