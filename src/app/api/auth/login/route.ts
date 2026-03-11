@@ -49,6 +49,71 @@ function recordSuccessfulAttempt(identifier: string): void {
   failedAttempts.delete(identifier);
 }
 
+async function getSessionDurationHours(): Promise<number> {
+  const CACHE_KEY = 'general_settings';
+
+  // Try to get from cache first
+  const cachedSettings = settingsCache.get<{ sessionDurationHours?: number }>(CACHE_KEY);
+
+  if (cachedSettings && cachedSettings.sessionDurationHours !== undefined) {
+    return cachedSettings.sessionDurationHours;
+  }
+
+  // Fallback to database
+  const settings = await prisma.settings.findFirst();
+  const sessionHours = settings?.sessionDurationHours || 24;
+
+  // Update cache with the full settings object
+  if (settings) {
+    settingsCache.set(CACHE_KEY, settings, 60);
+  }
+
+  return sessionHours;
+}
+
+// Minimal interface for the user object needed by verifyTOTP
+interface TOTPUser {
+  username: string;
+  totpEnabled: boolean;
+  totpVerified: boolean;
+  totpSecret: string | null;
+}
+
+function verifyTOTP(user: TOTPUser, totpToken: string | undefined): NextResponse | null {
+  if (!user.totpEnabled || !user.totpVerified || !user.totpSecret) {
+    return null;
+  }
+
+  // If no TOTP code provided, ask for it
+  if (!totpToken) {
+    return NextResponse.json({
+      requireTOTP: true,
+      message: 'Two-factor authentication required'
+    }, { status: 202 });
+  }
+
+  // Verify TOTP code
+  const totp = new OTPAuth.TOTP({
+    issuer: 'StartPage',
+    label: user.username,
+    algorithm: 'SHA256',
+    digits: 6,
+    period: 30,
+    secret: OTPAuth.Secret.fromBase32(user.totpSecret),
+  });
+
+  const isTOTPValid = totp.validate({ token: totpToken, window: 1 }) !== null;
+  if (!isTOTPValid) {
+    recordFailedAttempt(user.username.toLowerCase());
+    return NextResponse.json(
+      { error: 'Invalid authentication code' },
+      { status: 401 }
+    );
+  }
+
+  return null;
+}
+
 export async function POST(request: Request) {
   try {
     // Check content length
@@ -107,58 +172,17 @@ export async function POST(request: Request) {
       );
     }
 
-    // Check if TOTP is enabled
-    if (user.totpEnabled && user.totpVerified && user.totpSecret) {
-      // If no TOTP code provided, ask for it
-      if (!totpToken) {
-        return NextResponse.json({
-          requireTOTP: true,
-          message: 'Two-factor authentication required'
-        }, { status: 202 });
-      }
-
-      // Verify TOTP code
-      const totp = new OTPAuth.TOTP({
-        issuer: 'StartPage',
-        label: user.username,
-        algorithm: 'SHA256',
-        digits: 6,
-        period: 30,
-        secret: OTPAuth.Secret.fromBase32(user.totpSecret),
-      });
-
-      const isTOTPValid = totp.validate({ token: totpToken, window: 1 }) !== null;
-      if (!isTOTPValid) {
-        recordFailedAttempt(username.toLowerCase());
-        return NextResponse.json(
-          { error: 'Invalid authentication code' },
-          { status: 401 }
-        );
-      }
+    // Verify TOTP code if enabled
+    const totpResponse = verifyTOTP(user, totpToken);
+    if (totpResponse) {
+      return totpResponse;
     }
 
     // Clear failed attempts on successful login
     recordSuccessfulAttempt(username.toLowerCase());
 
     // Get session duration from settings
-    let sessionHours = 24;
-    const CACHE_KEY = 'general_settings';
-
-    // Try to get from cache first
-    const cachedSettings = settingsCache.get<{ sessionDurationHours?: number }>(CACHE_KEY);
-
-    if (cachedSettings && cachedSettings.sessionDurationHours !== undefined) {
-      sessionHours = cachedSettings.sessionDurationHours;
-    } else {
-      // Fallback to database
-      const settings = await prisma.settings.findFirst();
-      sessionHours = settings?.sessionDurationHours || 24;
-
-      // Update cache with the full settings object
-      if (settings) {
-        settingsCache.set(CACHE_KEY, settings, 60);
-      }
-    }
+    const sessionHours = await getSessionDurationHours();
 
     // Create session with the configured duration
     const token = await createSession(user.id, sessionHours);
