@@ -8,12 +8,76 @@ export const getInitials = (name: string): string => {
 };
 
 export const getDomain = (url: string): string => {
-  try {
-    const domain = new URL(url).hostname.replace('www.', '');
-    return domain;
-  } catch {
-    return url;
+  if (typeof url !== 'string') return url;
+
+  let start = 0;
+  if (url.startsWith('https://')) {
+    start = 8;
+  } else if (url.startsWith('http://')) {
+    start = 7;
+  } else {
+    try {
+      let hostname = new URL(url).hostname.replace('www.', '');
+      if (hostname.startsWith('[') && hostname.endsWith(']')) {
+        hostname = hostname.substring(1, hostname.length - 1);
+      }
+      return hostname;
+    } catch {
+      return url;
+    }
   }
+
+  // Fallback to strict URL constructor for authentication cases (user:pass@)
+  if (url.indexOf('@', start) !== -1) {
+    try {
+      let hostname = new URL(url).hostname.replace('www.', '');
+      if (hostname.startsWith('[') && hostname.endsWith(']')) {
+        hostname = hostname.substring(1, hostname.length - 1);
+      }
+      return hostname;
+    } catch {
+      return url;
+    }
+  }
+
+  let end = url.length;
+  let inIpv6 = false;
+
+  for (let i = start; i < url.length; i++) {
+    const charCode = url.charCodeAt(i);
+
+    // '[' is 91, ']' is 93
+    if (charCode === 91) {
+      inIpv6 = true;
+      continue;
+    } else if (charCode === 93) {
+      inIpv6 = false;
+      continue;
+    }
+
+    // If we're inside an IPv6 bracket, ignore colons (58)
+    if (inIpv6 && charCode === 58) {
+      continue;
+    }
+
+    // '/' is 47, '\' is 92, ':' is 58, '?' is 63, '#' is 35
+    if (charCode === 47 || charCode === 92 || charCode === 58 || charCode === 63 || charCode === 35) {
+      end = i;
+      break;
+    }
+  }
+
+  let domain = url.substring(start, end);
+
+  // Strip IPv6 brackets if present
+  if (domain.startsWith('[') && domain.endsWith(']')) {
+    domain = domain.substring(1, domain.length - 1);
+  }
+  const lowerDomain = domain.toLowerCase();
+  if (lowerDomain.startsWith('www.')) {
+    return lowerDomain.substring(4);
+  }
+  return lowerDomain;
 };
 
 // Generate a hash from a string for deterministic randomization
