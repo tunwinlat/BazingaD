@@ -154,6 +154,11 @@ export async function POST(request: Request) {
     });
 
     if (!user) {
+      // Dummy compare to prevent timing attacks for user enumeration
+      // Using a valid bcrypt hash (cost 12) of a random string
+      const dummyHash = '$2a$12$00000000000000000000000000000000000000000000000000000';
+      await bcrypt.compare(password, dummyHash);
+
       recordFailedAttempt(username.toLowerCase());
       return NextResponse.json(
         { error: 'Invalid credentials' },
