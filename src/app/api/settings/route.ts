@@ -4,6 +4,8 @@ import { verifyAuth } from '@/lib/auth';
 import { settingsUpdateSchema } from '@/lib/validation';
 import bcrypt from 'bcryptjs';
 import { ZodError } from 'zod';
+import { settingsCache } from '@/lib/cache';
+
 
 const MAX_BODY_SIZE = 1024 * 1024;
 
@@ -23,6 +25,7 @@ export async function GET() {
         },
       });
     }
+
 
     return NextResponse.json({
       dashboardProtected: settings.dashboardProtected,
@@ -129,6 +132,7 @@ export async function PUT(request: Request) {
       });
     }
 
+    settingsCache.delete("dashboard_auth_settings");
     return NextResponse.json({
       dashboardProtected: settings.dashboardProtected,
       sessionDurationHours: settings.sessionDurationHours,

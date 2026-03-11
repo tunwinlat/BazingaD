@@ -1,11 +1,13 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { verifyAuth, createSession, getCookieOptions } from '@/lib/auth';
+import { settingsCache } from '@/lib/cache';
 import bcrypt from 'bcryptjs';
 import { cookies } from 'next/headers';
 import { z } from 'zod';
 
 const MAX_BODY_SIZE = 1024 * 1024;
+const CACHE_KEY = 'dashboard_auth_settings';
 
 const dashboardLoginSchema = z.object({
   password: z.string().min(1, 'Password is required'),
@@ -14,7 +16,15 @@ const dashboardLoginSchema = z.object({
 // Check if dashboard is protected
 export async function GET() {
   try {
-    const settings = await prisma.settings.findFirst();
+    let dashboardProtected = settingsCache.get<boolean>(CACHE_KEY);
+
+    if (dashboardProtected === null || dashboardProtected === undefined) {
+      const settings = await prisma.settings.findFirst({
+        select: { dashboardProtected: true }
+      });
+      dashboardProtected = settings?.dashboardProtected ?? false;
+      settingsCache.set(CACHE_KEY, dashboardProtected, 60);
+    }
     
     // Check if user has admin auth (admins always have dashboard access)
     const auth = await verifyAuth();
@@ -36,7 +46,7 @@ export async function GET() {
     }
 
     return NextResponse.json({
-      protected: settings?.dashboardProtected ?? false,
+      protected: dashboardProtected,
       hasAccess: hasAdminAccess || hasDashboardAccess,
       isAdmin: hasAdminAccess,
     });
@@ -76,16 +86,26 @@ export async function POST(request: Request) {
     const validatedData = dashboardLoginSchema.parse(body);
     const { password } = validatedData;
     
-    const settings = await prisma.settings.findFirst();
+    let dashboardProtected = settingsCache.get<boolean>(CACHE_KEY);
+
+    if (dashboardProtected === null || dashboardProtected === undefined) {
+      const dbSettings = await prisma.settings.findFirst({
+        select: { dashboardProtected: true }
+      });
+      dashboardProtected = dbSettings?.dashboardProtected ?? false;
+      settingsCache.set(CACHE_KEY, dashboardProtected, 60);
+    }
     
-    if (!settings?.dashboardProtected) {
+    if (!dashboardProtected) {
       return NextResponse.json(
         { error: 'Dashboard is not protected' },
         { status: 400 }
       );
     }
     
-    if (!settings.dashboardPassword) {
+    const settings = await prisma.settings.findFirst();
+
+    if (!settings?.dashboardPassword) {
       return NextResponse.json(
         { error: 'No password set' },
         { status: 500 }
