@@ -1,19 +1,5 @@
+import { describe, it, expect } from 'vitest';
 import { generateSessionToken } from './auth';
-
-// Mock crypto.getRandomValues for Node environment if it doesn't exist natively
-// Node 19+ has global crypto, but just in case for Jest
-if (typeof crypto === 'undefined') {
-  const crypto = require('crypto');
-  global.crypto = {
-    getRandomValues: (arr: Uint8Array) => {
-      const randomBytes = crypto.randomBytes(arr.length);
-      for (let i = 0; i < arr.length; i++) {
-        arr[i] = randomBytes[i];
-      }
-      return arr;
-    }
-  } as any;
-}
 
 describe('generateSessionToken', () => {
   it('should generate a string of length 64', () => {
