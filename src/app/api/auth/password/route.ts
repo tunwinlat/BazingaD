@@ -7,18 +7,112 @@ import { ZodError } from 'zod';
 
 const MAX_BODY_SIZE = 1024 * 1024;
 
-export async function PUT(request: Request) {
+interface ValidationResult<T> {
+  data?: T;
+  error?: NextResponse;
+}
+
+// Check content length to prevent large payloads
+function validateContentLength(request: Request): NextResponse | null {
+  const contentLength = request.headers.get('content-length');
+  if (contentLength && parseInt(contentLength) > MAX_BODY_SIZE) {
+    return NextResponse.json(
+      { error: 'Request body too large' },
+      { status: 413 }
+    );
+  }
+  return null;
+}
+
+// Extract and parse JSON body
+async function parseRequestBody(request: Request): Promise<ValidationResult<unknown>> {
   try {
-    // Check content length
-    const contentLength = request.headers.get('content-length');
-    if (contentLength && parseInt(contentLength) > MAX_BODY_SIZE) {
+    const body = await request.json();
+    return { data: body };
+  } catch {
+    return {
+      error: NextResponse.json(
+        { error: 'Invalid JSON in request body' },
+        { status: 400 }
+      )
+    };
+  }
+}
+
+// Validate new password rules and difference from current
+async function validateNewPasswordParams(newPassword: string, userPasswordHash: string): Promise<NextResponse | null> {
+  // Validate new password meets strong requirements
+  try {
+    passwordSchema.parse(newPassword);
+  } catch (passwordError) {
+    if (passwordError instanceof ZodError) {
       return NextResponse.json(
-        { error: 'Request body too large' },
-        { status: 413 }
+        {
+          error: 'New password does not meet security requirements',
+          details: passwordError.issues.map(e => e.message),
+        },
+        { status: 400 }
       );
     }
+    throw passwordError;
+  }
 
-    // Verify authentication
+  // Check that new password is different from current
+  const isSamePassword = await bcrypt.compare(newPassword, userPasswordHash);
+  if (isSamePassword) {
+    return NextResponse.json(
+      { error: 'New password must be different from current password' },
+      { status: 400 }
+    );
+  }
+
+  return null;
+}
+
+// Perform the DB updates and session management
+async function updatePasswordAndSessions(userId: string, newPassword: string, currentSessionToken: string) {
+  // Hash and save new password with higher cost
+  const hashedPassword = await bcrypt.hash(newPassword, 12);
+
+  await prisma.user.update({
+    where: { id: userId },
+    data: {
+      password: hashedPassword,
+      passwordChangedAt: new Date(),
+    },
+  });
+
+  // Delete all sessions except current to force re-login elsewhere
+  await prisma.session.deleteMany({
+    where: {
+      userId: userId,
+      token: { not: currentSessionToken },
+    },
+  });
+}
+
+// Helper to handle general Zod validation errors safely
+function handleZodError(error: unknown) {
+  if (error instanceof ZodError) {
+    return NextResponse.json(
+      {
+        error: 'Validation failed',
+        details: error.issues.map(e => ({
+          field: e.path.join('.'),
+          message: e.message,
+        })),
+      },
+      { status: 400 }
+    );
+  }
+  return null;
+}
+
+export async function PUT(request: Request) {
+  try {
+    const lengthError = validateContentLength(request);
+    if (lengthError) return lengthError;
+
     const auth = await verifyAuth();
     if (!auth) {
       return NextResponse.json(
@@ -27,16 +121,8 @@ export async function PUT(request: Request) {
       );
     }
 
-    // Parse request body
-    let body;
-    try {
-      body = await request.json();
-    } catch {
-      return NextResponse.json(
-        { error: 'Invalid JSON in request body' },
-        { status: 400 }
-      );
-    }
+    const { data: body, error: bodyError } = await parseRequestBody(request);
+    if (bodyError) return bodyError;
 
     // Validate input
     const validatedData = passwordChangeSchema.parse(body);
@@ -63,49 +149,10 @@ export async function PUT(request: Request) {
       );
     }
 
-    // Validate new password meets strong requirements
-    try {
-      passwordSchema.parse(newPassword);
-    } catch (passwordError) {
-      if (passwordError instanceof ZodError) {
-        return NextResponse.json(
-          { 
-            error: 'New password does not meet security requirements',
-            details: passwordError.issues.map(e => e.message),
-          },
-          { status: 400 }
-        );
-      }
-      throw passwordError;
-    }
+    const newPasswordError = await validateNewPasswordParams(newPassword, user.password);
+    if (newPasswordError) return newPasswordError;
 
-    // Check that new password is different from current
-    const isSamePassword = await bcrypt.compare(newPassword, user.password);
-    if (isSamePassword) {
-      return NextResponse.json(
-        { error: 'New password must be different from current password' },
-        { status: 400 }
-      );
-    }
-
-    // Hash and save new password with higher cost
-    const hashedPassword = await bcrypt.hash(newPassword, 12);
-    
-    await prisma.user.update({
-      where: { id: user.id },
-      data: { 
-        password: hashedPassword,
-        passwordChangedAt: new Date(),
-      },
-    });
-
-    // Delete all sessions except current to force re-login elsewhere
-    await prisma.session.deleteMany({
-      where: {
-        userId: user.id,
-        token: { not: auth.sessionToken },
-      },
-    });
+    await updatePasswordAndSessions(user.id, newPassword, auth.sessionToken);
 
     const response = NextResponse.json({ 
       success: true, 
@@ -120,18 +167,8 @@ export async function PUT(request: Request) {
 
     return response;
   } catch (error) {
-    if (error instanceof ZodError) {
-      return NextResponse.json(
-        { 
-          error: 'Validation failed',
-          details: error.issues.map(e => ({
-            field: e.path.join('.'),
-            message: e.message,
-          })),
-        },
-        { status: 400 }
-      );
-    }
+    const zodErrorResponse = handleZodError(error);
+    if (zodErrorResponse) return zodErrorResponse;
 
     console.error('Password change error:', error);
     return NextResponse.json(
