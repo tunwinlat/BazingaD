@@ -27,8 +27,12 @@ export default function Weather({ compact = false }: WeatherProps) {
   useEffect(() => {
     const fetchWeather = async () => {
       try {
-        // First check if weather is enabled
-        const settingsRes = await fetch('/api/settings');
+        // Run both requests concurrently to avoid a waterfall
+        const [settingsRes, weatherRes] = await Promise.all([
+          fetch('/api/settings'),
+          fetch('/api/weather')
+        ]);
+
         if (settingsRes.ok) {
           const settings = await settingsRes.json();
           if (!settings.weatherEnabled) {
@@ -39,15 +43,13 @@ export default function Weather({ compact = false }: WeatherProps) {
           setEnabled(true);
         }
 
-        // Fetch weather data
-        const response = await fetch('/api/weather');
-        if (response.ok) {
-          const data = await response.json();
+        if (weatherRes.ok) {
+          const data = await weatherRes.json();
           setWeather(data);
         } else {
           setError('Failed to load weather');
         }
-      } catch (err) {
+      } catch {
         setError('Failed to load weather');
       } finally {
         setLoading(false);
