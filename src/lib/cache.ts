@@ -4,7 +4,7 @@ interface CacheEntry<T> {
   expiresAt: number;
 }
 
-export class MemoryCache {
+class MemoryCache {
   private cache = new Map<string, CacheEntry<any>>();
   private readonly defaultTTL: number;
 

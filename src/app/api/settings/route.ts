@@ -4,6 +4,7 @@ import { verifyAuth } from '@/lib/auth';
 import { settingsUpdateSchema, SettingsUpdateInput } from '@/lib/validation';
 import bcrypt from 'bcryptjs';
 import { ZodError } from 'zod';
+import { settingsCache } from '@/lib/cache';
 
 const MAX_BODY_SIZE = 1024 * 1024;
 
@@ -136,6 +137,9 @@ export async function PUT(request: Request) {
     if (!validatedData) throw new Error('Validation failed without error response');
 
     const settings = await updateOrCreateSettings(validatedData);
+
+    // Clear settings cache after update
+    settingsCache.delete("dashboard_auth_settings");
 
     return NextResponse.json({
       dashboardProtected: settings.dashboardProtected,
