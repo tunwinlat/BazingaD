@@ -30,6 +30,13 @@ const rateLimiters = {
     points: 30,
     duration: 60, // 1 minute
   }),
+
+  // Geocode: 20 per minute - prevent abuse of external Open-Meteo API
+  geocode: new RateLimiterMemory({
+    keyPrefix: 'geocode',
+    points: 20,
+    duration: 60, // 1 minute
+  }),
 };
 
 export type RateLimitType = keyof typeof rateLimiters;

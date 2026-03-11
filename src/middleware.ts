@@ -90,7 +90,7 @@ export async function middleware(request: NextRequest) {
   
   // Apply rate limiting to API routes
   if (pathname.startsWith('/api/')) {
-    let rateLimitType: 'api' | 'login' | 'sensitive' | 'health' = 'api';
+    let rateLimitType: 'api' | 'login' | 'sensitive' | 'health' | 'geocode' = 'api';
     
     if (pathname.includes('/auth/login')) {
       rateLimitType = 'login';
@@ -101,6 +101,8 @@ export async function middleware(request: NextRequest) {
       rateLimitType = 'sensitive';
     } else if (pathname.includes('/health')) {
       rateLimitType = 'health';
+    } else if (pathname.startsWith('/api/geocode')) {
+      rateLimitType = 'geocode' as any;
     }
     
     const rateLimitResponse = await rateLimitMiddleware(request, rateLimitType);
@@ -158,6 +160,7 @@ export const config = {
     '/api/settings/:path*',
     '/api/weather/:path*',
     '/api/health/:path*',
+    '/api/geocode/:path*',
     '/((?!_next/static|_next/image|favicon.ico|public|api/auth).*)',
   ],
 };

@@ -32,11 +32,27 @@ interface OpenMeteoGeocodeResponse {
 export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url);
-    const query = searchParams.get('q');
+    let query = searchParams.get('q');
 
     if (!query || query.trim().length < 2) {
       return NextResponse.json(
         { error: 'Query must be at least 2 characters' },
+        { status: 400 }
+      );
+    }
+
+    // Sanitize query to prevent abuse
+    // Strip control characters, allow unicode alphanumeric, spaces, hyphens, commas, apostrophes
+    query = query.trim().replace(/[^\p{L}\p{N}\s\-,']/gu, '');
+
+    // Enforce max length of 100 characters
+    if (query.length > 100) {
+      query = query.substring(0, 100);
+    }
+
+    if (query.length < 2) {
+      return NextResponse.json(
+        { error: 'Query contains invalid characters after sanitization' },
         { status: 400 }
       );
     }
