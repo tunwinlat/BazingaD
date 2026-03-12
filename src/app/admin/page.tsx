@@ -930,6 +930,7 @@ export default function AdminPage() {
                         <button
                           onClick={() => { setEditingCategory(cat); setShowCategoryForm(true); }}
                           className="p-2 rounded-lg mr-2 transition-colors hover:bg-white/10"
+                          aria-label="Edit category"
                         >
                           <Edit className="w-4 h-4" />
                         </button>
@@ -937,6 +938,7 @@ export default function AdminPage() {
                           onClick={() => handleDeleteCategory(cat.id)}
                           className="p-2 rounded-lg transition-colors hover:bg-red-500/20"
                           style={{ color: '#f87171' }}
+                          aria-label="Delete category"
                         >
                           <Trash2 className="w-4 h-4" />
                         </button>
@@ -1004,6 +1006,7 @@ export default function AdminPage() {
                             onClick={() => handleCheckHealth(block.id)}
                             className="p-2 rounded-lg mr-2 transition-colors hover:bg-white/10"
                             title="Check health"
+                            aria-label="Check health"
                           >
                             <RefreshCw className="w-4 h-4" />
                           </button>
@@ -1011,6 +1014,7 @@ export default function AdminPage() {
                         <button
                           onClick={() => { setEditingBlock(block); setShowBlockForm(true); }}
                           className="p-2 rounded-lg mr-2 transition-colors hover:bg-white/10"
+                          aria-label="Edit block"
                         >
                           <Edit className="w-4 h-4" />
                         </button>
@@ -1018,6 +1022,7 @@ export default function AdminPage() {
                           onClick={() => handleDeleteBlock(block.id)}
                           className="p-2 rounded-lg transition-colors hover:bg-red-500/20"
                           style={{ color: '#f87171' }}
+                          aria-label="Delete block"
                         >
                           <Trash2 className="w-4 h-4" />
                         </button>
@@ -1800,7 +1805,7 @@ export default function AdminPage() {
               <h3 className="text-xl font-semibold">
                 {editingCategory ? 'Edit Category' : 'Add Category'}
               </h3>
-              <button onClick={closeCategoryForm} className="p-1 hover:bg-white/10 rounded-lg">
+              <button onClick={closeCategoryForm} className="p-1 hover:bg-white/10 rounded-lg" aria-label="Close modal">
                 <X className="w-5 h-5" />
               </button>
             </div>
@@ -1885,7 +1890,7 @@ export default function AdminPage() {
               <h3 className="text-xl font-semibold">
                 {editingBlock ? 'Edit Block' : 'Add Block'}
               </h3>
-              <button onClick={closeBlockForm} className="p-1 hover:bg-white/10 rounded-lg">
+              <button onClick={closeBlockForm} className="p-1 hover:bg-white/10 rounded-lg" aria-label="Close modal">
                 <X className="w-5 h-5" />
               </button>
             </div>
@@ -2039,7 +2044,7 @@ export default function AdminPage() {
           <div className="w-full max-w-md rounded-2xl p-6 max-h-[90vh] overflow-y-auto" style={{ backgroundColor: '#1a1a2e', border: '1px solid rgba(255,255,255,0.1)' }}>
             <div className="flex justify-between items-center mb-6">
               <h3 className="text-xl font-semibold">Setup Two-Factor Authentication</h3>
-              <button onClick={() => { setShowTOTPSetup(false); setTotpSetupData(null); }} className="p-1 hover:bg-white/10 rounded-lg">
+              <button onClick={() => { setShowTOTPSetup(false); setTotpSetupData(null); }} className="p-1 hover:bg-white/10 rounded-lg" aria-label="Close modal">
                 <X className="w-5 h-5" />
               </button>
             </div>
@@ -2064,6 +2069,7 @@ export default function AdminPage() {
                     onClick={() => copyToClipboard(totpSetupData.secret, 'secret')}
                     className="p-2 rounded-lg transition-colors hover:bg-white/10"
                     style={{ backgroundColor: 'rgba(255,255,255,0.05)' }}
+                    aria-label="Copy secret"
                   >
                     {copiedSecret ? <Check className="w-5 h-5 text-emerald-400" /> : <Copy className="w-5 h-5" />}
                   </button>
@@ -2085,6 +2091,7 @@ export default function AdminPage() {
                     onClick={() => copyToClipboard(totpSetupData.recoveryCode, 'recovery')}
                     className="p-2 rounded-lg transition-colors"
                     style={{ backgroundColor: 'rgba(245, 158, 11, 0.2)' }}
+                    aria-label="Copy recovery code"
                   >
                     {copiedRecovery ? <Check className="w-5 h-5" /> : <Copy className="w-5 h-5" />}
                   </button>
@@ -2134,7 +2141,7 @@ export default function AdminPage() {
           <div className="w-full max-w-md rounded-2xl p-6" style={{ backgroundColor: '#1a1a2e', border: '1px solid rgba(255,255,255,0.1)' }}>
             <div className="flex justify-between items-center mb-6">
               <h3 className="text-xl font-semibold text-red-400">Disable Two-Factor Authentication</h3>
-              <button onClick={() => { setShowDisableTOTP(false); setDisableTOTPForm({ password: '', code: '' }); }} className="p-1 hover:bg-white/10 rounded-lg">
+              <button onClick={() => { setShowDisableTOTP(false); setDisableTOTPForm({ password: '', code: '' }); }} className="p-1 hover:bg-white/10 rounded-lg" aria-label="Close modal">
                 <X className="w-5 h-5" />
               </button>
             </div>
