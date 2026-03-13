@@ -166,7 +166,7 @@ export function getCookieOptions(maxAgeSeconds?: number) {
   return {
     httpOnly: true,
     secure: isProduction && !isDocker, // Only secure in production if not in Docker
-    sameSite: 'lax' as const, // Use lax to allow redirects to work
+    sameSite: 'strict' as const, // Strict for maximum CSRF protection
     path: '/',
     maxAge: maxAgeSeconds ?? SESSION_DURATION_SECONDS,
   };

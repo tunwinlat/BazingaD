@@ -681,7 +681,7 @@ export default function AdminPage() {
       fetchData();
     } catch (error) {
       console.error('Failed to save category:', error);
-      toast.error(error instanceof Error ? error.message : 'Failed to save category');
+      toast.error('Failed to save category. Please try again.');
     } finally {
       setIsSavingCategory(false);
     }
@@ -715,7 +715,7 @@ export default function AdminPage() {
       fetchData();
     } catch (error) {
       console.error('Failed to save block:', error);
-      toast.error(error instanceof Error ? error.message : 'Failed to save block');
+      toast.error('Failed to save block. Please try again.');
     } finally {
       setIsSavingBlock(false);
     }
@@ -736,7 +736,7 @@ export default function AdminPage() {
       fetchData();
     } catch (error) {
       console.error('Failed to delete category:', error);
-      toast.error(error instanceof Error ? error.message : 'Failed to delete category');
+      toast.error('Failed to delete category. Please try again.');
     } finally {
       setIsDeletingCategory(null);
     }
@@ -757,7 +757,7 @@ export default function AdminPage() {
       fetchData();
     } catch (error) {
       console.error('Failed to delete block:', error);
-      toast.error(error instanceof Error ? error.message : 'Failed to delete block');
+      toast.error('Failed to delete block. Please try again.');
     } finally {
       setIsDeletingBlock(null);
     }
