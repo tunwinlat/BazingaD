@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef, useMemo } from 'react';
-import { Search, ExternalLink, Globe } from 'lucide-react';
+import { Search, ExternalLink, Globe, X } from 'lucide-react';
 import type { Category } from '@/types';
 
 interface UnifiedSearchProps {
@@ -142,6 +142,7 @@ export default function UnifiedSearch({ categories }: UnifiedSearchProps) {
           onChange={(e) => setQuery(e.target.value)}
           onFocus={() => setIsFocused(true)}
           placeholder="Search your blocks or the web..."
+          aria-label="Search blocks or the web"
           autoComplete="off"
           className="flex-1 bg-transparent border-none outline-none text-white placeholder-white/50 px-3 py-2 text-base"
           style={{
@@ -149,6 +150,18 @@ export default function UnifiedSearch({ categories }: UnifiedSearchProps) {
             boxShadow: 'none',
           }}
         />
+        {query.trim() && (
+          <button
+            onClick={() => {
+              setQuery('');
+              inputRef.current?.focus();
+            }}
+            aria-label="Clear search"
+            className="p-1 rounded-full hover:bg-white/10 transition-colors mr-2"
+          >
+            <X className="w-4 h-4 text-white/50" />
+          </button>
+        )}
         <kbd
           className="hidden sm:block px-2 py-1 rounded text-xs text-white/40"
           style={{ backgroundColor: 'rgba(255, 255, 255, 0.1)' }}
