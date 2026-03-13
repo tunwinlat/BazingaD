@@ -217,7 +217,7 @@ export async function POST(request: Request) {
 
     console.error('Login error:', error);
     return NextResponse.json(
-      { error: 'Login failed', details: error instanceof Error ? error.message : 'Unknown error' },
+      { error: 'Login failed', details: 'An unexpected error occurred' },
       { status: 500 }
     );
   }

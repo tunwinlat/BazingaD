@@ -51,7 +51,7 @@ export async function PUT(request: Request) {
       );
     }
 
-    let existingSettings = await prisma.settings.findFirst();
+    const existingSettings = await prisma.settings.findFirst();
     
     if (existingSettings) {
       await prisma.settings.update({
