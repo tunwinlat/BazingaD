@@ -26,6 +26,7 @@ export default function KeyboardShortcutsModal({ onClose }: KeyboardShortcutsMod
           <h2 className="text-lg font-semibold">Keyboard Shortcuts</h2>
           <button
             onClick={onClose}
+            aria-label="Close keyboard shortcuts"
             className="p-1.5 rounded-lg hover:bg-white/10 transition-colors"
           >
             <X className="w-5 h-5" />
