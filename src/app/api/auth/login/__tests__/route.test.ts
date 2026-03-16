@@ -57,7 +57,7 @@ describe('Login API', () => {
     password: 'password123',
   };
 
-  function createRequest(body: any = validLoginData, headers: Record<string, string> = {}) {
+  function createRequest(body: unknown = validLoginData, headers: Record<string, string> = {}) {
     const init: RequestInit = {
       method: 'POST',
       headers: new Headers({
@@ -122,7 +122,7 @@ describe('Login API', () => {
         id: '1',
         username: 'testuser',
         password: 'hashedpassword',
-      } as any);
+      } as unknown as ReturnType<typeof prisma.user.findUnique>);
       vi.mocked(bcrypt.compare).mockResolvedValue(false);
 
       const request = createRequest(validLoginData);
@@ -140,7 +140,7 @@ describe('Login API', () => {
         username: 'testuser',
         password: 'hashedpassword',
         totpEnabled: false,
-      } as any);
+      } as unknown as ReturnType<typeof prisma.user.findUnique>);
       vi.mocked(bcrypt.compare).mockResolvedValue(true);
       vi.mocked(createSession).mockResolvedValue('session-token-123');
       vi.mocked(settingsCache.get).mockReturnValue({ sessionDurationHours: 24 });
@@ -169,7 +169,7 @@ describe('Login API', () => {
     };
 
     it('returns 202 if TOTP is required but not provided', async () => {
-      vi.mocked(prisma.user.findUnique).mockResolvedValue(mockUserWithTOTP as any);
+      vi.mocked(prisma.user.findUnique).mockResolvedValue(mockUserWithTOTP as unknown as ReturnType<typeof prisma.user.findUnique>);
       vi.mocked(bcrypt.compare).mockResolvedValue(true);
 
       const request = createRequest({ username: 'testuser_totp', password: 'password123' });
@@ -181,11 +181,11 @@ describe('Login API', () => {
     });
 
     it('returns 401 for invalid TOTP code', async () => {
-      vi.mocked(prisma.user.findUnique).mockResolvedValue(mockUserWithTOTP as any);
+      vi.mocked(prisma.user.findUnique).mockResolvedValue(mockUserWithTOTP as unknown as ReturnType<typeof prisma.user.findUnique>);
       vi.mocked(bcrypt.compare).mockResolvedValue(true);
 
       const mockValidate = vi.fn().mockReturnValue(null); // null means invalid
-      vi.mocked(OTPAuth.TOTP).mockImplementation(function() { return { validate: mockValidate } as any; });
+      vi.mocked(OTPAuth.TOTP).mockImplementation(function() { return { validate: mockValidate } as unknown as OTPAuth.TOTP; });
 
       const request = createRequest({ username: 'testuser_totp', password: 'password123', totpToken: '123456' });
       const response = await POST(request);
@@ -197,11 +197,11 @@ describe('Login API', () => {
     });
 
     it('successfully logs in with valid TOTP', async () => {
-      vi.mocked(prisma.user.findUnique).mockResolvedValue(mockUserWithTOTP as any);
+      vi.mocked(prisma.user.findUnique).mockResolvedValue(mockUserWithTOTP as unknown as ReturnType<typeof prisma.user.findUnique>);
       vi.mocked(bcrypt.compare).mockResolvedValue(true);
 
       const mockValidate = vi.fn().mockReturnValue(0); // 0 or any non-null means valid
-      vi.mocked(OTPAuth.TOTP).mockImplementation(function() { return { validate: mockValidate } as any; });
+      vi.mocked(OTPAuth.TOTP).mockImplementation(function() { return { validate: mockValidate } as unknown as OTPAuth.TOTP; });
       vi.mocked(createSession).mockResolvedValue('session-token-totp');
       vi.mocked(settingsCache.get).mockReturnValue({ sessionDurationHours: 24 });
 
@@ -245,7 +245,7 @@ describe('Login API', () => {
         username: 'lockoutuser2',
         password: 'hashedpassword',
         totpEnabled: false,
-      } as any);
+      } as unknown as ReturnType<typeof prisma.user.findUnique>);
       vi.mocked(bcrypt.compare).mockResolvedValue(true);
       vi.mocked(createSession).mockResolvedValue('session');
       vi.mocked(settingsCache.get).mockReturnValue({ sessionDurationHours: 24 });
@@ -281,7 +281,7 @@ describe('Login API', () => {
 
       expect(response.status).toBe(500);
       expect(data.error).toBe('Login failed');
-      expect(data.details).toBe('Database explosion');
+      expect(data.details).toBe('An unexpected error occurred. Please try again later.');
     });
   });
 });
