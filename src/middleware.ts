@@ -92,7 +92,10 @@ export async function middleware(request: NextRequest) {
   if (pathname.startsWith('/api/')) {
     let rateLimitType: 'api' | 'login' | 'sensitive' | 'health' | 'geocode' = 'api';
     
-    if (pathname.includes('/auth/login')) {
+    if (
+      pathname.includes('/auth/login') ||
+      pathname.includes('/auth/dashboard')
+    ) {
       rateLimitType = 'login';
     } else if (
       pathname.includes('/auth/password') ||

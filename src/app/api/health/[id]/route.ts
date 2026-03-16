@@ -52,7 +52,7 @@ export async function GET(
       error,
       lastChecked: new Date(),
     });
-  } catch (error) {
+  } catch {
     return NextResponse.json({ error: 'Failed to check health' }, { status: 500 });
   }
 }
