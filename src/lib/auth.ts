@@ -27,30 +27,30 @@ export async function verifyAuth(): Promise<{ userId: string; sessionToken: stri
   try {
     const cookieStore = await cookies();
     const token = cookieStore.get('auth-token')?.value;
-    
-    if (!token) return null;
-    
+
+    if (!token || token.startsWith('dash_')) return null;
+
     // Find session with user
     const session = await prisma.session.findUnique({
       where: { token },
       include: { user: true },
     });
-    
+
     if (!session) return null;
-    
+
     // Check if session has expired
     if (new Date() > session.expiresAt) {
       // Delete expired session
       await prisma.session.delete({ where: { id: session.id } });
       return null;
     }
-    
+
     // Check if password was changed after session creation
     if (session.user.passwordChangedAt > session.createdAt) {
       await prisma.session.delete({ where: { id: session.id } });
       return null;
     }
-    
+
     return { userId: session.userId, sessionToken: token };
   } catch (error) {
     console.error('Auth verification error:', error);
@@ -64,29 +64,29 @@ export async function verifyAuth(): Promise<{ userId: string; sessionToken: stri
 export async function verifyAuthFromRequest(request: NextRequest): Promise<{ userId: string; sessionToken: string } | null> {
   try {
     const token = request.cookies.get('auth-token')?.value;
-    
-    if (!token) return null;
-    
+
+    if (!token || token.startsWith('dash_')) return null;
+
     // Find session with user
     const session = await prisma.session.findUnique({
       where: { token },
       include: { user: true },
     });
-    
+
     if (!session) return null;
-    
+
     // Check if session has expired
     if (new Date() > session.expiresAt) {
       await prisma.session.delete({ where: { id: session.id } });
       return null;
     }
-    
+
     // Check if password was changed after session creation
     if (session.user.passwordChangedAt > session.createdAt) {
       await prisma.session.delete({ where: { id: session.id } });
       return null;
     }
-    
+
     return { userId: session.userId, sessionToken: token };
   } catch (error) {
     console.error('Auth verification error:', error);
@@ -101,16 +101,16 @@ export async function verifyAuthFromRequest(request: NextRequest): Promise<{ use
  */
 export async function createSession(userId: string, durationHours?: number): Promise<string> {
   const token = generateSessionToken();
-  
+
   // Use provided duration or default, clamped to maximum
   const effectiveDurationHours = Math.min(
     durationHours ?? SESSION_DURATION_HOURS,
     MAX_SESSION_DURATION_HOURS
   );
   const durationMs = effectiveDurationHours * 60 * 60 * 1000;
-  
+
   const expiresAt = new Date(Date.now() + durationMs);
-  
+
   await prisma.session.create({
     data: {
       token,
@@ -118,7 +118,7 @@ export async function createSession(userId: string, durationHours?: number): Pro
       expiresAt,
     },
   });
-  
+
   return token;
 }
 
@@ -145,7 +145,7 @@ export async function deleteAllUserSessions(userId: string): Promise<void> {
  */
 export async function extendSession(token: string): Promise<void> {
   const newExpiresAt = new Date(Date.now() + SESSION_DURATION_MS);
-  
+
   await prisma.session.update({
     where: { token },
     data: { expiresAt: newExpiresAt },
@@ -158,11 +158,11 @@ export async function extendSession(token: string): Promise<void> {
  */
 export function getCookieOptions(maxAgeSeconds?: number) {
   const isProduction = process.env.NODE_ENV === 'production';
-  
+
   // Check if we're running in a container without HTTPS
   // In Docker, we typically don't have HTTPS, so we need to allow non-secure cookies
   const isDocker = process.env.DOCKER_ENV === 'true' || !process.env.VERCEL;
-  
+
   return {
     httpOnly: true,
     secure: isProduction && !isDocker, // Only secure in production if not in Docker
