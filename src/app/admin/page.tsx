@@ -116,13 +116,24 @@ export default function AdminPage() {
   const [isDeletingBlock, setIsDeletingBlock] = useState<string | null>(null);
 
   useEffect(() => {
-    fetchData();
-    fetchAuthStatus();
-    fetchSettings();
-    fetchSessions();
-    fetchGeneralSettings();
-    fetchThemes();
-    fetchTrafficSettings();
+    const loadData = async () => {
+      try {
+        await Promise.all([
+          fetchData(),
+          fetchAuthStatus(),
+          fetchSettings(),
+          fetchSessions(),
+          fetchGeneralSettings(),
+          fetchThemes(),
+          fetchTrafficSettings()
+        ]);
+      } catch (error) {
+        console.error('Failed to load admin data:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    loadData();
   }, []);
 
   useEffect(() => {
@@ -179,8 +190,6 @@ export default function AdminPage() {
       setBlocks(blks);
     } catch (error) {
       console.error('Failed to fetch data:', error);
-    } finally {
-      setLoading(false);
     }
   };
 
