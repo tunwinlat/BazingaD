@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef, useMemo } from 'react';
-import { Search, ExternalLink, Globe } from 'lucide-react';
+import { Search, ExternalLink, Globe, X } from 'lucide-react';
 import type { Category } from '@/types';
 
 interface UnifiedSearchProps {
@@ -150,6 +150,20 @@ export default function UnifiedSearch({ categories }: UnifiedSearchProps) {
             boxShadow: 'none',
           }}
         />
+        {query && (
+          <button
+            type="button"
+            onClick={() => {
+              setQuery('');
+              inputRef.current?.focus();
+            }}
+            className="p-1 mr-2 rounded-full text-white/40 hover:text-white hover:bg-white/10 transition-colors"
+            aria-label="Clear search"
+            title="Clear search"
+          >
+            <X className="w-4 h-4" />
+          </button>
+        )}
         <kbd
           className="hidden sm:block px-2 py-1 rounded text-xs text-white/40"
           style={{ backgroundColor: 'rgba(255, 255, 255, 0.1)' }}
