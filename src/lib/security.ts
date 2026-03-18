@@ -33,9 +33,8 @@ export function isSafeUrl(url: string | null | undefined): boolean {
       return false;
     }
 
-    // Check for IPv4 addresses
-    const ipv4Regex = /^(\d{1,3}\.){3}\d{1,3}$/;
-    if (ipv4Regex.test(hostname)) {
+    // Check for IPv4 addresses - be more inclusive to catch edge cases in isPrivateIPv4
+    if (/^(\d{1,3}\.){1,3}\d{1,3}$/.test(hostname) || /^(\d{1,3}\.){3}[a-z0-9]+$/.test(hostname)) {
       return !isPrivateIPv4(hostname);
     }
 
