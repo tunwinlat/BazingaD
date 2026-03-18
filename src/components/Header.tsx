@@ -34,9 +34,10 @@ export default function Header({ categories }: HeaderProps) {
       <div className="absolute top-0 right-0">
         <Link
           href="/admin"
-          className="flex items-center gap-2 px-3 py-2 rounded-lg transition-colors hover:bg-white/10"
+          className="flex items-center gap-2 px-3 py-2 rounded-lg transition-colors hover:bg-white/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
           style={{ backgroundColor: 'var(--theme-surface)', border: '1px solid var(--theme-surface-border)' }}
           title="Admin Settings"
+          aria-label="Open Admin Settings"
         >
           <Settings className="w-4 h-4" style={{ color: 'var(--theme-text-muted)' }} />
           <span className="text-sm hidden sm:inline" style={{ color: 'var(--theme-text-muted)' }}>Admin</span>
