@@ -516,7 +516,7 @@ export default function AdminPage() {
       } else {
         setLocationError(data.error || 'No locations found');
       }
-    } catch (error) {
+    } catch {
       setLocationError('Failed to search location');
     } finally {
       setLocationSearchLoading(false);
@@ -613,7 +613,7 @@ export default function AdminPage() {
           const errorData = await response.json();
           errorMessage = errorData.error || errorMessage;
           console.error('Save error:', errorData);
-        } catch (e) {
+        } catch {
           // Response wasn't JSON
           const text = await response.text();
           console.error('Save error (non-JSON):', text);
@@ -769,7 +769,7 @@ export default function AdminPage() {
       const data = await res.json();
       toast.success(`Status: ${data.status}${data.responseTime ? ` (${data.responseTime}ms)` : ''}`);
       fetchData();
-    } catch (error) {
+    } catch {
       toast.error('Health check failed');
     }
   };

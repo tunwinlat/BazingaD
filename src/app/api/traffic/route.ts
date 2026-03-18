@@ -146,7 +146,17 @@ function buildCachedResponse(cache: any, cacheAgeMinutes: number, apiError?: Err
   };
 
   if (apiError) {
-    response.error = `Using stale cache (${cacheAgeMinutes} min old). ${apiError.message}`;
+    let safeMessage = 'Failed to fetch traffic data';
+    if (apiError.message && (
+      apiError.message.startsWith('API_KEY_INVALID:') ||
+      apiError.message.startsWith('RATE_LIMIT_EXCEEDED:') ||
+      apiError.message.startsWith('ADDRESS_NOT_FOUND:') ||
+      apiError.message.startsWith('API_ERROR:') ||
+      apiError.message.startsWith('NO_ROUTE_FOUND:')
+    )) {
+      safeMessage = apiError.message;
+    }
+    response.error = `Using stale cache (${cacheAgeMinutes} min old). ${safeMessage}`;
   }
 
   return response;
@@ -231,7 +241,17 @@ export async function GET() {
       }
 
       // Parse error code from message
-      const errorMessage = apiError instanceof Error ? apiError.message : 'Unknown error';
+      let errorMessage = 'Failed to fetch traffic data';
+      if (apiError instanceof Error && (
+        apiError.message.startsWith('API_KEY_INVALID:') ||
+        apiError.message.startsWith('RATE_LIMIT_EXCEEDED:') ||
+        apiError.message.startsWith('ADDRESS_NOT_FOUND:') ||
+        apiError.message.startsWith('API_ERROR:') ||
+        apiError.message.startsWith('NO_ROUTE_FOUND:')
+      )) {
+        errorMessage = apiError.message;
+      }
+
       const errorCode = errorMessage.includes(':')
         ? errorMessage.split(':')[0]
         : 'UNKNOWN_ERROR';
