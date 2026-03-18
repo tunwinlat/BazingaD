@@ -1,6 +1,5 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { verifyAuth } from '@/lib/auth';
 
 // Weather condition codes from Open-Meteo
 const weatherCodes: Record<number, { label: string; icon: string }> = {
