@@ -31,9 +31,9 @@ export async function GET(
         signal: AbortSignal.timeout(10000),
       });
       status = response.ok ? 'online' : 'offline';
-    } catch (e) {
+    } catch {
       status = 'offline';
-      error = e instanceof Error ? e.message : 'Unknown error';
+      error = 'Health check failed';
     }
 
     const responseTime = Date.now() - startTime;

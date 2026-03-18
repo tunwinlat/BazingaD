@@ -164,7 +164,7 @@ export default function DashboardLoginPage() {
       } else {
         setError(data.error || 'Invalid password');
       }
-    } catch (error) {
+    } catch {
       setError('An error occurred during login');
     } finally {
       setSubmitting(false);
