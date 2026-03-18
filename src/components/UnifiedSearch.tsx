@@ -40,11 +40,6 @@ export default function UnifiedSearch({ categories }: UnifiedSearchProps) {
   // Total results including Google search option
   const totalResults = filteredBlocks.length + (query.trim() ? 1 : 0);
 
-  // Reset selected index when results change
-  useEffect(() => {
-    // We intentionally reset selected index when query or results change
-    setSelectedIndex(0);
-  }, [filteredBlocks.length, query]);
 
   // Keyboard shortcuts
   useEffect(() => {
@@ -139,7 +134,10 @@ export default function UnifiedSearch({ categories }: UnifiedSearchProps) {
           ref={inputRef}
           type="text"
           value={query}
-          onChange={(e) => setQuery(e.target.value)}
+          onChange={(e) => {
+            setQuery(e.target.value);
+            setSelectedIndex(0); // Reset selection when user types
+          }}
           onFocus={() => setIsFocused(true)}
           placeholder="Search your blocks or the web..."
           aria-label="Search your blocks or the web"
@@ -153,6 +151,7 @@ export default function UnifiedSearch({ categories }: UnifiedSearchProps) {
         <kbd
           className="hidden sm:block px-2 py-1 rounded text-xs text-white/40"
           style={{ backgroundColor: 'rgba(255, 255, 255, 0.1)' }}
+          aria-hidden="true"
         >
           /
         </kbd>
