@@ -4,11 +4,12 @@ import { verifyAuth } from '@/lib/auth';
 
 export async function GET() {
   try {
+    const auth = await verifyAuth();
     const settings = await prisma.settings.findFirst();
     
     return NextResponse.json({
       enabled: settings?.trafficEnabled ?? false,
-      apiKey: settings?.trafficApiKey ?? '',
+      apiKey: auth ? (settings?.trafficApiKey ?? '') : '', // 🛡️ Sentinel: Only expose API key to authenticated users
       homeAddress: settings?.trafficHomeAddress ?? '',
       workAddress: settings?.trafficWorkAddress ?? '',
       travelMode: settings?.trafficTravelMode ?? 'DRIVE',
