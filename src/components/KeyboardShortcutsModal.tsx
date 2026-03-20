@@ -1,5 +1,6 @@
 'use client';
 
+import { useEffect } from 'react';
 import { X, ArrowUp, ArrowDown, CornerDownLeft } from 'lucide-react';
 
 interface KeyboardShortcutsModalProps {
@@ -7,6 +8,17 @@ interface KeyboardShortcutsModalProps {
 }
 
 export default function KeyboardShortcutsModal({ onClose }: KeyboardShortcutsModalProps) {
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        onClose();
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [onClose]);
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       <div
