@@ -16,7 +16,8 @@ export default function BlockCard({ block }: BlockCardProps) {
       target="_blank"
       rel="noopener noreferrer"
       title={block.description || block.title}
-      className="group flex flex-col items-center text-center p-6 rounded-2xl transition-all duration-300 hover:-translate-y-1 relative overflow-hidden"
+      aria-label={`${block.title}${block.description ? ` - ${block.description}` : ''}`}
+      className="group flex flex-col items-center text-center p-6 rounded-2xl transition-all duration-300 hover:-translate-y-1 relative overflow-hidden focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
       style={{
         backgroundColor: 'var(--theme-surface)',
         border: '1px solid var(--theme-surface-border)',
