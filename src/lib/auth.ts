@@ -28,7 +28,7 @@ export async function verifyAuth(): Promise<{ userId: string; sessionToken: stri
     const cookieStore = await cookies();
     const token = cookieStore.get('auth-token')?.value;
     
-    if (!token) return null;
+    if (!token || token.startsWith('dash_')) return null;
     
     // Find session with user
     const session = await prisma.session.findUnique({
@@ -65,7 +65,7 @@ export async function verifyAuthFromRequest(request: NextRequest): Promise<{ use
   try {
     const token = request.cookies.get('auth-token')?.value;
     
-    if (!token) return null;
+    if (!token || token.startsWith('dash_')) return null;
     
     // Find session with user
     const session = await prisma.session.findUnique({
@@ -99,8 +99,8 @@ export async function verifyAuthFromRequest(request: NextRequest): Promise<{ use
  * @param userId - The user ID to create the session for
  * @param durationHours - Optional custom session duration in hours (defaults to 24 hours, max 12 months)
  */
-export async function createSession(userId: string, durationHours?: number): Promise<string> {
-  const token = generateSessionToken();
+export async function createSession(userId: string, durationHours?: number, prefix: string = ''): Promise<string> {
+  const token = prefix + generateSessionToken();
   
   // Use provided duration or default, clamped to maximum
   const effectiveDurationHours = Math.min(

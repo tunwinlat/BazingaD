@@ -134,7 +134,7 @@ export async function POST(request: Request) {
     const sessionDurationHours = settings.sessionDurationHours || 24;
     
     // Create session using auth utility with the configured duration
-    const token = await createSession(user.id, sessionDurationHours);
+    const token = await createSession(user.id, sessionDurationHours, 'dash_');
     
     const response = NextResponse.json({ success: true });
     
