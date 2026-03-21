@@ -10,8 +10,8 @@ export async function GET() {
     return NextResponse.json({
       enabled: settings?.trafficEnabled ?? false,
       apiKey: auth ? (settings?.trafficApiKey ?? '') : '', // 🛡️ Sentinel: Only expose API key to authenticated users
-      homeAddress: settings?.trafficHomeAddress ?? '',
-      workAddress: settings?.trafficWorkAddress ?? '',
+      homeAddress: auth ? (settings?.trafficHomeAddress ?? '') : '', // 🛡️ Sentinel: Only expose PII to authenticated users
+      workAddress: auth ? (settings?.trafficWorkAddress ?? '') : '', // 🛡️ Sentinel: Only expose PII to authenticated users
       travelMode: settings?.trafficTravelMode ?? 'DRIVE',
       units: settings?.trafficUnits ?? 'metric',
     });
@@ -52,7 +52,7 @@ export async function PUT(request: Request) {
       );
     }
 
-    let existingSettings = await prisma.settings.findFirst();
+    const existingSettings = await prisma.settings.findFirst();
     
     if (existingSettings) {
       await prisma.settings.update({
