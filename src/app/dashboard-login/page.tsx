@@ -86,8 +86,9 @@ function LoginCard({
         {/* Form */}
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label className="block text-sm text-white/70 mb-2">Password</label>
+            <label htmlFor="dashboard-password" className="block text-sm text-white/70 mb-2">Password</label>
             <input
+              id="dashboard-password"
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}

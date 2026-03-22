@@ -12,8 +12,9 @@ export function TOTPInputs({ useRecoveryCode, setUseRecoveryCode, formData, setF
     <>
       {useRecoveryCode ? (
         <div>
-          <label className="block text-sm text-white/70 mb-2">Recovery Code</label>
+          <label htmlFor="recovery-code" className="block text-sm text-white/70 mb-2">Recovery Code</label>
           <input
+            id="recovery-code"
             type="text"
             value={formData.recoveryCode}
             onChange={(e) => setFormData(prev => ({ ...prev, recoveryCode: e.target.value.toUpperCase() }))}
@@ -28,8 +29,9 @@ export function TOTPInputs({ useRecoveryCode, setUseRecoveryCode, formData, setF
         </div>
       ) : (
         <div>
-          <label className="block text-sm text-white/70 mb-2">6-Digit Code</label>
+          <label htmlFor="totp-code" className="block text-sm text-white/70 mb-2">6-Digit Code</label>
           <input
+            id="totp-code"
             type="text"
             value={formData.totpCode}
             onChange={(e) => setFormData(prev => ({ ...prev, totpCode: e.target.value.replace(/\D/g, '').slice(0, 6) }))}
