@@ -15,11 +15,6 @@ const failedAttempts = new Map<string, { count: number; lastAttempt: number }>()
 const MAX_FAILED_ATTEMPTS = 5;
 const LOCKOUT_DURATION_MS = 15 * 60 * 1000; // 15 minutes
 
-function getClientIP(request: Request): string {
-  // In a real deployment, get this from headers
-  return 'unknown';
-}
-
 function isLockedOut(identifier: string): boolean {
   const attempt = failedAttempts.get(identifier);
   if (!attempt) return false;
@@ -36,6 +31,20 @@ function isLockedOut(identifier: string): boolean {
 }
 
 function recordFailedAttempt(identifier: string): void {
+  // 🛡️ Sentinel: Prevent memory exhaustion (DoS) by capping map size
+  if (failedAttempts.size >= 10000) {
+    const now = Date.now();
+    for (const [key, attempt] of failedAttempts.entries()) {
+      if (now - attempt.lastAttempt > LOCKOUT_DURATION_MS) {
+        failedAttempts.delete(key);
+      }
+    }
+    // If still too large, forcefully clear older entries
+    if (failedAttempts.size >= 10000) {
+      failedAttempts.clear();
+    }
+  }
+
   const existing = failedAttempts.get(identifier);
   if (existing) {
     existing.count++;
