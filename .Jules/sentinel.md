@@ -16,3 +16,7 @@
 **Vulnerability:** The GET `/api/settings/traffic` endpoint was exposing the admin's `trafficHomeAddress` and `trafficWorkAddress` to unauthenticated users.
 **Learning:** API endpoints returning settings/configuration data must filter sensitive fields (like PII, home/work addresses, API keys) based on the user's authentication status, even if the endpoint requires no auth for public consumption.
 **Prevention:** Ensure fields returned by configuration API endpoints are conditionally exposed using ternary operators checking the auth context (e.g. `auth ? settings.address : ''`).
+## 2026-03-22 - Memory Exhaustion / Denial of Service in Rate Limiting
+**Vulnerability:** The in-memory rate limiting mechanism in `src/app/api/auth/login/route.ts` tracked failed attempts using a `Map` keyed by username, but failed to clean up old entries unless the same username was attempted again after the lockout duration.
+**Learning:** In-memory tracking structures (like Maps or Arrays) that store data based on unvalidated user input (like a username) can grow indefinitely if not explicitly capped or cleared, leading to an Out-Of-Memory (OOM) crash (Denial of Service) when an attacker sends requests with many unique identifiers.
+**Prevention:** Always implement a size cap or a proactive cleanup strategy (like LRU cache or periodic pruning) for in-memory data structures that store state per user/IP/identifier, especially on unauthenticated endpoints.
