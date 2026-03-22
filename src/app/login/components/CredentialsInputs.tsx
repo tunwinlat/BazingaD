@@ -10,10 +10,11 @@ export function CredentialsInputs({ formData, setFormData }: CredentialsInputsPr
   return (
     <>
       <div>
-        <label className="block text-sm text-white/70 mb-2">Username</label>
+        <label htmlFor="username" className="block text-sm text-white/70 mb-2">Username</label>
         <div className="relative">
           <User className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-white/40" />
           <input
+            id="username"
             type="text"
             value={formData.username}
             onChange={(e) => setFormData(prev => ({ ...prev, username: e.target.value }))}
@@ -29,10 +30,11 @@ export function CredentialsInputs({ formData, setFormData }: CredentialsInputsPr
       </div>
 
       <div>
-        <label className="block text-sm text-white/70 mb-2">Password</label>
+        <label htmlFor="password" className="block text-sm text-white/70 mb-2">Password</label>
         <div className="relative">
           <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-white/40" />
           <input
+            id="password"
             type="password"
             value={formData.password}
             onChange={(e) => setFormData(prev => ({ ...prev, password: e.target.value }))}
