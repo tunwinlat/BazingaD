@@ -20,3 +20,7 @@
 **Vulnerability:** The in-memory rate limiting mechanism in `src/app/api/auth/login/route.ts` tracked failed attempts using a `Map` keyed by username, but failed to clean up old entries unless the same username was attempted again after the lockout duration.
 **Learning:** In-memory tracking structures (like Maps or Arrays) that store data based on unvalidated user input (like a username) can grow indefinitely if not explicitly capped or cleared, leading to an Out-Of-Memory (OOM) crash (Denial of Service) when an attacker sends requests with many unique identifiers.
 **Prevention:** Always implement a size cap or a proactive cleanup strategy (like LRU cache or periodic pruning) for in-memory data structures that store state per user/IP/identifier, especially on unauthenticated endpoints.
+## 2024-05-24 - Information Disclosure in Settings API
+**Vulnerability:** The public GET endpoint in `src/app/api/settings/route.ts` was leaking Personally Identifiable Information (PII) including `weatherLatitude`, `weatherLongitude`, and `weatherLocationName` to unauthenticated users.
+**Learning:** Mixed-concern configuration endpoints that serve both public features and authenticated settings need careful review to ensure sensitive fields and PII are properly filtered for unauthenticated requests.
+**Prevention:** Always use `verifyAuth()` on public configuration endpoints to conditionally expose sensitive fields (like PII or API keys) only when an active authenticated session is present.
