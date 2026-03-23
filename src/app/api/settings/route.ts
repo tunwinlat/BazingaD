@@ -11,6 +11,7 @@ const MAX_BODY_SIZE = 1024 * 1024;
 // Get settings - public endpoint (no auth required for read)
 export async function GET() {
   try {
+    const auth = await verifyAuth();
     let settings = await prisma.settings.findFirst();
 
     if (!settings) {
@@ -29,9 +30,9 @@ export async function GET() {
       dashboardProtected: settings.dashboardProtected,
       sessionDurationHours: settings.sessionDurationHours,
       weatherEnabled: settings.weatherEnabled,
-      weatherLatitude: settings.weatherLatitude,
-      weatherLongitude: settings.weatherLongitude,
-      weatherLocationName: settings.weatherLocationName,
+      weatherLatitude: auth ? settings.weatherLatitude : null,
+      weatherLongitude: auth ? settings.weatherLongitude : null,
+      weatherLocationName: auth ? settings.weatherLocationName : '',
       weatherUnits: settings.weatherUnits,
     });
   } catch (error) {
