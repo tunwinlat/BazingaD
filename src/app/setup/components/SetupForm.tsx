@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Shield, User, Lock, AlertCircle } from 'lucide-react';
+import { Shield, User, Lock, AlertCircle, Loader2 } from 'lucide-react';
 
 interface SetupFormProps {
   initialError?: string;
@@ -182,9 +182,10 @@ export function SetupForm({ initialError = '' }: SetupFormProps) {
           <button
             type="submit"
             disabled={submitting}
-            className="w-full py-3 rounded-lg font-medium text-white transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+            className="w-full py-3 rounded-lg font-medium text-white transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
             style={{ background: 'linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)' }}
           >
+            {submitting && <Loader2 className="w-5 h-5 animate-spin" />}
             {submitting ? 'Creating Account...' : 'Create Admin Account'}
           </button>
         </form>

@@ -7,3 +7,6 @@
 ## 2026-03-23 - Search Input Clear Button
 **Learning:** Users often need a quick way to clear a search query without using backspace repeatedly, especially on mobile or long queries. Keyboard navigators appreciate when the clear action restores focus smoothly to the input.
 **Action:** Added an accessible clear button to the UnifiedSearch component with a properly descriptive aria-label and auto-focus.
+## 2026-03-24 - Async Loading Indicators on Primary Actions
+**Learning:** Users lack confidence when they submit authentication or setup forms and see no immediate visual feedback beyond the button becoming disabled. This leads to perceived sluggishness or frustration. Adding an inline loading spinner inside the primary call-to-action button directly addresses this by providing immediate validation that the system is processing their request.
+**Action:** Always include inline loading indicators (like a spinner) inside the primary submit button of async forms, instead of solely relying on disabled states or global loaders.
