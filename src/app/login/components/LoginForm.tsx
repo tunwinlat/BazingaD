@@ -1,6 +1,6 @@
 'use client';
 
-import { Lock, AlertCircle, CheckCircle, Shield } from 'lucide-react';
+import { Lock, AlertCircle, CheckCircle, Shield, Loader2 } from 'lucide-react';
 import { useLogin } from '../hooks/useLogin';
 import { LoginBackground } from './LoginBackground';
 import { CredentialsInputs } from './CredentialsInputs';
@@ -95,9 +95,10 @@ export function LoginForm() {
             <button
               type="submit"
               disabled={submitting}
-              className="w-full py-3 rounded-lg font-medium text-white transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="w-full py-3 rounded-lg font-medium text-white transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
               style={{ background: 'linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)' }}
             >
+              {submitting && <Loader2 className="w-5 h-5 animate-spin" />}
               {submitting
                 ? (requireTOTP ? 'Verifying...' : 'Logging in...')
                 : (requireTOTP ? 'Verify' : 'Log In')
