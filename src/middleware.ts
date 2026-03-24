@@ -105,7 +105,7 @@ export async function middleware(request: NextRequest) {
     } else if (pathname.includes('/health')) {
       rateLimitType = 'health';
     } else if (pathname.startsWith('/api/geocode')) {
-      rateLimitType = 'geocode' as any;
+      rateLimitType = 'geocode';
     }
     
     const rateLimitResponse = await rateLimitMiddleware(request, rateLimitType);
@@ -164,6 +164,7 @@ export const config = {
     '/api/weather/:path*',
     '/api/health/:path*',
     '/api/geocode/:path*',
-    '/((?!_next/static|_next/image|favicon.ico|public|api/auth).*)',
+    '/api/auth/:path*',
+    '/((?!_next/static|_next/image|favicon.ico|public).*)',
   ],
 };
