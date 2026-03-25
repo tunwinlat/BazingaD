@@ -70,7 +70,7 @@ async function fetchRouteData(
 
     if (errorData.error?.message?.includes('not found')) {
       throw new Error(
-        `ADDRESS_NOT_FOUND: Could not find location "${origin}" or "${destination}". ` +
+        `ADDRESS_NOT_FOUND: Could not find one of the specified locations. ` +
         'Please check the addresses and try again.'
       );
     }
