@@ -133,6 +133,10 @@ export default function UnifiedSearch({ categories }: UnifiedSearchProps) {
         <input
           ref={inputRef}
           type="text"
+          role="combobox"
+          aria-expanded={isFocused && query.trim() ? true : false}
+          aria-controls="search-listbox"
+          aria-activedescendant={isFocused && query.trim() ? `search-option-${selectedIndex}` : undefined}
           value={query}
           onChange={(e) => {
             setQuery(e.target.value);
@@ -174,6 +178,8 @@ export default function UnifiedSearch({ categories }: UnifiedSearchProps) {
       {/* Dropdown Results */}
       {isFocused && query.trim() && (
         <div
+          id="search-listbox"
+          role="listbox"
           className="absolute top-full left-0 right-0 mt-2 rounded-2xl overflow-hidden z-50"
           style={{
             backgroundColor: 'rgba(30, 30, 50, 0.98)',
@@ -191,9 +197,12 @@ export default function UnifiedSearch({ categories }: UnifiedSearchProps) {
               {filteredBlocks.map((block, index) => (
                 <button
                   key={block.id}
+                  id={`search-option-${index}`}
+                  role="option"
+                  aria-selected={index === selectedIndex}
                   onClick={() => handleBlockClick(block.url)}
                   onMouseEnter={() => setSelectedIndex(index)}
-                  className="w-full flex items-center gap-3 px-4 py-2.5 text-left transition-colors"
+                  className="w-full flex items-center gap-3 px-4 py-2.5 text-left transition-colors focus-visible:outline-none focus-visible:bg-indigo-500/20"
                   style={{
                     backgroundColor:
                       index === selectedIndex
@@ -250,9 +259,12 @@ export default function UnifiedSearch({ categories }: UnifiedSearchProps) {
           {query.trim() && (
             <div className="border-t border-white/10 py-2">
               <button
+                id={`search-option-${filteredBlocks.length}`}
+                role="option"
+                aria-selected={selectedIndex === filteredBlocks.length}
                 onClick={handleGoogleSearch}
                 onMouseEnter={() => setSelectedIndex(filteredBlocks.length)}
-                className="w-full flex items-center gap-3 px-4 py-2.5 text-left transition-colors"
+                className="w-full flex items-center gap-3 px-4 py-2.5 text-left transition-colors focus-visible:outline-none focus-visible:bg-indigo-500/20"
                 style={{
                   backgroundColor:
                     selectedIndex === filteredBlocks.length
