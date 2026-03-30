@@ -121,10 +121,11 @@ export function SetupForm({ initialError = '' }: SetupFormProps) {
         {/* Form */}
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label className="block text-sm text-white/70 mb-2">Username</label>
+            <label htmlFor="username" className="block text-sm text-white/70 mb-2">Username</label>
             <div className="relative">
               <User className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-white/40" />
               <input
+                id="username"
                 type="text"
                 value={formData.username}
                 onChange={(e) => setFormData({ ...formData, username: e.target.value })}
@@ -141,10 +142,11 @@ export function SetupForm({ initialError = '' }: SetupFormProps) {
           </div>
 
           <div>
-            <label className="block text-sm text-white/70 mb-2">Password</label>
+            <label htmlFor="password" className="block text-sm text-white/70 mb-2">Password</label>
             <div className="relative">
               <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-white/40" />
               <input
+                id="password"
                 type="password"
                 value={formData.password}
                 onChange={(e) => setFormData({ ...formData, password: e.target.value })}
@@ -161,10 +163,11 @@ export function SetupForm({ initialError = '' }: SetupFormProps) {
           </div>
 
           <div>
-            <label className="block text-sm text-white/70 mb-2">Confirm Password</label>
+            <label htmlFor="confirmPassword" className="block text-sm text-white/70 mb-2">Confirm Password</label>
             <div className="relative">
               <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-white/40" />
               <input
+                id="confirmPassword"
                 type="password"
                 value={formData.confirmPassword}
                 onChange={(e) => setFormData({ ...formData, confirmPassword: e.target.value })}
