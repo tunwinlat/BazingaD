@@ -3,6 +3,7 @@ import { prisma } from '@/lib/prisma';
 import { verifyAuth } from '@/lib/auth';
 import { blockUpdateSchema } from '@/lib/validation';
 import { ZodError } from 'zod';
+import { categoriesCache } from '@/lib/cache';
 
 const MAX_BODY_SIZE = 1024 * 1024;
 
@@ -72,7 +73,7 @@ export async function PUT(
     }
 
     // Update block - remove id from data
-    const { id: _, ...updateData } = validatedData;
+    const { id: _unused, ...updateData } = validatedData;
     const block = await prisma.block.update({
       where: { id },
       data: updateData,
@@ -86,6 +87,9 @@ export async function PUT(
         },
       },
     });
+
+    // Invalidate categories cache since block was updated
+    categoriesCache.delete('categories_with_blocks');
 
     return NextResponse.json(block);
   } catch (error) {
@@ -141,6 +145,9 @@ export async function DELETE(
     await prisma.block.delete({
       where: { id },
     });
+
+    // Invalidate categories cache since block was deleted
+    categoriesCache.delete('categories_with_blocks');
 
     return NextResponse.json({ success: true });
   } catch (error) {

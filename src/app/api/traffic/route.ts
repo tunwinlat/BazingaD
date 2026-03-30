@@ -75,8 +75,9 @@ async function fetchRouteData(
       );
     }
 
+    // 🛡️ Sentinel: Do not reflect raw API error messages to prevent leaking internal configs (e.g., home/work addresses)
     throw new Error(
-      errorData.error?.message || `API_ERROR: HTTP ${response.status} - ${response.statusText}`
+      `API_ERROR: HTTP ${response.status} - ${response.statusText}`
     );
   }
 
