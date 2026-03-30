@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
-import { ArrowLeft, Plus, Trash2, Edit, X, RefreshCw, LogOut, Shield, Key, QrCode, Copy, Check, AlertTriangle, Lock, Settings2, Cloud, MapPin, Thermometer, Globe, Upload, RotateCcw } from 'lucide-react';
+import { ArrowLeft, Plus, Trash2, Edit, X, RefreshCw, LogOut, Shield, Key, QrCode, Copy, Check, AlertTriangle, Lock, Settings2, Cloud, MapPin, Thermometer, Globe, Upload, RotateCcw, Loader2 } from 'lucide-react';
 import type { Category, Block, CategoryFormData, BlockFormData } from '@/types';
 
 export default function AdminPage() {
@@ -945,11 +945,12 @@ export default function AdminPage() {
                         </button>
                         <button
                           onClick={() => handleDeleteCategory(cat.id)}
-                          className="p-2 rounded-lg transition-colors hover:bg-red-500/20"
+                          disabled={isDeletingCategory === cat.id}
+                          className="p-2 rounded-lg transition-colors hover:bg-red-500/20 disabled:opacity-50 disabled:cursor-not-allowed"
                           style={{ color: '#f87171' }}
                           aria-label="Delete category"
                         >
-                          <Trash2 className="w-4 h-4" />
+                          {isDeletingCategory === cat.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
                         </button>
                       </td>
                     </tr>
@@ -1029,11 +1030,12 @@ export default function AdminPage() {
                         </button>
                         <button
                           onClick={() => handleDeleteBlock(block.id)}
-                          className="p-2 rounded-lg transition-colors hover:bg-red-500/20"
+                          disabled={isDeletingBlock === block.id}
+                          className="p-2 rounded-lg transition-colors hover:bg-red-500/20 disabled:opacity-50 disabled:cursor-not-allowed"
                           style={{ color: '#f87171' }}
                           aria-label="Delete block"
                         >
-                          <Trash2 className="w-4 h-4" />
+                          {isDeletingBlock === block.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
                         </button>
                       </td>
                     </tr>
@@ -1875,10 +1877,18 @@ export default function AdminPage() {
                 </button>
                 <button
                   type="submit"
-                  className="flex-1 px-4 py-2 rounded-lg transition-colors"
+                  disabled={isSavingCategory}
+                  className="flex-1 px-4 py-2 rounded-lg transition-colors flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
                   style={{ backgroundColor: '#6366f1' }}
                 >
-                  {editingCategory ? 'Update' : 'Create'}
+                  {isSavingCategory ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                      Saving...
+                    </>
+                  ) : (
+                    editingCategory ? 'Update' : 'Create'
+                  )}
                 </button>
               </div>
             </form>
@@ -2036,10 +2046,18 @@ export default function AdminPage() {
                 </button>
                 <button
                   type="submit"
-                  className="flex-1 px-4 py-2 rounded-lg transition-colors"
+                  disabled={isSavingBlock}
+                  className="flex-1 px-4 py-2 rounded-lg transition-colors flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
                   style={{ backgroundColor: '#6366f1' }}
                 >
-                  {editingBlock ? 'Update' : 'Create'}
+                  {isSavingBlock ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                      Saving...
+                    </>
+                  ) : (
+                    editingBlock ? 'Update' : 'Create'
+                  )}
                 </button>
               </div>
             </form>
