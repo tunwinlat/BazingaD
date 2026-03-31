@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { weatherCache } from '@/lib/cache';
 
 // Weather condition codes from Open-Meteo
 const weatherCodes: Record<number, { label: string; icon: string }> = {
@@ -54,6 +55,19 @@ export async function GET() {
 
     const { weatherLatitude: lat, weatherLongitude: lon, weatherUnits: units, weatherLocationName } = settings;
 
+    // 🛡️ Sentinel: Implement caching to prevent external API rate limit exhaustion (DoS prevention)
+    const cacheKey = `weather_${lat}_${lon}_${units}_${weatherLocationName}`;
+    const cachedWeather = weatherCache.get<any>(cacheKey);
+
+    if (cachedWeather) {
+      return NextResponse.json(cachedWeather, {
+        headers: {
+          'X-Cache': 'HIT',
+          'Cache-Control': 'private, max-age=600',
+        },
+      });
+    }
+
     // Build Open-Meteo API URL
     const params = new URLSearchParams({
       latitude: lat.toString(),
@@ -91,7 +105,7 @@ export async function GET() {
       const weatherCode = current.weather_code;
       const weatherInfo = weatherCodes[weatherCode] || { label: 'Unknown', icon: '❓' };
 
-      return NextResponse.json({
+      const weatherResponse = {
         temperature: Math.round(current.temperature_2m),
         unit: units === 'imperial' ? '°F' : '°C',
         condition: weatherInfo.label,
@@ -100,6 +114,16 @@ export async function GET() {
         windSpeedUnit: units === 'imperial' ? 'mph' : 'km/h',
         windDirection: getWindDirection(current.wind_direction_10m),
         locationName: weatherLocationName || 'Current Location',
+      };
+
+      // Store in cache
+      weatherCache.set(cacheKey, weatherResponse);
+
+      return NextResponse.json(weatherResponse, {
+        headers: {
+          'X-Cache': 'MISS',
+          'Cache-Control': 'private, max-age=600',
+        },
       });
     } catch (fetchError) {
       clearTimeout(timeoutId);
