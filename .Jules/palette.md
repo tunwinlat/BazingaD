@@ -13,3 +13,6 @@
 ## 2026-03-24 - Screen Reader Support for Custom Dropdowns
 **Learning:** Custom dropdown components built without native `<select>` elements require explicit ARIA roles to be understood by screen readers as interactive lists. Keyboard users relying on screen readers won't know they are navigating a list without proper structure.
 **Action:** When creating custom search comboboxes or dropdowns, ensure the container has `role="listbox"`, the interactive items have `role="option"` with `id`s, and the input has `role="combobox"` with `aria-activedescendant` linking to the currently focused option's `id`.
+## 2026-04-01 - Added htmlFor and id association to Password fields in Admin Dashboard
+**Learning:** Adding `htmlFor` to `<label>` elements and matching `id` attributes to their target `<input>` elements drastically improves accessibility for screen reader users by properly associating labels and inputs, and additionally enhances the general UX by allowing users to click on the label text to focus the input field directly.
+**Action:** Consistently enforce the explicit linking of `<label>` and `<input>` fields using `htmlFor` and `id` across all interactive forms to adhere to accessibility standards.

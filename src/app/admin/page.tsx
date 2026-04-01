@@ -1071,8 +1071,9 @@ export default function AdminPage() {
               ) : (
                 <form onSubmit={handleChangePassword} className="space-y-4 max-w-md">
                   <div>
-                    <label className="block text-sm text-white/70 mb-1">Current Password</label>
+                    <label htmlFor="currentPassword" className="block text-sm text-white/70 mb-1">Current Password</label>
                     <input
+                      id="currentPassword"
                       type="password"
                       value={passwordForm.currentPassword}
                       onChange={(e) => setPasswordForm({ ...passwordForm, currentPassword: e.target.value })}
@@ -1082,8 +1083,9 @@ export default function AdminPage() {
                     />
                   </div>
                   <div>
-                    <label className="block text-sm text-white/70 mb-1">New Password</label>
+                    <label htmlFor="newPassword" className="block text-sm text-white/70 mb-1">New Password</label>
                     <input
+                      id="newPassword"
                       type="password"
                       value={passwordForm.newPassword}
                       onChange={(e) => setPasswordForm({ ...passwordForm, newPassword: e.target.value })}
@@ -1094,8 +1096,9 @@ export default function AdminPage() {
                     />
                   </div>
                   <div>
-                    <label className="block text-sm text-white/70 mb-1">Confirm New Password</label>
+                    <label htmlFor="confirmPassword" className="block text-sm text-white/70 mb-1">Confirm New Password</label>
                     <input
+                      id="confirmPassword"
                       type="password"
                       value={passwordForm.confirmPassword}
                       onChange={(e) => setPasswordForm({ ...passwordForm, confirmPassword: e.target.value })}
@@ -1213,8 +1216,9 @@ export default function AdminPage() {
 
                   {settings.dashboardProtected && (
                     <div>
-                      <label className="block text-sm text-white/70 mb-1">Dashboard Password</label>
+                      <label htmlFor="dashboardPasswordInput" className="block text-sm text-white/70 mb-1">Dashboard Password</label>
                       <input
+                        id="dashboardPasswordInput"
                         type="password"
                         value={dashboardPassword}
                         onChange={(e) => setDashboardPassword(e.target.value)}
