@@ -34,11 +34,13 @@ export async function GET() {
 }
 
 async function createAdminUser(username: string, password: string) {
+  const normalizedUsername = username.toLowerCase();
+
   // Check for existing username (case-insensitive)
   const existingUser = await prisma.user.findFirst({
     where: {
       username: {
-        equals: username.toLowerCase(),
+        equals: normalizedUsername,
       },
     },
   });
@@ -56,7 +58,7 @@ async function createAdminUser(username: string, password: string) {
   // Create user
   await prisma.user.create({
     data: {
-      username,
+      username: normalizedUsername,
       password: hashedPassword,
     },
   });
@@ -120,7 +122,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ 
       success: true, 
       message: 'Admin user created successfully',
-      username: username
+      username: username.toLowerCase()
     }, { status: 201 });
   } catch (error) {
     if (error instanceof ZodError) {
