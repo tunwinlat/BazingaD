@@ -5,7 +5,7 @@ interface CacheEntry<T> {
 }
 
 export class MemoryCache {
-  private cache = new Map<string, CacheEntry<any>>();
+  private cache = new Map<string, CacheEntry<unknown>>();
   private readonly defaultTTL: number;
 
   constructor(defaultTTLSeconds: number = 300) { // 5 minutes default
@@ -23,7 +23,7 @@ export class MemoryCache {
       return null;
     }
     
-    return entry.value;
+    return entry.value as T;
   }
 
   set<T>(key: string, value: T, ttlSeconds?: number): void {
