@@ -148,14 +148,23 @@ function buildCachedResponse(cache: any, cacheAgeMinutes: number, apiError?: Err
 
   if (apiError) {
     let safeMessage = 'Failed to fetch traffic data';
-    if (apiError.message && (
-      apiError.message.startsWith('API_KEY_INVALID:') ||
-      apiError.message.startsWith('RATE_LIMIT_EXCEEDED:') ||
-      apiError.message.startsWith('ADDRESS_NOT_FOUND:') ||
-      apiError.message.startsWith('API_ERROR:') ||
-      apiError.message.startsWith('NO_ROUTE_FOUND:')
-    )) {
-      safeMessage = apiError.message;
+    if (apiError.message) {
+      const code = apiError.message.split(':')[0];
+      switch (code) {
+        case 'API_KEY_INVALID':
+          safeMessage = 'Traffic service is currently unavailable.';
+          break;
+        case 'RATE_LIMIT_EXCEEDED':
+          safeMessage = 'Traffic service is busy. Please try again later.';
+          break;
+        case 'ADDRESS_NOT_FOUND':
+        case 'NO_ROUTE_FOUND':
+          safeMessage = 'Could not calculate route for the configured locations.';
+          break;
+        case 'API_ERROR':
+          safeMessage = 'Traffic service experienced an internal error.';
+          break;
+      }
     }
     response.error = `Using stale cache (${cacheAgeMinutes} min old). ${safeMessage}`;
   }
@@ -243,19 +252,29 @@ export async function GET() {
 
       // Parse error code from message
       let errorMessage = 'Failed to fetch traffic data';
-      if (apiError instanceof Error && (
-        apiError.message.startsWith('API_KEY_INVALID:') ||
-        apiError.message.startsWith('RATE_LIMIT_EXCEEDED:') ||
-        apiError.message.startsWith('ADDRESS_NOT_FOUND:') ||
-        apiError.message.startsWith('API_ERROR:') ||
-        apiError.message.startsWith('NO_ROUTE_FOUND:')
-      )) {
-        errorMessage = apiError.message;
-      }
+      let errorCode = 'UNKNOWN_ERROR';
 
-      const errorCode = errorMessage.includes(':')
-        ? errorMessage.split(':')[0]
-        : 'UNKNOWN_ERROR';
+      if (apiError instanceof Error && apiError.message) {
+        const parsedCode = apiError.message.split(':')[0];
+        if (['API_KEY_INVALID', 'RATE_LIMIT_EXCEEDED', 'ADDRESS_NOT_FOUND', 'API_ERROR', 'NO_ROUTE_FOUND'].includes(parsedCode)) {
+          errorCode = parsedCode;
+          switch (errorCode) {
+            case 'API_KEY_INVALID':
+              errorMessage = 'Traffic service is currently unavailable.';
+              break;
+            case 'RATE_LIMIT_EXCEEDED':
+              errorMessage = 'Traffic service is busy. Please try again later.';
+              break;
+            case 'ADDRESS_NOT_FOUND':
+            case 'NO_ROUTE_FOUND':
+              errorMessage = 'Could not calculate route for the configured locations.';
+              break;
+            case 'API_ERROR':
+              errorMessage = 'Traffic service experienced an internal error.';
+              break;
+          }
+        }
+      }
 
       return NextResponse.json(
         {
