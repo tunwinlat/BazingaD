@@ -5,7 +5,7 @@ interface CacheEntry<T> {
 }
 
 export class MemoryCache {
-  private cache = new Map<string, CacheEntry<any>>();
+  private cache = new Map<string, CacheEntry<unknown>>();
   private readonly defaultTTL: number;
 
   constructor(defaultTTLSeconds: number = 300) { // 5 minutes default
@@ -14,19 +14,19 @@ export class MemoryCache {
     setInterval(() => this.cleanup(), 60000); // Every minute
   }
 
-  get<T>(key: string): T | null {
+  get<K>(key: string): K | null {
     const entry = this.cache.get(key);
     if (!entry) return null;
-    
+
     if (Date.now() > entry.expiresAt) {
       this.cache.delete(key);
       return null;
     }
-    
-    return entry.value;
+
+    return entry.value as K;
   }
 
-  set<T>(key: string, value: T, ttlSeconds?: number): void {
+  set<K>(key: string, value: K, ttlSeconds?: number): void {
     const ttl = (ttlSeconds ?? this.defaultTTL / 1000) * 1000;
     this.cache.set(key, {
       value,
