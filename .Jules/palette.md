@@ -13,3 +13,6 @@
 ## 2026-03-24 - Screen Reader Support for Custom Dropdowns
 **Learning:** Custom dropdown components built without native `<select>` elements require explicit ARIA roles to be understood by screen readers as interactive lists. Keyboard users relying on screen readers won't know they are navigating a list without proper structure.
 **Action:** When creating custom search comboboxes or dropdowns, ensure the container has `role="listbox"`, the interactive items have `role="option"` with `id`s, and the input has `role="combobox"` with `aria-activedescendant` linking to the currently focused option's `id`.
+## 2024-03-24 - Admin Dashboard API Resilience and Loading Feedback
+**Learning:** During UI enhancement, it became apparent that API responses for blocks and categories must be validated as arrays before setting state to prevent React crashes. Additionally, destructive actions (like deletion) need disabled states combined with loading spinners to communicate system status clearly to the user.
+**Action:** Always wrap API array responses in `Array.isArray(data) ? data : []` to prevent `.map()` errors. Always use the `Loader2` spinner and a disabled state for asynchronous destructive UI actions.
