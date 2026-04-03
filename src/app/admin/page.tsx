@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
-import { ArrowLeft, Plus, Trash2, Edit, X, RefreshCw, LogOut, Shield, Key, QrCode, Copy, Check, AlertTriangle, Lock, Settings2, Cloud, MapPin, Thermometer, Globe, Upload, RotateCcw } from 'lucide-react';
+import { ArrowLeft, Plus, Trash2, Edit, X, RefreshCw, LogOut, Shield, Key, QrCode, Copy, Check, AlertTriangle, Lock, Settings2, Cloud, MapPin, Thermometer, Globe, Upload, RotateCcw, Loader2 } from 'lucide-react';
 import type { Category, Block, CategoryFormData, BlockFormData } from '@/types';
 
 export default function AdminPage() {
@@ -13,7 +13,7 @@ export default function AdminPage() {
   const [blocks, setBlocks] = useState<Block[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<'general' | 'categories' | 'blocks' | 'security' | 'integrations' | 'traffic'>('blocks');
-  
+
   // Security states
   const [authStatus, setAuthStatus] = useState<{ username: string; totpEnabled: boolean } | null>(null);
   const [showTOTPSetup, setShowTOTPSetup] = useState(false);
@@ -23,7 +23,7 @@ export default function AdminPage() {
   const [totpVerificationCode, setTotpVerificationCode] = useState('');
   const [copiedSecret, setCopiedSecret] = useState(false);
   const [copiedRecovery, setCopiedRecovery] = useState(false);
-  
+
   // Form states
   const [showCategoryForm, setShowCategoryForm] = useState(false);
   const [showBlockForm, setShowBlockForm] = useState(false);
@@ -434,7 +434,7 @@ export default function AdminPage() {
       } else {
         const data = await response.json();
         console.error('Settings update failed:', data);
-        const errorMsg = data.details 
+        const errorMsg = data.details
           ? `${data.error}: ${data.details.map((d: {message: string}) => d.message).join(', ')}`
           : data.error || 'Failed to update settings';
         toast.error(errorMsg);
@@ -446,7 +446,7 @@ export default function AdminPage() {
 
   const handleLogoutAllSessions = async () => {
     if (!confirm('This will log out all users from all sessions, including yourself. Continue?')) return;
-    
+
     try {
       const response = await fetch('/api/auth/sessions', {
         method: 'DELETE',
@@ -672,7 +672,7 @@ export default function AdminPage() {
     try {
       const url = editingCategory ? `/api/categories/${editingCategory.id}` : '/api/categories';
       const method = editingCategory ? 'PUT' : 'POST';
-      
+
       const response = await fetch(url, {
         method,
         headers: { 'Content-Type': 'application/json' },
@@ -702,7 +702,7 @@ export default function AdminPage() {
     try {
       const url = editingBlock ? `/api/blocks/${editingBlock.id}` : '/api/blocks';
       const method = editingBlock ? 'PUT' : 'POST';
-      
+
       const response = await fetch(url, {
         method,
         headers: { 'Content-Type': 'application/json' },
@@ -735,7 +735,7 @@ export default function AdminPage() {
     setIsDeletingCategory(id);
     try {
       const response = await fetch(`/api/categories/${id}`, { method: 'DELETE' });
-      
+
       if (!response.ok) {
         const data = await response.json();
         throw new Error(data.error || 'Failed to delete category');
@@ -756,7 +756,7 @@ export default function AdminPage() {
     setIsDeletingBlock(id);
     try {
       const response = await fetch(`/api/blocks/${id}`, { method: 'DELETE' });
-      
+
       if (!response.ok) {
         const data = await response.json();
         throw new Error(data.error || 'Failed to delete block');
@@ -831,7 +831,7 @@ export default function AdminPage() {
         <div className="flex items-center justify-between mb-8">
           <h1 className="text-3xl font-bold">Admin Dashboard</h1>
           <div className="flex items-center gap-3">
-            <Link 
+            <Link
               href="/"
               className="flex items-center gap-2 px-4 py-2 rounded-lg transition-colors"
               style={{ backgroundColor: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)' }}
@@ -847,7 +847,7 @@ export default function AdminPage() {
           <button
             onClick={() => setActiveTab('blocks')}
             className="px-4 py-2 rounded-lg transition-colors"
-            style={{ 
+            style={{
               backgroundColor: activeTab === 'blocks' ? '#6366f1' : 'rgba(255,255,255,0.05)',
             }}
           >
@@ -856,7 +856,7 @@ export default function AdminPage() {
           <button
             onClick={() => setActiveTab('categories')}
             className="px-4 py-2 rounded-lg transition-colors"
-            style={{ 
+            style={{
               backgroundColor: activeTab === 'categories' ? '#6366f1' : 'rgba(255,255,255,0.05)',
             }}
           >
@@ -865,7 +865,7 @@ export default function AdminPage() {
           <button
             onClick={() => setActiveTab('general')}
             className="px-4 py-2 rounded-lg transition-colors flex items-center gap-2"
-            style={{ 
+            style={{
               backgroundColor: activeTab === 'general' ? '#6366f1' : 'rgba(255,255,255,0.05)',
             }}
           >
@@ -875,7 +875,7 @@ export default function AdminPage() {
           <button
             onClick={() => setActiveTab('security')}
             className="px-4 py-2 rounded-lg transition-colors flex items-center gap-2"
-            style={{ 
+            style={{
               backgroundColor: activeTab === 'security' ? '#6366f1' : 'rgba(255,255,255,0.05)',
             }}
           >
@@ -885,7 +885,7 @@ export default function AdminPage() {
           <button
             onClick={() => setActiveTab('integrations')}
             className="px-4 py-2 rounded-lg transition-colors flex items-center gap-2"
-            style={{ 
+            style={{
               backgroundColor: activeTab === 'integrations' ? '#6366f1' : 'rgba(255,255,255,0.05)',
             }}
           >
@@ -895,7 +895,7 @@ export default function AdminPage() {
           <button
             onClick={() => setActiveTab('traffic')}
             className="px-4 py-2 rounded-lg transition-colors flex items-center gap-2"
-            style={{ 
+            style={{
               backgroundColor: activeTab === 'traffic' ? '#6366f1' : 'rgba(255,255,255,0.05)',
             }}
           >
@@ -917,7 +917,7 @@ export default function AdminPage() {
                 Add Category
               </button>
             </div>
-            
+
             <div className="rounded-xl overflow-hidden"
               style={{ backgroundColor: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)' }}>
               <table className="w-full">
@@ -945,11 +945,12 @@ export default function AdminPage() {
                         </button>
                         <button
                           onClick={() => handleDeleteCategory(cat.id)}
-                          className="p-2 rounded-lg transition-colors hover:bg-red-500/20"
+                          className="p-2 rounded-lg transition-colors hover:bg-red-500/20 disabled:opacity-50 disabled:cursor-not-allowed"
                           style={{ color: '#f87171' }}
                           aria-label="Delete category"
+                          disabled={isDeletingCategory === cat.id}
                         >
-                          <Trash2 className="w-4 h-4" />
+                          {isDeletingCategory === cat.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
                         </button>
                       </td>
                     </tr>
@@ -973,7 +974,7 @@ export default function AdminPage() {
                 Add Block
               </button>
             </div>
-            
+
             <div className="rounded-xl overflow-hidden"
               style={{ backgroundColor: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)' }}>
               <table className="w-full">
@@ -1029,11 +1030,12 @@ export default function AdminPage() {
                         </button>
                         <button
                           onClick={() => handleDeleteBlock(block.id)}
-                          className="p-2 rounded-lg transition-colors hover:bg-red-500/20"
+                          className="p-2 rounded-lg transition-colors hover:bg-red-500/20 disabled:opacity-50 disabled:cursor-not-allowed"
                           style={{ color: '#f87171' }}
                           aria-label="Delete block"
+                          disabled={isDeletingBlock === block.id}
                         >
-                          <Trash2 className="w-4 h-4" />
+                          {isDeletingBlock === block.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
                         </button>
                       </td>
                     </tr>
@@ -1047,7 +1049,7 @@ export default function AdminPage() {
         {activeTab === 'security' && (
           <div>
             <h2 className="text-xl font-semibold mb-6">Security Settings</h2>
-            
+
             {/* Password Change Section */}
             <div className="rounded-xl p-6 mb-6" style={{ backgroundColor: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)' }}>
               <div className="flex items-center gap-3 mb-4">
@@ -1059,7 +1061,7 @@ export default function AdminPage() {
                   <p className="text-sm text-white/60">Update your admin account password</p>
                 </div>
               </div>
-              
+
               {!showPasswordChange ? (
                 <button
                   onClick={() => setShowPasswordChange(true)}
@@ -1134,8 +1136,8 @@ export default function AdminPage() {
                 <div>
                   <h3 className="font-semibold">Two-Factor Authentication</h3>
                   <p className="text-sm text-white/60">
-                    {authStatus?.totpEnabled 
-                      ? 'TOTP is currently enabled' 
+                    {authStatus?.totpEnabled
+                      ? 'TOTP is currently enabled'
                       : 'Add an extra layer of security to your account'}
                   </p>
                 </div>
@@ -1175,8 +1177,8 @@ export default function AdminPage() {
                 <div>
                   <h3 className="font-semibold">Dashboard Protection</h3>
                   <p className="text-sm text-white/60">
-                    {settings.dashboardProtected 
-                      ? 'Dashboard is password protected' 
+                    {settings.dashboardProtected
+                      ? 'Dashboard is password protected'
                       : 'Dashboard is currently open to everyone'}
                   </p>
                 </div>
@@ -1186,7 +1188,7 @@ export default function AdminPage() {
                   </span>
                 )}
               </div>
-              
+
               {!showDashboardSettings ? (
                 <button
                   onClick={() => setShowDashboardSettings(true)}
@@ -1287,7 +1289,7 @@ export default function AdminPage() {
                   {activeSessions} active
                 </span>
               </div>
-              
+
               <button
                 onClick={handleLogoutAllSessions}
                 className="px-4 py-2 rounded-lg transition-colors flex items-center gap-2"
@@ -1304,7 +1306,7 @@ export default function AdminPage() {
         {activeTab === 'integrations' && (
           <div>
             <h2 className="text-xl font-semibold mb-6">Integrations</h2>
-            
+
             {/* Weather Section */}
             <div className="rounded-xl p-6" style={{ backgroundColor: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)' }}>
               <div className="flex items-center gap-3 mb-4">
@@ -1376,7 +1378,7 @@ export default function AdminPage() {
 
                         {/* Search Results */}
                         {showLocationResults && locationSearchResults.length > 0 && (
-                          <div 
+                          <div
                             className="rounded-lg overflow-hidden"
                             style={{ backgroundColor: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)' }}
                           >
@@ -1506,7 +1508,7 @@ export default function AdminPage() {
         {activeTab === 'traffic' && (
           <div>
             <h2 className="text-xl font-semibold mb-6">Traffic Information</h2>
-            
+
             <div className="rounded-xl p-6" style={{ backgroundColor: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)' }}>
               <div className="flex items-center gap-3 mb-4">
                 <div className="w-10 h-10 rounded-lg flex items-center justify-center" style={{ backgroundColor: 'rgba(16, 185, 129, 0.2)' }}>
@@ -1530,7 +1532,7 @@ export default function AdminPage() {
                   API Usage & Pricing
                 </h4>
                 <p className="text-sm text-white/70 mb-2">
-                  Google Routes API includes a free tier of <strong>10,000 requests per month</strong>. 
+                  Google Routes API includes a free tier of <strong>10,000 requests per month</strong>.
                   Beyond that, charges apply. This app caches results for 30 minutes to minimize API calls.
                 </p>
                 <p className="text-sm text-white/50">
@@ -1562,13 +1564,13 @@ export default function AdminPage() {
                         <Key className="w-4 h-4" />
                         API Configuration
                       </h4>
-                      
+
                       <div>
                         <label className="block text-sm text-white/70 mb-1">
                           Google Routes API Key
-                          <a 
-                            href="https://developers.google.com/maps/documentation/routes/get-api-key" 
-                            target="_blank" 
+                          <a
+                            href="https://developers.google.com/maps/documentation/routes/get-api-key"
+                            target="_blank"
                             rel="noopener noreferrer"
                             className="ml-2 text-xs text-blue-400 hover:underline"
                           >
@@ -1601,7 +1603,7 @@ export default function AdminPage() {
                         <MapPin className="w-4 h-4" />
                         Locations
                       </h4>
-                      
+
                       <div>
                         <label className="block text-sm text-white/70 mb-1">Home Address</label>
                         <input
@@ -1682,7 +1684,7 @@ export default function AdminPage() {
         {activeTab === 'general' && (
           <div>
             <h2 className="text-xl font-semibold mb-6">General Settings</h2>
-            
+
             {/* Site Identity */}
             <div className="rounded-xl p-6 mb-6" style={{ backgroundColor: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)' }}>
               <div className="flex items-center gap-3 mb-4">
@@ -1714,17 +1716,17 @@ export default function AdminPage() {
                 {/* Favicon */}
                 <div>
                   <label className="block text-sm text-white/70 mb-2">Favicon</label>
-                  
+
                   {/* Current Favicon Preview */}
                   <div className="flex items-center gap-4 mb-3">
-                    <div 
+                    <div
                       className="w-16 h-16 rounded-lg flex items-center justify-center"
                       style={{ backgroundColor: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)' }}
                     >
                       {faviconPreview ? (
-                        <img 
-                          src={faviconPreview} 
-                          alt="Favicon preview" 
+                        <img
+                          src={faviconPreview}
+                          alt="Favicon preview"
                           className="w-10 h-10 object-contain"
                         />
                       ) : (
@@ -1755,7 +1757,7 @@ export default function AdminPage() {
                         className="hidden"
                       />
                     </label>
-                    
+
                     {faviconPreview && (
                       <button
                         onClick={handleResetFavicon}
@@ -1806,7 +1808,7 @@ export default function AdminPage() {
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4"
           style={{ backgroundColor: 'rgba(0,0,0,0.7)' }}>
           <div className="w-full max-w-md rounded-2xl p-6"
-            style={{ 
+            style={{
               backgroundColor: '#1a1a2e',
               border: '1px solid rgba(255,255,255,0.1)',
             }}>
@@ -1818,7 +1820,7 @@ export default function AdminPage() {
                 <X className="w-5 h-5" />
               </button>
             </div>
-            
+
             <form onSubmit={handleSaveCategory} className="space-y-4">
               <div>
                 <label className="block text-sm text-white/70 mb-1">Name</label>
@@ -1831,15 +1833,15 @@ export default function AdminPage() {
                   required
                 />
               </div>
-              
+
               <div>
                 <label className="block text-sm text-white/70 mb-1">Icon</label>
                 <select
                   value={categoryForm.icon}
                   onChange={(e) => setCategoryForm({ ...categoryForm, icon: e.target.value })}
                   className="w-full px-4 py-2 rounded-lg border outline-none focus:border-indigo-500 appearance-none cursor-pointer"
-                  style={{ 
-                    backgroundColor: 'rgba(255,255,255,0.05)', 
+                  style={{
+                    backgroundColor: 'rgba(255,255,255,0.05)',
                     borderColor: 'rgba(255,255,255,0.1)',
                     color: 'white',
                   }}
@@ -1853,7 +1855,7 @@ export default function AdminPage() {
                   <option value="shopping" style={{ backgroundColor: '#1a1a2e', color: 'white' }}>Shopping</option>
                 </select>
               </div>
-              
+
               <div>
                 <label className="block text-sm text-white/70 mb-1">Sort Order</label>
                 <input
@@ -1863,7 +1865,7 @@ export default function AdminPage() {
                   className="w-full px-4 py-2 rounded-lg bg-white/5 border border-white/10 text-white outline-none focus:border-indigo-500"
                 />
               </div>
-              
+
               <div className="flex gap-3 pt-4">
                 <button
                   type="button"
@@ -1891,7 +1893,7 @@ export default function AdminPage() {
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4"
           style={{ backgroundColor: 'rgba(0,0,0,0.7)' }}>
           <div className="w-full max-w-md rounded-2xl p-6 max-h-[90vh] overflow-y-auto"
-            style={{ 
+            style={{
               backgroundColor: '#1a1a2e',
               border: '1px solid rgba(255,255,255,0.1)',
             }}>
@@ -1903,7 +1905,7 @@ export default function AdminPage() {
                 <X className="w-5 h-5" />
               </button>
             </div>
-            
+
             <form onSubmit={handleSaveBlock} className="space-y-4">
               <div>
                 <label className="block text-sm text-white/70 mb-1">Title *</label>
@@ -1916,7 +1918,7 @@ export default function AdminPage() {
                   required
                 />
               </div>
-              
+
               <div>
                 <label className="block text-sm text-white/70 mb-1">URL *</label>
                 <input
@@ -1928,7 +1930,7 @@ export default function AdminPage() {
                   required
                 />
               </div>
-              
+
               <div>
                 <label className="block text-sm text-white/70 mb-1">Description</label>
                 <input
@@ -1939,15 +1941,15 @@ export default function AdminPage() {
                   placeholder="Brief description"
                 />
               </div>
-              
+
               <div>
                 <label className="block text-sm text-white/70 mb-1">Category *</label>
                 <select
                   value={blockForm.categoryId}
                   onChange={(e) => setBlockForm({ ...blockForm, categoryId: e.target.value })}
                   className="w-full px-4 py-2 rounded-lg border outline-none focus:border-indigo-500 appearance-none cursor-pointer"
-                  style={{ 
-                    backgroundColor: 'rgba(255,255,255,0.05)', 
+                  style={{
+                    backgroundColor: 'rgba(255,255,255,0.05)',
                     borderColor: 'rgba(255,255,255,0.1)',
                     color: 'white',
                   }}
@@ -1961,7 +1963,7 @@ export default function AdminPage() {
                   ))}
                 </select>
               </div>
-              
+
               <div>
                 <label className="block text-sm text-white/70 mb-1">Custom Icon URL</label>
                 <input
@@ -1972,10 +1974,10 @@ export default function AdminPage() {
                   placeholder="https://example.com/icon.png"
                 />
               </div>
-              
+
               <div className="pt-4" style={{ borderTop: '1px solid rgba(255,255,255,0.1)' }}>
                 <h4 className="text-sm font-medium mb-3">Service Monitoring (Optional)</h4>
-                
+
                 <div className="flex items-center gap-2 mb-3">
                   <input
                     type="checkbox"
@@ -1986,7 +1988,7 @@ export default function AdminPage() {
                   />
                   <label htmlFor="isMonitored" className="text-sm">Enable health monitoring</label>
                 </div>
-                
+
                 {blockForm.isMonitored && (
                   <>
                     <div className="mb-3">
@@ -1999,7 +2001,7 @@ export default function AdminPage() {
                         placeholder="https://api.github.com/status"
                       />
                     </div>
-                    
+
                     <div className="mb-3">
                       <label className="block text-sm text-white/70 mb-1">Service Type</label>
                       <input
@@ -2010,7 +2012,7 @@ export default function AdminPage() {
                         placeholder="e.g., api, website"
                       />
                     </div>
-                    
+
                     <div>
                       <label className="block text-sm text-white/70 mb-1">Service URL</label>
                       <input
@@ -2024,7 +2026,7 @@ export default function AdminPage() {
                   </>
                 )}
               </div>
-              
+
               <div className="flex gap-3 pt-4">
                 <button
                   type="button"
