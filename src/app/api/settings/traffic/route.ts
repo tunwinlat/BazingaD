@@ -6,10 +6,10 @@ export async function GET() {
   try {
     const auth = await verifyAuth();
     const settings = await prisma.settings.findFirst();
-    
+
     return NextResponse.json({
       enabled: settings?.trafficEnabled ?? false,
-      apiKey: auth ? (settings?.trafficApiKey ?? '') : '', // 🛡️ Sentinel: Only expose API key to authenticated users
+      apiKey: auth && settings?.trafficApiKey ? '********' : '', // 🛡️ Sentinel: Mask API key to prevent leaking secret to the frontend
       homeAddress: auth ? (settings?.trafficHomeAddress ?? '') : '', // 🛡️ Sentinel: Only expose PII to authenticated users
       workAddress: auth ? (settings?.trafficWorkAddress ?? '') : '', // 🛡️ Sentinel: Only expose PII to authenticated users
       travelMode: settings?.trafficTravelMode ?? 'DRIVE',
@@ -53,28 +53,34 @@ export async function PUT(request: Request) {
     }
 
     const existingSettings = await prisma.settings.findFirst();
-    
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const updateData: any = {
+      trafficEnabled: enabled ?? false,
+      trafficTravelMode: travelMode ?? 'DRIVE',
+      trafficUnits: units ?? 'metric',
+      trafficHomeAddress: homeAddress || null,
+      trafficWorkAddress: workAddress || null,
+    };
+
+    if (apiKey !== undefined && apiKey !== '********') {
+      updateData.trafficApiKey = apiKey || null;
+    }
+
     if (existingSettings) {
       await prisma.settings.update({
         where: { id: existingSettings.id },
-        data: {
-          trafficEnabled: enabled ?? false,
-          trafficApiKey: apiKey || null,
-          trafficHomeAddress: homeAddress || null,
-          trafficWorkAddress: workAddress || null,
-          trafficTravelMode: travelMode ?? 'DRIVE',
-          trafficUnits: units ?? 'metric',
-        },
+        data: updateData,
       });
     } else {
       await prisma.settings.create({
         data: {
-          trafficEnabled: enabled ?? false,
-          trafficApiKey: apiKey || null,
-          trafficHomeAddress: homeAddress || null,
-          trafficWorkAddress: workAddress || null,
-          trafficTravelMode: travelMode ?? 'DRIVE',
-          trafficUnits: units ?? 'metric',
+          trafficEnabled: updateData.trafficEnabled,
+          trafficApiKey: updateData.trafficApiKey || null,
+          trafficHomeAddress: updateData.trafficHomeAddress || null,
+          trafficWorkAddress: updateData.trafficWorkAddress || null,
+          trafficTravelMode: updateData.trafficTravelMode,
+          trafficUnits: updateData.trafficUnits,
         },
       });
     }
