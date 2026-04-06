@@ -1877,10 +1877,12 @@ export default function AdminPage() {
                 </button>
                 <button
                   type="submit"
-                  className="flex-1 px-4 py-2 rounded-lg transition-colors"
+                  disabled={isSavingCategory}
+                  className="flex-1 px-4 py-2 rounded-lg transition-colors flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
                   style={{ backgroundColor: '#6366f1' }}
                 >
-                  {editingCategory ? 'Update' : 'Create'}
+                  {isSavingCategory && <Loader2 className="w-4 h-4 animate-spin" />}
+                  {isSavingCategory ? (editingCategory ? 'Updating...' : 'Creating...') : (editingCategory ? 'Update' : 'Create')}
                 </button>
               </div>
             </form>
@@ -2038,10 +2040,12 @@ export default function AdminPage() {
                 </button>
                 <button
                   type="submit"
-                  className="flex-1 px-4 py-2 rounded-lg transition-colors"
+                  disabled={isSavingBlock}
+                  className="flex-1 px-4 py-2 rounded-lg transition-colors flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
                   style={{ backgroundColor: '#6366f1' }}
                 >
-                  {editingBlock ? 'Update' : 'Create'}
+                  {isSavingBlock && <Loader2 className="w-4 h-4 animate-spin" />}
+                  {isSavingBlock ? (editingBlock ? 'Updating...' : 'Creating...') : (editingBlock ? 'Update' : 'Create')}
                 </button>
               </div>
             </form>
