@@ -6,10 +6,10 @@ export async function GET() {
   try {
     const auth = await verifyAuth();
     const settings = await prisma.settings.findFirst();
-    
+
     return NextResponse.json({
       enabled: settings?.trafficEnabled ?? false,
-      apiKey: auth ? (settings?.trafficApiKey ?? '') : '', // 🛡️ Sentinel: Only expose API key to authenticated users
+      apiKey: auth && settings?.trafficApiKey ? '********' : '', // 🛡️ Sentinel: Mask API key to prevent exposure, even to authenticated users
       homeAddress: auth ? (settings?.trafficHomeAddress ?? '') : '', // 🛡️ Sentinel: Only expose PII to authenticated users
       workAddress: auth ? (settings?.trafficWorkAddress ?? '') : '', // 🛡️ Sentinel: Only expose PII to authenticated users
       travelMode: settings?.trafficTravelMode ?? 'DRIVE',
@@ -53,29 +53,27 @@ export async function PUT(request: Request) {
     }
 
     const existingSettings = await prisma.settings.findFirst();
-    
+
+    const updateData: any = {
+      trafficEnabled: enabled ?? false,
+      trafficHomeAddress: homeAddress || null,
+      trafficWorkAddress: workAddress || null,
+      trafficTravelMode: travelMode ?? 'DRIVE',
+      trafficUnits: units ?? 'metric',
+    };
+
+    if (apiKey !== undefined && apiKey !== '********') {
+      updateData.trafficApiKey = apiKey || null;
+    }
+
     if (existingSettings) {
       await prisma.settings.update({
         where: { id: existingSettings.id },
-        data: {
-          trafficEnabled: enabled ?? false,
-          trafficApiKey: apiKey || null,
-          trafficHomeAddress: homeAddress || null,
-          trafficWorkAddress: workAddress || null,
-          trafficTravelMode: travelMode ?? 'DRIVE',
-          trafficUnits: units ?? 'metric',
-        },
+        data: updateData,
       });
     } else {
       await prisma.settings.create({
-        data: {
-          trafficEnabled: enabled ?? false,
-          trafficApiKey: apiKey || null,
-          trafficHomeAddress: homeAddress || null,
-          trafficWorkAddress: workAddress || null,
-          trafficTravelMode: travelMode ?? 'DRIVE',
-          trafficUnits: units ?? 'metric',
-        },
+        data: updateData,
       });
     }
 

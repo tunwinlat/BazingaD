@@ -34,3 +34,7 @@
 **Vulnerability:** The GET endpoint in `src/app/api/weather/route.ts` was repeatedly fetching weather data from `api.open-meteo.com` on every incoming request without any caching layer.
 **Learning:** Calling external APIs without a caching mechanism makes the application vulnerable to upstream rate limit exhaustion and potentially amplifies outbound requests during a volumetric attack, functioning as an unintentional Denial of Service (DoS) proxy.
 **Prevention:** Implement a server-side cache (like `weatherCache`) with an appropriate Time-To-Live (TTL) for external API endpoints that serve non-real-time data (like weather) to throttle requests to upstream services and improve local endpoint response times.
+## 2026-04-06 - Prevent Sensitive API Key Exposure in Traffic Settings
+**Vulnerability:** The GET `/api/settings/traffic` endpoint was exposing the raw `trafficApiKey` to authenticated users.
+**Learning:** API keys must never be exposed to clients, even if authenticated. They should only be masked and never returned in plaintext to prevent unauthorized reuse or extraction from compromised client sessions.
+**Prevention:** Always mask API keys (e.g. '********') in GET responses and ensure PUT handlers ignore masked values during updates to prevent accidentally overwriting the real key with the mask.
