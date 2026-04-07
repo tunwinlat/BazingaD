@@ -163,10 +163,9 @@ export async function POST(request: Request) {
     });
 
     if (!user) {
-      // Dummy compare to prevent timing attacks for user enumeration
-      // Using a valid bcrypt hash (cost 12) of a random string
-      const dummyHash = '$2a$12$00000000000000000000000000000000000000000000000000000';
-      await bcrypt.compare(password, dummyHash);
+      // Perform a real hash to ensure constant time behavior and prevent user enumeration
+      // compared to a static dummy hash which may leak timing differences.
+      await bcrypt.hash(password, 12);
 
       recordFailedAttempt(username.toLowerCase());
       return NextResponse.json(
