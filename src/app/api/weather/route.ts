@@ -55,17 +55,11 @@ export async function GET() {
 
     const { weatherLatitude: lat, weatherLongitude: lon, weatherUnits: units, weatherLocationName } = settings;
 
-    // 🛡️ Sentinel: Implement caching to prevent external API rate limit exhaustion (DoS prevention)
-    const cacheKey = `weather_${lat}_${lon}_${units}_${weatherLocationName}`;
-    const cachedWeather = weatherCache.get<any>(cacheKey);
-
-    if (cachedWeather) {
-      return NextResponse.json(cachedWeather, {
-        headers: {
-          'X-Cache': 'HIT',
-          'Cache-Control': 'private, max-age=600',
-        },
-      });
+    // 🛡️ Sentinel: Check cache first to prevent upstream rate limit exhaustion and DoS
+    const cacheKey = `${lat}_${lon}_${units}_${weatherLocationName}`;
+    const cachedData = weatherCache.get(cacheKey);
+    if (cachedData) {
+      return NextResponse.json(cachedData);
     }
 
     // Build Open-Meteo API URL
@@ -105,7 +99,7 @@ export async function GET() {
       const weatherCode = current.weather_code;
       const weatherInfo = weatherCodes[weatherCode] || { label: 'Unknown', icon: '❓' };
 
-      const weatherResponse = {
+      const responseData = {
         temperature: Math.round(current.temperature_2m),
         unit: units === 'imperial' ? '°F' : '°C',
         condition: weatherInfo.label,
@@ -116,15 +110,10 @@ export async function GET() {
         locationName: weatherLocationName || 'Current Location',
       };
 
-      // Store in cache
-      weatherCache.set(cacheKey, weatherResponse);
+      // 🛡️ Sentinel: Store fetched data in cache
+      weatherCache.set(cacheKey, responseData);
 
-      return NextResponse.json(weatherResponse, {
-        headers: {
-          'X-Cache': 'MISS',
-          'Cache-Control': 'private, max-age=600',
-        },
-      });
+      return NextResponse.json(responseData);
     } catch (fetchError) {
       clearTimeout(timeoutId);
       throw fetchError;
