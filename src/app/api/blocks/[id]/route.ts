@@ -73,7 +73,7 @@ export async function PUT(
     }
 
     // Update block - remove id from data
-    const { id: _unused, ...updateData } = validatedData;
+    const updateData = (({ id, ...rest }) => rest)(validatedData);
     const block = await prisma.block.update({
       where: { id },
       data: updateData,
