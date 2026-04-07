@@ -14,19 +14,19 @@ export class MemoryCache {
     setInterval(() => this.cleanup(), 60000); // Every minute
   }
 
-  get<K>(key: string): K | null {
+  get<T>(key: string): T | null {
     const entry = this.cache.get(key);
     if (!entry) return null;
-
+    
     if (Date.now() > entry.expiresAt) {
       this.cache.delete(key);
       return null;
     }
-
-    return entry.value as K;
+    
+    return entry.value as T;
   }
 
-  set<K>(key: string, value: K, ttlSeconds?: number): void {
+  set<T>(key: string, value: T, ttlSeconds?: number): void {
     const ttl = (ttlSeconds ?? this.defaultTTL / 1000) * 1000;
     this.cache.set(key, {
       value,
