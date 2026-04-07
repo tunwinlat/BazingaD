@@ -148,9 +148,10 @@ export async function POST(request: Request) {
     // Validate input
     const validatedData = loginSchema.parse(body);
     const { username, password, totpToken } = validatedData;
+    const normalizedUsername = username.toLowerCase();
 
     // Check for lockout (using username as identifier)
-    if (isLockedOut(username.toLowerCase())) {
+    if (isLockedOut(normalizedUsername)) {
       return NextResponse.json(
         { error: 'Account temporarily locked due to too many failed attempts. Please try again later.' },
         { status: 429 }
@@ -159,7 +160,7 @@ export async function POST(request: Request) {
 
     // Find user
     const user = await prisma.user.findUnique({
-      where: { username },
+      where: { username: normalizedUsername },
     });
 
     if (!user) {
@@ -167,7 +168,7 @@ export async function POST(request: Request) {
       // compared to a static dummy hash which may leak timing differences.
       await bcrypt.hash(password, 12);
 
-      recordFailedAttempt(username.toLowerCase());
+      recordFailedAttempt(normalizedUsername);
       return NextResponse.json(
         { error: 'Invalid credentials' },
         { status: 401 }
@@ -178,7 +179,7 @@ export async function POST(request: Request) {
     const isValid = await bcrypt.compare(password, user.password);
 
     if (!isValid) {
-      recordFailedAttempt(username.toLowerCase());
+      recordFailedAttempt(normalizedUsername);
       return NextResponse.json(
         { error: 'Invalid credentials' },
         { status: 401 }
@@ -192,7 +193,7 @@ export async function POST(request: Request) {
     }
 
     // Clear failed attempts on successful login
-    recordSuccessfulAttempt(username.toLowerCase());
+    recordSuccessfulAttempt(normalizedUsername);
 
     // Get session duration from settings
     const sessionHours = await getSessionDurationHours();
