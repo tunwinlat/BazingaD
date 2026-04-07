@@ -9,7 +9,7 @@ export async function GET() {
 
     return NextResponse.json({
       enabled: settings?.trafficEnabled ?? false,
-      apiKey: auth && settings?.trafficApiKey ? '********' : '', // 🛡️ Sentinel: Mask API key to prevent leaking secret to the frontend
+      apiKey: auth && settings?.trafficApiKey ? '********' : '', // 🛡️ Sentinel: Mask API key to prevent exposure, even to authenticated users
       homeAddress: auth ? (settings?.trafficHomeAddress ?? '') : '', // 🛡️ Sentinel: Only expose PII to authenticated users
       workAddress: auth ? (settings?.trafficWorkAddress ?? '') : '', // 🛡️ Sentinel: Only expose PII to authenticated users
       travelMode: settings?.trafficTravelMode ?? 'DRIVE',
@@ -54,13 +54,12 @@ export async function PUT(request: Request) {
 
     const existingSettings = await prisma.settings.findFirst();
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const updateData: any = {
       trafficEnabled: enabled ?? false,
-      trafficTravelMode: travelMode ?? 'DRIVE',
-      trafficUnits: units ?? 'metric',
       trafficHomeAddress: homeAddress || null,
       trafficWorkAddress: workAddress || null,
+      trafficTravelMode: travelMode ?? 'DRIVE',
+      trafficUnits: units ?? 'metric',
     };
 
     if (apiKey !== undefined && apiKey !== '********') {
@@ -74,14 +73,7 @@ export async function PUT(request: Request) {
       });
     } else {
       await prisma.settings.create({
-        data: {
-          trafficEnabled: updateData.trafficEnabled,
-          trafficApiKey: updateData.trafficApiKey || null,
-          trafficHomeAddress: updateData.trafficHomeAddress || null,
-          trafficWorkAddress: updateData.trafficWorkAddress || null,
-          trafficTravelMode: updateData.trafficTravelMode,
-          trafficUnits: updateData.trafficUnits,
-        },
+        data: updateData,
       });
     }
 
