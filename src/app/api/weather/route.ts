@@ -2,17 +2,6 @@ import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { weatherCache } from '@/lib/cache';
 
-interface WeatherResponse {
-  temperature: number;
-  unit: string;
-  condition: string;
-  icon: string;
-  windSpeed: number;
-  windSpeedUnit: string;
-  windDirection: string;
-  locationName: string;
-}
-
 // Weather condition codes from Open-Meteo
 const weatherCodes: Record<number, { label: string; icon: string }> = {
   0: { label: 'Clear sky', icon: '☀️' },
@@ -66,12 +55,17 @@ export async function GET() {
 
     const { weatherLatitude: lat, weatherLongitude: lon, weatherUnits: units, weatherLocationName } = settings;
 
-    // 🛡️ Sentinel: Prevent upstream rate limit exhaustion and DoS by caching external API responses
-    const cacheKey = `${lat}_${lon}_${units}_${weatherLocationName}`;
-    const cachedWeather = weatherCache.get<WeatherResponse>(cacheKey);
+    // 🛡️ Sentinel: Implement caching to prevent external API rate limit exhaustion (DoS prevention)
+    const cacheKey = `weather_${lat}_${lon}_${units}_${weatherLocationName}`;
+    const cachedWeather = weatherCache.get<any>(cacheKey);
 
     if (cachedWeather) {
-      return NextResponse.json(cachedWeather);
+      return NextResponse.json(cachedWeather, {
+        headers: {
+          'X-Cache': 'HIT',
+          'Cache-Control': 'private, max-age=600',
+        },
+      });
     }
 
     // Build Open-Meteo API URL
@@ -111,7 +105,7 @@ export async function GET() {
       const weatherCode = current.weather_code;
       const weatherInfo = weatherCodes[weatherCode] || { label: 'Unknown', icon: '❓' };
 
-      const responseData: WeatherResponse = {
+      const weatherResponse = {
         temperature: Math.round(current.temperature_2m),
         unit: units === 'imperial' ? '°F' : '°C',
         condition: weatherInfo.label,
@@ -122,9 +116,15 @@ export async function GET() {
         locationName: weatherLocationName || 'Current Location',
       };
 
-      weatherCache.set(cacheKey, responseData);
+      // Store in cache
+      weatherCache.set(cacheKey, weatherResponse);
 
-      return NextResponse.json(responseData);
+      return NextResponse.json(weatherResponse, {
+        headers: {
+          'X-Cache': 'MISS',
+          'Cache-Control': 'private, max-age=600',
+        },
+      });
     } catch (fetchError) {
       clearTimeout(timeoutId);
       throw fetchError;
