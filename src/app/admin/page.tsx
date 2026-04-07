@@ -186,8 +186,8 @@ export default function AdminPage() {
       ]);
       const cats = await catRes.json();
       const blks = await blockRes.json();
-      setCategories(Array.isArray(cats) ? cats : []);
-      setBlocks(Array.isArray(blks) ? blks : []);
+      setCategories(cats);
+      setBlocks(blks);
     } catch (error) {
       console.error('Failed to fetch data:', error);
     }
@@ -945,10 +945,10 @@ export default function AdminPage() {
                         </button>
                         <button
                           onClick={() => handleDeleteCategory(cat.id)}
-                          disabled={isDeletingCategory === cat.id}
                           className="p-2 rounded-lg transition-colors hover:bg-red-500/20 disabled:opacity-50 disabled:cursor-not-allowed"
                           style={{ color: '#f87171' }}
                           aria-label="Delete category"
+                          disabled={isDeletingCategory === cat.id}
                         >
                           {isDeletingCategory === cat.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
                         </button>
@@ -1030,10 +1030,10 @@ export default function AdminPage() {
                         </button>
                         <button
                           onClick={() => handleDeleteBlock(block.id)}
-                          disabled={isDeletingBlock === block.id}
                           className="p-2 rounded-lg transition-colors hover:bg-red-500/20 disabled:opacity-50 disabled:cursor-not-allowed"
                           style={{ color: '#f87171' }}
                           aria-label="Delete block"
+                          disabled={isDeletingBlock === block.id}
                         >
                           {isDeletingBlock === block.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
                         </button>
