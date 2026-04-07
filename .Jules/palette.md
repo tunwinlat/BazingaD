@@ -16,3 +16,7 @@
 ## 2024-03-24 - Admin Dashboard API Resilience and Loading Feedback
 **Learning:** During UI enhancement, it became apparent that API responses for blocks and categories must be validated as arrays before setting state to prevent React crashes. Additionally, destructive actions (like deletion) need disabled states combined with loading spinners to communicate system status clearly to the user.
 **Action:** Always wrap API array responses in `Array.isArray(data) ? data : []` to prevent `.map()` errors. Always use the `Loader2` spinner and a disabled state for asynchronous destructive UI actions.
+
+## 2025-02-28 - Add Loading States to Submit Buttons
+**Learning:** Async forms without immediate visual feedback on the submit button cause users to wonder if their action was registered, risking double submissions. While `disabled` state helps technically, users need a clear visual indicator like a loading spinner and updated text.
+**Action:** Always include an inline loading indicator (like `Loader2` from `lucide-react`) and update the button text (e.g., from "Update" to "Updating...") inside the primary submit button of async forms.
