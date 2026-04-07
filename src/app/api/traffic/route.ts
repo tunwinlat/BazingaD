@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import type { Settings } from '@prisma/client';
 
 const CACHE_DURATION_MS = 30 * 60 * 1000; // 30 minutes
 
@@ -105,8 +106,7 @@ async function fetchRouteData(
   };
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-function validateSettings(settings: any): NextResponse | null {
+function validateSettings(settings: Settings | null): NextResponse | null {
   if (!settings?.trafficEnabled) {
     return NextResponse.json(
       { error: 'Traffic feature is not enabled' },
