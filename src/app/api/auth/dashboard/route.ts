@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { verifyAuth, createSession, getCookieOptions } from '@/lib/auth';
+import { verifyAuth, getCookieOptions, generateSessionToken, MAX_SESSION_DURATION_HOURS } from '@/lib/auth';
 import { settingsCache } from '@/lib/cache';
 import bcrypt from 'bcryptjs';
 import { cookies } from 'next/headers';
@@ -25,21 +25,21 @@ export async function GET() {
       dashboardProtected = settings?.dashboardProtected ?? false;
       settingsCache.set(CACHE_KEY, dashboardProtected, 60);
     }
-    
+
     // Check if user has admin auth (admins always have dashboard access)
     const auth = await verifyAuth();
     const hasAdminAccess = !!auth;
-    
+
     // Check dashboard-specific access
     const cookieStore = await cookies();
     const dashboardToken = cookieStore.get('dashboard-token')?.value;
-    
+
     let hasDashboardAccess = false;
     if (dashboardToken) {
       const session = await prisma.session.findUnique({
         where: { token: dashboardToken },
       });
-      
+
       if (session && session.expiresAt > new Date()) {
         hasDashboardAccess = true;
       }
@@ -85,7 +85,7 @@ export async function POST(request: Request) {
     // Validate input
     const validatedData = dashboardLoginSchema.parse(body);
     const { password } = validatedData;
-    
+
     let dashboardProtected = settingsCache.get<boolean>(CACHE_KEY);
 
     if (dashboardProtected === null || dashboardProtected === undefined) {
@@ -95,14 +95,14 @@ export async function POST(request: Request) {
       dashboardProtected = dbSettings?.dashboardProtected ?? false;
       settingsCache.set(CACHE_KEY, dashboardProtected, 60);
     }
-    
+
     if (!dashboardProtected) {
       return NextResponse.json(
         { error: 'Dashboard is not protected' },
         { status: 400 }
       );
     }
-    
+
     const settings = await prisma.settings.findFirst();
 
     if (!settings?.dashboardPassword) {
@@ -111,16 +111,16 @@ export async function POST(request: Request) {
         { status: 500 }
       );
     }
-    
+
     const isValid = await bcrypt.compare(password, settings.dashboardPassword);
-    
+
     if (!isValid) {
       return NextResponse.json(
         { error: 'Invalid password' },
         { status: 401 }
       );
     }
-    
+
     // Get first user for session relation
     const user = await prisma.user.findFirst();
     if (!user) {
@@ -132,22 +132,33 @@ export async function POST(request: Request) {
 
     // Get session duration from settings
     const sessionDurationHours = settings.sessionDurationHours || 24;
-    
-    // Create session using auth utility with the configured duration
-    const token = await createSession(user.id, sessionDurationHours, 'dash_');
-    
+
+    // Create custom dashboard session to avoid privilege escalation
+    // We use a prefix to ensure this token cannot be used for admin API access
+    const token = `dash_${generateSessionToken()}`;
+    const effectiveDurationHours = Math.min(sessionDurationHours, MAX_SESSION_DURATION_HOURS);
+    const durationMs = effectiveDurationHours * 60 * 60 * 1000;
+
+    await prisma.session.create({
+      data: {
+        token,
+        userId: user.id,
+        expiresAt: new Date(Date.now() + durationMs),
+      }
+    });
+
     const response = NextResponse.json({ success: true });
-    
+
     // Set cookie with secure options
     response.cookies.set('dashboard-token', token, getCookieOptions(
       sessionDurationHours * 60 * 60
     ));
-    
+
     return response;
   } catch (error) {
     if (error instanceof z.ZodError) {
       return NextResponse.json(
-        { 
+        {
           error: 'Validation failed',
           details: error.issues.map(e => e.message),
         },
@@ -168,19 +179,19 @@ export async function DELETE() {
   try {
     const cookieStore = await cookies();
     const token = cookieStore.get('dashboard-token')?.value;
-    
+
     if (token) {
       await prisma.session.deleteMany({
         where: { token },
       });
     }
-    
+
     const response = NextResponse.json({ success: true });
     response.cookies.set('dashboard-token', '', {
       ...getCookieOptions(0),
       maxAge: 0,
     });
-    
+
     return response;
   } catch (error) {
     console.error('Dashboard logout error:', error);
