@@ -131,6 +131,32 @@ function validateSettings(settings: any): NextResponse | null {
   return null;
 }
 
+function getSafeErrorInfo(error: unknown): { message: string; code: string } {
+  let message = 'Failed to fetch traffic data';
+  let code = 'UNKNOWN_ERROR';
+
+  if (error instanceof Error) {
+    if (error.message.startsWith('API_KEY_INVALID:')) {
+      code = 'API_KEY_INVALID';
+      message = 'The API key is invalid or the Routes API is not enabled.';
+    } else if (error.message.startsWith('RATE_LIMIT_EXCEEDED:')) {
+      code = 'RATE_LIMIT_EXCEEDED';
+      message = 'You have exceeded the API rate limit.';
+    } else if (error.message.startsWith('ADDRESS_NOT_FOUND:')) {
+      code = 'ADDRESS_NOT_FOUND';
+      message = 'Could not find one of the specified locations.';
+    } else if (error.message.startsWith('NO_ROUTE_FOUND:')) {
+      code = 'NO_ROUTE_FOUND';
+      message = 'Could not find a route between the specified addresses.';
+    } else if (error.message.startsWith('API_ERROR:')) {
+      code = 'API_ERROR';
+      // Do not expose specific API_ERROR details
+    }
+  }
+
+  return { message, code };
+}
+
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 function buildCachedResponse(cache: any, cacheAgeMinutes: number, apiError?: Error): TrafficResponse {
   const response: TrafficResponse = {
@@ -147,26 +173,9 @@ function buildCachedResponse(cache: any, cacheAgeMinutes: number, apiError?: Err
   };
 
   if (apiError) {
-    let safeMessage = 'Failed to fetch traffic data';
-    if (apiError.message) {
-      const code = apiError.message.split(':')[0];
-      switch (code) {
-        case 'API_KEY_INVALID':
-          safeMessage = 'Traffic service is currently unavailable.';
-          break;
-        case 'RATE_LIMIT_EXCEEDED':
-          safeMessage = 'Traffic service is busy. Please try again later.';
-          break;
-        case 'ADDRESS_NOT_FOUND':
-        case 'NO_ROUTE_FOUND':
-          safeMessage = 'Could not calculate route for the configured locations.';
-          break;
-        case 'API_ERROR':
-          safeMessage = 'Traffic service experienced an internal error.';
-          break;
-      }
-    }
+    const { message: safeMessage, code } = getSafeErrorInfo(apiError);
     response.error = `Using stale cache (${cacheAgeMinutes} min old). ${safeMessage}`;
+    response.errorCode = code;
   }
 
   return response;
@@ -250,36 +259,12 @@ export async function GET() {
         return NextResponse.json(buildCachedResponse(cache, cacheAgeMinutes, err));
       }
 
-      // Parse error code from message
-      let errorMessage = 'Failed to fetch traffic data';
-      let errorCode = 'UNKNOWN_ERROR';
-
-      if (apiError instanceof Error && apiError.message) {
-        const parsedCode = apiError.message.split(':')[0];
-        if (['API_KEY_INVALID', 'RATE_LIMIT_EXCEEDED', 'ADDRESS_NOT_FOUND', 'API_ERROR', 'NO_ROUTE_FOUND'].includes(parsedCode)) {
-          errorCode = parsedCode;
-          switch (errorCode) {
-            case 'API_KEY_INVALID':
-              errorMessage = 'Traffic service is currently unavailable.';
-              break;
-            case 'RATE_LIMIT_EXCEEDED':
-              errorMessage = 'Traffic service is busy. Please try again later.';
-              break;
-            case 'ADDRESS_NOT_FOUND':
-            case 'NO_ROUTE_FOUND':
-              errorMessage = 'Could not calculate route for the configured locations.';
-              break;
-            case 'API_ERROR':
-              errorMessage = 'Traffic service experienced an internal error.';
-              break;
-          }
-        }
-      }
+      const { message, code } = getSafeErrorInfo(apiError);
 
       return NextResponse.json(
         {
-          error: errorMessage,
-          errorCode,
+          error: message,
+          errorCode: code,
         },
         { status: 500 }
       );
