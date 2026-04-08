@@ -1,7 +1,8 @@
 'use client';
 
+import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Lock, LogOut } from 'lucide-react';
+import { Lock, LogOut, Loader2 } from 'lucide-react';
 
 interface DashboardHeaderProps {
   isAdmin?: boolean;
@@ -9,13 +10,16 @@ interface DashboardHeaderProps {
 
 export default function DashboardHeader({ isAdmin }: DashboardHeaderProps) {
   const router = useRouter();
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
 
   const handleLogout = async () => {
+    setIsLoggingOut(true);
     try {
       await fetch('/api/auth/dashboard', { method: 'DELETE' });
       router.push('/dashboard-login');
     } catch (error) {
       console.error('Logout error:', error);
+      setIsLoggingOut(false);
     }
   };
 
@@ -34,14 +38,19 @@ export default function DashboardHeader({ isAdmin }: DashboardHeaderProps) {
       </div>
       <button
         onClick={handleLogout}
-        className="flex items-center gap-2 px-3 py-1.5 rounded-full text-sm transition-colors hover:bg-white/10"
+        disabled={isLoggingOut}
+        className="flex items-center gap-2 px-3 py-1.5 rounded-full text-sm transition-colors hover:bg-white/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed"
         style={{
           backgroundColor: 'rgba(255,255,255,0.05)',
           border: '1px solid rgba(255,255,255,0.1)',
         }}
       >
-        <LogOut className="w-3.5 h-3.5" />
-        Logout
+        {isLoggingOut ? (
+          <Loader2 className="w-3.5 h-3.5 animate-spin" />
+        ) : (
+          <LogOut className="w-3.5 h-3.5" />
+        )}
+        {isLoggingOut ? 'Logging out...' : 'Logout'}
       </button>
     </div>
   );

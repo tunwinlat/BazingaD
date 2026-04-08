@@ -78,8 +78,8 @@ export async function PUT(
     }
 
     // Update category - remove id from data
-    const updateData = { ...validatedData };
-    delete updateData.id;
+    const { id: _id, ...updateData } = validatedData;
+    // delete updateData.id;
     const category = await prisma.category.update({
       where: { id },
       data: updateData,

@@ -20,3 +20,6 @@
 ## 2025-02-28 - Add Loading States to Submit Buttons
 **Learning:** Async forms without immediate visual feedback on the submit button cause users to wonder if their action was registered, risking double submissions. While `disabled` state helps technically, users need a clear visual indicator like a loading spinner and updated text.
 **Action:** Always include an inline loading indicator (like `Loader2` from `lucide-react`) and update the button text (e.g., from "Update" to "Updating...") inside the primary submit button of async forms.
+## 2026-04-08 - DashboardHeader Logout Button UX Improvement
+**Learning:** Destructive and async actions (like logout) should have immediate visual feedback to prevent multiple clicks and user confusion. Focus states are essential for accessibility, and disabled states during asynchronous operations should be clearly indicated via opacity and cursor changes.
+**Action:** When implementing async buttons, always include a loading state (e.g., using lucide-react Loader2) and the standard accessibility classes (focus-visible:ring-2 focus-visible:ring-indigo-500).
