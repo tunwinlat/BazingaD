@@ -143,6 +143,11 @@ export default function UnifiedSearch({ categories }: UnifiedSearchProps) {
           onFocus={() => setIsFocused(true)}
           placeholder="Search your blocks or the web..."
           aria-label="Search your blocks or the web"
+          role="combobox"
+          aria-expanded={isFocused && query.trim() ? "true" : "false"}
+          aria-controls="search-results"
+          aria-activedescendant={isFocused && query.trim() ? `search-result-${selectedIndex}` : undefined}
+          aria-autocomplete="list"
           autoComplete="off"
           className="flex-1 bg-transparent border-none outline-none text-white placeholder-white/50 px-3 py-2 text-base"
           style={{
@@ -175,6 +180,8 @@ export default function UnifiedSearch({ categories }: UnifiedSearchProps) {
       {/* Dropdown Results */}
       {isFocused && query.trim() && (
         <div
+          id="search-results"
+          role="listbox"
           className="absolute top-full left-0 right-0 mt-2 rounded-2xl overflow-hidden z-50"
           style={{
             backgroundColor: 'rgba(30, 30, 50, 0.98)',
@@ -191,6 +198,9 @@ export default function UnifiedSearch({ categories }: UnifiedSearchProps) {
               </div>
               {filteredBlocks.map((block, index) => (
                 <button
+                  id={`search-result-${index}`}
+                  role="option"
+                  aria-selected={index === selectedIndex}
                   key={block.id}
                   onClick={() => handleBlockClick(block.url)}
                   onMouseEnter={() => setSelectedIndex(index)}
@@ -251,6 +261,9 @@ export default function UnifiedSearch({ categories }: UnifiedSearchProps) {
           {query.trim() && (
             <div className="border-t border-white/10 py-2">
               <button
+                id={`search-result-${filteredBlocks.length}`}
+                role="option"
+                aria-selected={selectedIndex === filteredBlocks.length}
                 onClick={handleGoogleSearch}
                 onMouseEnter={() => setSelectedIndex(filteredBlocks.length)}
                 className="w-full flex items-center gap-3 px-4 py-2.5 text-left transition-colors"

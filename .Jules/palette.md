@@ -23,3 +23,6 @@
 ## 2026-04-08 - DashboardHeader Logout Button UX Improvement
 **Learning:** Destructive and async actions (like logout) should have immediate visual feedback to prevent multiple clicks and user confusion. Focus states are essential for accessibility, and disabled states during asynchronous operations should be clearly indicated via opacity and cursor changes.
 **Action:** When implementing async buttons, always include a loading state (e.g., using lucide-react Loader2) and the standard accessibility classes (focus-visible:ring-2 focus-visible:ring-indigo-500).
+## 2024-05-19 - UnifiedSearch Accessibility
+**Learning:** Custom React-based search dropdowns often lack native combobox accessibility, making them invisible or confusing to screen readers. Adding explicit ARIA roles (combobox, listbox, option) and managing stateful attributes (aria-expanded, aria-activedescendant) significantly improves keyboard and screen reader navigation without altering visual design or core logic.
+**Action:** When implementing or reviewing custom select/autocomplete components, ensure the W3C WAI-ARIA combobox pattern is applied to bridge the gap between visual presentation and semantic structure.
