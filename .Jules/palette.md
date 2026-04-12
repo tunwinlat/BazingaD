@@ -20,3 +20,6 @@
 ## 2025-02-28 - Add Loading States to Submit Buttons
 **Learning:** Async forms without immediate visual feedback on the submit button cause users to wonder if their action was registered, risking double submissions. While `disabled` state helps technically, users need a clear visual indicator like a loading spinner and updated text.
 **Action:** Always include an inline loading indicator (like `Loader2` from `lucide-react`) and update the button text (e.g., from "Update" to "Updating...") inside the primary submit button of async forms.
+## 2024-04-12 - Password Visibility Toggle
+**Learning:** Adding a password visibility toggle reduces login friction and helps prevent typos.
+**Action:** Ensure password inputs feature an accessible visibility toggle (e.g., using `Eye` and `EyeOff` from `lucide-react`) with proper `aria-label` and `focus-visible` classes.
