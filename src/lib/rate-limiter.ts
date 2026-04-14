@@ -45,6 +45,9 @@ export type RateLimitType = keyof typeof rateLimiters;
  * Get client IP from request with fallback strategies
  */
 function getClientIP(request: NextRequest): string {
+  // Try request.ip first (provided by Next.js in deployed environments)
+  if (request.ip) return request.ip;
+
   // Try various headers to get the real client IP
   const forwarded = request.headers.get('x-forwarded-for');
   const realIP = request.headers.get('x-real-ip');
@@ -57,9 +60,9 @@ function getClientIP(request: NextRequest): string {
     return realIP;
   }
   
-  // Use a unique identifier per request if we can't determine IP
-  // This prevents rate limiting all requests when IP is unknown
-  return request.headers.get('user-agent') || 'default';
+  // Fallback to a single bucket if we truly can't determine IP
+  // Do not use user-agent as it can be easily randomized to bypass rate limiting
+  return 'unknown-ip';
 }
 
 /**
