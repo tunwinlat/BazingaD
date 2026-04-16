@@ -130,8 +130,8 @@ export const totpVerifySchema = z.object({
 
 // Login schema
 export const loginSchema = z.object({
-  username: z.string().min(1, 'Username is required'),
-  password: z.string().min(1, 'Password is required'),
+  username: z.string().min(1, 'Username is required').max(100, 'Username must not exceed 100 characters'),
+  password: z.string().min(1, 'Password is required').max(128, 'Password must not exceed 128 characters'),
   totpToken: z.string()
     .length(6, 'TOTP token must be 6 digits')
     .regex(/^\d{6}$/, 'TOTP token must contain only digits')

@@ -42,3 +42,13 @@
 **Vulnerability:** IP rate limiting in `rate-limiter.ts` previously fell back to the `user-agent` header when an IP could not be determined. This allowed attackers to completely bypass rate limits by continuously randomizing their User-Agent.
 **Learning:** Fallbacks for rate limiting identifiers must never use easily spoofed or randomized client-controlled headers, as it provides a trivial way to evade the limits.
 **Prevention:** Always use reliable IP address sources (such as `request.ip` provided by the framework) and fall back to a single shared global bucket (e.g., 'unknown-ip') when the real client IP cannot be determined, ensuring limits remain enforced.
+
+## 2026-03-31 - Bcrypt DoS via Unbounded Password Lengths
+**Vulnerability:** The password fields in authentication endpoints (, , ) were validated with Zod schemas that had a minimum length but no maximum length limit. This allowed attackers to send massive password strings (up to the 1MB payload limit) to be hashed or compared by Bcrypt, causing severe CPU exhaustion (Denial of Service).
+**Learning:** Bcrypt's computational cost scales with the length of the input string. Missing maximum length constraints on fields passed to computationally expensive functions like Bcrypt open the door to resource exhaustion attacks.
+**Prevention:** Always enforce strict maximum length limits (e.g., `.max(128)`) on all password input validation schemas (such as Zod objects) to cap the maximum computational effort required by hashing algorithms.
+
+## 2026-03-31 - Bcrypt DoS via Unbounded Password Lengths
+**Vulnerability:** The password fields in authentication endpoints (`/api/auth/login`, `/api/auth/dashboard`, `/api/auth/totp/disable`) were validated with Zod schemas that had a minimum length but no maximum length limit. This allowed attackers to send massive password strings (up to the 1MB payload limit) to be hashed or compared by Bcrypt, causing severe CPU exhaustion (Denial of Service).
+**Learning:** Bcrypt's computational cost scales with the length of the input string. Missing maximum length constraints on fields passed to computationally expensive functions like Bcrypt open the door to resource exhaustion attacks.
+**Prevention:** Always enforce strict maximum length limits (e.g., `.max(128)`) on all password input validation schemas (such as Zod objects) to cap the maximum computational effort required by hashing algorithms.
