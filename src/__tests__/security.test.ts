@@ -29,6 +29,12 @@ describe('isSafeUrl', () => {
       assert.strictEqual(isSafeUrl('http://1.2.3.4.5'), false, 'Should block too many segments if they match private patterns');
       assert.strictEqual(isSafeUrl('http://127.0.0.a'), false, 'Should block non-numeric segments in private range');
     });
+
+    test('returns false for integer and hex IP representations (SSRF bypass)', () => {
+      assert.strictEqual(isSafeUrl('http://2130706433'), false, 'Should block decimal integer representation of 127.0.0.1');
+      assert.strictEqual(isSafeUrl('http://0x7f000001'), false, 'Should block hex representation of 127.0.0.1');
+      assert.strictEqual(isSafeUrl('http://017700000001'), false, 'Should block octal representation of 127.0.0.1');
+    });
   });
 
   describe('Hostname Validation', () => {
