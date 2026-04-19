@@ -42,3 +42,7 @@
 **Vulnerability:** IP rate limiting in `rate-limiter.ts` previously fell back to the `user-agent` header when an IP could not be determined. This allowed attackers to completely bypass rate limits by continuously randomizing their User-Agent.
 **Learning:** Fallbacks for rate limiting identifiers must never use easily spoofed or randomized client-controlled headers, as it provides a trivial way to evade the limits.
 **Prevention:** Always use reliable IP address sources (such as `request.ip` provided by the framework) and fall back to a single shared global bucket (e.g., 'unknown-ip') when the real client IP cannot be determined, ensuring limits remain enforced.
+## 2025-02-20 - Enforce Max Length on Password Schemas
+**Vulnerability:** Bcrypt Denial of Service (DoS) via excessively long password inputs.
+**Learning:** The project relies on Bcrypt for hashing passwords. Since the computational cost of Bcrypt increases significantly with input length, passing extremely long strings (e.g., millions of characters) can cause CPU exhaustion and DoS.
+**Prevention:** Always enforce a `.max(128)` constraint on password fields using validation schemas (e.g., Zod) prior to executing hashing logic.
