@@ -1,0 +1,4 @@
+## 2025-02-28 - Bcrypt Denial of Service (DoS) via Unconstrained Password Length
+**Vulnerability:** Password fields during login and authentication verification flows lacked a maximum length constraint. An attacker could submit extremely long passwords, causing excessive CPU consumption during the Bcrypt hashing or comparison process.
+**Learning:** Bcrypt's computational cost increases linearly with the length of the input. Because it was unconstrained, sending megabytes of data in the password field would exhaust server CPU resources, leading to a Denial of Service (DoS). This vulnerability must be addressed anywhere user-provided strings are passed to heavy cryptographic functions.
+**Prevention:** Always enforce a maximum length limit (e.g., `.max(128)`) on password inputs in validation schemas (like Zod) for all authentication and password-change routes.
