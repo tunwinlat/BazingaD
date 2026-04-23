@@ -130,8 +130,9 @@ export const totpVerifySchema = z.object({
 
 // Login schema
 export const loginSchema = z.object({
-  username: z.string().min(1, 'Username is required'),
-  password: z.string().min(1, 'Password is required'),
+  // 🛡️ Sentinel: Enforce max length to prevent Bcrypt Denial of Service (DoS) during authentication
+  username: z.string().min(1, 'Username is required').max(32, 'Username must not exceed 32 characters'),
+  password: z.string().min(1, 'Password is required').max(128, 'Password must not exceed 128 characters'),
   totpToken: z.string()
     .length(6, 'TOTP token must be 6 digits')
     .regex(/^\d{6}$/, 'TOTP token must contain only digits')
@@ -143,7 +144,8 @@ export const loginSchema = z.object({
 export const setupSchema = z.object({
   username: usernameSchema,
   password: passwordSchema,
-  confirmPassword: z.string(),
+  // 🛡️ Sentinel: Enforce max length to prevent Bcrypt Denial of Service (DoS)
+  confirmPassword: z.string().max(128, 'Password must not exceed 128 characters'),
 }).refine(data => data.password === data.confirmPassword, {
   message: 'Passwords do not match',
   path: ['confirmPassword'],
@@ -151,9 +153,10 @@ export const setupSchema = z.object({
 
 // Password change schema
 export const passwordChangeSchema = z.object({
-  currentPassword: z.string().min(1, 'Current password is required'),
+  // 🛡️ Sentinel: Enforce max length on all password fields to prevent Bcrypt Denial of Service (DoS)
+  currentPassword: z.string().min(1, 'Current password is required').max(128, 'Password must not exceed 128 characters'),
   newPassword: passwordSchema,
-  confirmNewPassword: z.string(),
+  confirmNewPassword: z.string().max(128, 'Password must not exceed 128 characters'),
 }).refine(data => data.newPassword === data.confirmNewPassword, {
   message: 'New passwords do not match',
   path: ['confirmNewPassword'],
