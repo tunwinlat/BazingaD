@@ -28,6 +28,8 @@ describe('isSafeUrl', () => {
       assert.strictEqual(isSafeUrl('http://192.168.1'), false, 'Should block incomplete private IP');
       assert.strictEqual(isSafeUrl('http://1.2.3.4.5'), false, 'Should block too many segments if they match private patterns');
       assert.strictEqual(isSafeUrl('http://127.0.0.a'), false, 'Should block non-numeric segments in private range');
+      assert.strictEqual(isSafeUrl('http://2130706433/'), false, 'Should block integer IP');
+      assert.strictEqual(isSafeUrl('http://0x7f000001/'), false, 'Should block hex IP');
     });
   });
 

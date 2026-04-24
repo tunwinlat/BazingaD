@@ -20,6 +20,11 @@ export function isSafeUrl(url: string | null | undefined): boolean {
       hostname = hostname.slice(0, -1);
     }
 
+    // Explicitly reject integer/hex IP formats
+    if (/^\d+$/.test(hostname) || /^0x[0-9a-f]+$/i.test(hostname)) {
+      return false;
+    }
+
     // Block localhost and common local names
     const localNames = ['localhost', 'localhost.localdomain', 'loopback'];
     if (
