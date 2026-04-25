@@ -29,3 +29,6 @@
 ## 2026-04-11 - Password Visibility Toggle
 **Learning:** Password inputs without a visibility toggle increase login friction and typos. Adding a simple toggle improves UX significantly and reduces user frustration.
 **Action:** Always consider adding a show/hide password toggle to password inputs, ensuring the toggle button is accessible via keyboard and screen readers.
+## 2026-04-25 - Password Visibility Toggle Enhancement
+**Learning:** Password inputs without visibility toggles can cause frustration and login errors, particularly for complex passwords on mobile or in secure environments.
+**Action:** Always add `Eye` / `EyeOff` toggles to password inputs, ensuring they are built accessibly using `type="button"`, proper `aria-label`s, and `focus-visible` styling to support keyboard navigation.
