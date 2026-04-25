@@ -10,7 +10,7 @@ const MAX_BODY_SIZE = 1024 * 1024;
 const CACHE_KEY = 'dashboard_auth_settings';
 
 const dashboardLoginSchema = z.object({
-  password: z.string().min(1, 'Password is required'),
+  password: z.string().min(1, 'Password is required').max(128, 'Password is too long'),
 });
 
 // Track failed login attempts in memory (for rate limiting)
