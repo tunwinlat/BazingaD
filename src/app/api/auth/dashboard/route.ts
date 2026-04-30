@@ -10,7 +10,8 @@ const MAX_BODY_SIZE = 1024 * 1024;
 const CACHE_KEY = 'dashboard_auth_settings';
 
 const dashboardLoginSchema = z.object({
-  password: z.string().min(1, 'Password is required'),
+  // 🛡️ Sentinel: Enforce max length constraint (128) to prevent Bcrypt DoS via CPU exhaustion
+  password: z.string().min(1, 'Password is required').max(128, 'Password must not exceed 128 characters'),
 });
 
 // Track failed login attempts in memory (for rate limiting)

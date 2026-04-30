@@ -10,7 +10,8 @@ const MAX_BODY_SIZE = 1024 * 1024;
 
 const disableTotpSchema = z.object({
   code: z.string().min(1, 'Code is required'),
-  password: z.string().min(1, 'Password is required'),
+  // 🛡️ Sentinel: Enforce max length constraint (128) to prevent Bcrypt DoS via CPU exhaustion
+  password: z.string().min(1, 'Password is required').max(128, 'Password must not exceed 128 characters'),
 });
 
 /**
