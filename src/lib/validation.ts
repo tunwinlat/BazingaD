@@ -130,8 +130,8 @@ export const totpVerifySchema = z.object({
 
 // Login schema
 export const loginSchema = z.object({
-  username: z.string().min(1, 'Username is required'),
-  password: z.string().min(1, 'Password is required'),
+  username: z.string().min(1, 'Username is required').max(128, 'Username is too long'),
+  password: z.string().min(1, 'Password is required').max(128, 'Password is too long'),
   totpToken: z.string()
     .length(6, 'TOTP token must be 6 digits')
     .regex(/^\d{6}$/, 'TOTP token must contain only digits')
@@ -151,7 +151,7 @@ export const setupSchema = z.object({
 
 // Password change schema
 export const passwordChangeSchema = z.object({
-  currentPassword: z.string().min(1, 'Current password is required'),
+  currentPassword: z.string().min(1, 'Current password is required').max(128, 'Password is too long'),
   newPassword: passwordSchema,
   confirmNewPassword: z.string(),
 }).refine(data => data.newPassword === data.confirmNewPassword, {

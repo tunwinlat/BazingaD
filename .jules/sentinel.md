@@ -1,0 +1,4 @@
+## 2024-05-24 - Unbounded Input Fields Exposing Bcrypt Denial of Service (DoS)
+**Vulnerability:** Missing maximum length constraints on password/username validation schemas (`loginSchema`, `passwordChangeSchema`, `dashboardLoginSchema`, `disableTotpSchema`), which allows arbitrarily long inputs to reach the `bcrypt.compare` and `bcrypt.hash` functions.
+**Learning:** Bcrypt computational complexity scales linearly with the input length. When processing abnormally large strings (e.g. Megabytes in size), it consumes disproportionate CPU resources and can block the event loop, causing a Denial of Service. While the system limits max body payload to 1MB, parsing a 1MB password hash takes unacceptably long.
+**Prevention:** Always enforce a `.max(128)` constraint on fields that are subsequently hashed or compared using computationally expensive algorithms like Bcrypt.
