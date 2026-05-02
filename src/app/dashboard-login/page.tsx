@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { Lock, AlertCircle, Loader2 } from 'lucide-react';
+import { Lock, AlertCircle, Loader2, Eye, EyeOff } from 'lucide-react';
 
 function LoadingScreen() {
   return (
@@ -50,6 +50,8 @@ function LoginCard({
   submitting: boolean;
   handleSubmit: (e: React.FormEvent) => Promise<void>;
 }) {
+  const [showPassword, setShowPassword] = useState(false);
+
   return (
     <div className="w-full max-w-md">
       {/* Login Card */}
@@ -87,19 +89,29 @@ function LoginCard({
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
             <label htmlFor="dashboard-password" className="block text-sm text-white/70 mb-2">Password</label>
-            <input
-              id="dashboard-password"
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              className="w-full px-4 py-3 rounded-lg text-white placeholder-white/40 outline-none focus:border-indigo-500"
-              style={{
-                backgroundColor: 'rgba(255,255,255,0.05)',
-                border: '1px solid rgba(255,255,255,0.1)',
-              }}
-              placeholder="Enter dashboard password"
-              required
-            />
+            <div className="relative">
+              <input
+                id="dashboard-password"
+                type={showPassword ? "text" : "password"}
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                className="w-full px-4 py-3 pr-12 rounded-lg text-white placeholder-white/40 outline-none focus:border-indigo-500"
+                style={{
+                  backgroundColor: 'rgba(255,255,255,0.05)',
+                  border: '1px solid rgba(255,255,255,0.1)',
+                }}
+                placeholder="Enter dashboard password"
+                required
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-white/40 hover:text-white/80 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 rounded p-1"
+                aria-label={showPassword ? "Hide password" : "Show password"}
+              >
+                {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+              </button>
+            </div>
           </div>
 
           <button
@@ -130,7 +142,7 @@ export default function DashboardLoginPage() {
       try {
         const response = await fetch('/api/auth/dashboard');
         const data = await response.json();
-        
+
         if (!data.protected || data.hasAccess) {
           // Not protected or already has access, redirect to home
           router.push('/');
