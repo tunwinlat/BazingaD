@@ -29,3 +29,9 @@
 ## 2026-04-11 - Password Visibility Toggle
 **Learning:** Password inputs without a visibility toggle increase login friction and typos. Adding a simple toggle improves UX significantly and reduces user frustration.
 **Action:** Always consider adding a show/hide password toggle to password inputs, ensuring the toggle button is accessible via keyboard and screen readers.
+## 2026-04-11 - Password Visibility Toggle on Dashboard Login
+**Learning:** Password inputs without a visibility toggle increase login friction and typos, particularly for generic forms like the dashboard protection prompt.
+**Action:** Implemented a show/hide password toggle (using lucide-react Eye/EyeOff icons) on the dashboard login page, ensuring keyboard accessibility via , ARIA labels, and explicit focus states ().
+## 2026-04-11 - Password Visibility Toggle on Dashboard Login
+**Learning:** Password inputs without a visibility toggle increase login friction and typos, particularly for generic forms like the dashboard protection prompt.
+**Action:** Implemented a show/hide password toggle (using lucide-react Eye/EyeOff icons) on the dashboard login page, ensuring keyboard accessibility via type="button", ARIA labels, and explicit focus states (focus-visible:ring-2 focus-visible:ring-indigo-500).
