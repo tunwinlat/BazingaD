@@ -29,3 +29,6 @@
 ## 2026-04-11 - Password Visibility Toggle
 **Learning:** Password inputs without a visibility toggle increase login friction and typos. Adding a simple toggle improves UX significantly and reduces user frustration.
 **Action:** Always consider adding a show/hide password toggle to password inputs, ensuring the toggle button is accessible via keyboard and screen readers.
+## 2026-05-04 - Password Visibility Toggle Padding
+**Learning:** When adding absolute positioned icons inside form inputs (e.g., for password visibility toggles), failing to adjust the input's padding causes typed text to overlap visually with the icon.
+**Action:** Always ensure the corresponding input element's padding is appropriately adjusted (e.g., changing `pr-4` to `pr-12` or `pr-10` in Tailwind depending on icon width and positioning) to maintain input text readability.
