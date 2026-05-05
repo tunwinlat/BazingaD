@@ -42,3 +42,8 @@
 **Vulnerability:** IP rate limiting in `rate-limiter.ts` previously fell back to the `user-agent` header when an IP could not be determined. This allowed attackers to completely bypass rate limits by continuously randomizing their User-Agent.
 **Learning:** Fallbacks for rate limiting identifiers must never use easily spoofed or randomized client-controlled headers, as it provides a trivial way to evade the limits.
 **Prevention:** Always use reliable IP address sources (such as `request.ip` provided by the framework) and fall back to a single shared global bucket (e.g., 'unknown-ip') when the real client IP cannot be determined, ensuring limits remain enforced.
+
+## 2026-05-05 - Mitigate Bcrypt DoS
+**Vulnerability:** Bcrypt DoS vulnerability on authentication routes due to unconstrained string length input handling. Extremely large inputs can exhaust CPU and block the event loop.
+**Learning:** The password and username inputs on authentication requests were not capped at 128 characters, allowing for potential Bcrypt DoS attacks.
+**Prevention:** Use Zod validation with `z.string().max(128)` on all password and username fields to enforce a maximum length.
