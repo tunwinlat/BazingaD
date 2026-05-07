@@ -29,3 +29,6 @@
 ## 2026-04-11 - Password Visibility Toggle
 **Learning:** Password inputs without a visibility toggle increase login friction and typos. Adding a simple toggle improves UX significantly and reduces user frustration.
 **Action:** Always consider adding a show/hide password toggle to password inputs, ensuring the toggle button is accessible via keyboard and screen readers.
+## 2026-04-11 - Setup Form Password Visibility Toggle
+**Learning:** During the initial setup phase, users are creating critical administrative credentials. Missing password visibility toggles on both the password and confirm password fields increases friction and the likelihood of frustrating typos during this critical onboarding stage.
+**Action:** Always provide password visibility toggles for all password fields in initial setup and onboarding forms to enhance user confidence and reduce input errors. Ensure toggles use accessible `aria-label`s and proper focus states.
