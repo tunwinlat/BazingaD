@@ -29,3 +29,6 @@
 ## 2026-04-11 - Password Visibility Toggle
 **Learning:** Password inputs without a visibility toggle increase login friction and typos. Adding a simple toggle improves UX significantly and reduces user frustration.
 **Action:** Always consider adding a show/hide password toggle to password inputs, ensuring the toggle button is accessible via keyboard and screen readers.
+## 2026-05-09 - Password Visibility Toggle Absolute Positioning
+**Learning:** When adding an absolute positioned icon (like a password visibility toggle) inside a form input container, it is essential to increase the corresponding side's padding (e.g., `pr-12`) on the input element itself. Failure to do so will cause the user's typed text to visually overlap with the icon, leading to a confusing and broken user experience.
+**Action:** Always verify and adjust padding (`pr` or `pl`) on the underlying input field when introducing absolute positioned interactive elements or icons within the same relative container.
