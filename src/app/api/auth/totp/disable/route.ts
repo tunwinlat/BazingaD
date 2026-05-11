@@ -9,8 +9,8 @@ import { ZodError } from 'zod';
 const MAX_BODY_SIZE = 1024 * 1024;
 
 const disableTotpSchema = z.object({
-  code: z.string().min(1, 'Code is required'),
-  password: z.string().min(1, 'Password is required'),
+  code: z.string().min(1, 'Code is required').max(128, 'Code must not exceed 128 characters'),
+  password: z.string().min(1, 'Password is required').max(128, 'Password must not exceed 128 characters'),
 });
 
 /**
