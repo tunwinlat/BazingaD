@@ -29,3 +29,7 @@
 ## 2026-04-11 - Password Visibility Toggle
 **Learning:** Password inputs without a visibility toggle increase login friction and typos. Adding a simple toggle improves UX significantly and reduces user frustration.
 **Action:** Always consider adding a show/hide password toggle to password inputs, ensuring the toggle button is accessible via keyboard and screen readers.
+
+## 2024-05-11 - Password Visibility Toggle
+**Learning:** Found that secondary or less-used login pages (like dashboard-login) often miss standard UX features like password visibility toggles, which can cause user friction during entry.
+**Action:** Always verify and implement password visibility toggles (using `Eye`/`EyeOff` icons, `aria-label`, and `type="button"`) with appropriate input padding (`pr-12`) on all password fields across the application for consistent UX.
