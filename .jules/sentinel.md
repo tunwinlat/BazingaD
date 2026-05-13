@@ -1,0 +1,4 @@
+## 2026-05-13 - Bcrypt DoS via Excessive Input Length
+**Vulnerability:** Application schemas for authentication routes (login, password change, TOTP disable) lacked an upper length bound on password fields. Attackers could submit extremely long passwords, causing CPU exhaustion during the Bcrypt hashing or comparison phase and leading to a Denial of Service (DoS).
+**Learning:** Bcrypt's computational cost grows significantly with input length. Relying on default validation without explicit constraints allows extremely large inputs to consume excessive server resources, blocking other requests.
+**Prevention:** Enforce a maximum length constraint (standard: `.max(128)`) on all password and username fields in validation schemas (e.g., Zod) across both centralized libraries and decentralized route definitions.
