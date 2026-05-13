@@ -15,6 +15,12 @@ export function isSafeUrl(url: string | null | undefined): boolean {
 
     let hostname = parsedUrl.hostname.toLowerCase();
 
+    // Prevent SSRF bypasses via integer/hex IP representations (e.g., 2130706433 for 127.0.0.1).
+    // Node.js fetch (Undici) resolves these, but they might bypass dotted-quad checks depending on URL parsing.
+    if (/^\d+$/.test(hostname) || /^0x[0-9a-f]+$/i.test(hostname)) {
+      return false;
+    }
+
     // Remove trailing dot if present
     if (hostname.endsWith('.')) {
       hostname = hostname.slice(0, -1);
