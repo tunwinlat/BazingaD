@@ -29,3 +29,6 @@
 ## 2026-04-11 - Password Visibility Toggle
 **Learning:** Password inputs without a visibility toggle increase login friction and typos. Adding a simple toggle improves UX significantly and reduces user frustration.
 **Action:** Always consider adding a show/hide password toggle to password inputs, ensuring the toggle button is accessible via keyboard and screen readers.
+## 2026-05-13 - Password Visibility Toggle
+**Learning:** Password visibility toggles significantly reduce login friction and prevent typos by allowing users to verify their input. When absolutely positioning an icon inside a form input (like an eye icon for a password field), the corresponding input element's padding must be appropriately adjusted (e.g., using Tailwind's `pr-12` instead of `pr-4`) to prevent the user's typed text from overlapping visually with the toggle icon.
+**Action:** Always include a password visibility toggle with proper padding, accessible ARIA labels, and focus states for keyboard accessibility when building authentication forms.
