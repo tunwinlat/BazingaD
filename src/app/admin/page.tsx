@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
-import { ArrowLeft, Plus, Trash2, Edit, X, RefreshCw, LogOut, Shield, Key, QrCode, Copy, Check, AlertTriangle, Lock, Settings2, Cloud, MapPin, Thermometer, Globe, Upload, RotateCcw, Loader2 } from 'lucide-react';
+import { ArrowLeft, Plus, Trash2, Edit, X, RefreshCw, LogOut, Shield, Key, QrCode, Copy, Check, AlertTriangle, Lock, Settings2, Cloud, MapPin, Thermometer, Globe, Upload, RotateCcw, Loader2, Eye, EyeOff } from 'lucide-react';
 import type { Category, Block, CategoryFormData, BlockFormData } from '@/types';
 
 export default function AdminPage() {
@@ -51,6 +51,11 @@ export default function AdminPage() {
     newPassword: '',
     confirmPassword: '',
   });
+  const [showCurrentPassword, setShowCurrentPassword] = useState(false);
+  const [showNewPassword, setShowNewPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [showDashboardPassword, setShowDashboardPassword] = useState(false);
+  const [showDisableTOTPPassword, setShowDisableTOTPPassword] = useState(false);
 
   // Dashboard protection settings
   const [settings, setSettings] = useState({
@@ -1074,40 +1079,70 @@ export default function AdminPage() {
                 <form onSubmit={handleChangePassword} className="space-y-4 max-w-md">
                   <div>
                     <label htmlFor="currentPassword" className="block text-sm text-white/70 mb-1">Current Password</label>
-                    <input
-                      id="currentPassword"
-                      type="password"
-                      value={passwordForm.currentPassword}
-                      onChange={(e) => setPasswordForm({ ...passwordForm, currentPassword: e.target.value })}
-                      className="w-full px-4 py-2 rounded-lg border outline-none focus:border-indigo-500"
-                      style={{ backgroundColor: 'rgba(255,255,255,0.05)', borderColor: 'rgba(255,255,255,0.1)', color: 'white' }}
-                      required
-                    />
+                    <div className="relative">
+                      <input
+                        id="currentPassword"
+                        type={showCurrentPassword ? "text" : "password"}
+                        value={passwordForm.currentPassword}
+                        onChange={(e) => setPasswordForm({ ...passwordForm, currentPassword: e.target.value })}
+                        className="w-full pl-4 pr-10 py-2 rounded-lg border outline-none focus:border-indigo-500"
+                        style={{ backgroundColor: 'rgba(255,255,255,0.05)', borderColor: 'rgba(255,255,255,0.1)', color: 'white' }}
+                        required
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowCurrentPassword(!showCurrentPassword)}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-white/40 hover:text-white/80 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 rounded p-1"
+                        aria-label={showCurrentPassword ? "Hide current password" : "Show current password"}
+                      >
+                        {showCurrentPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                      </button>
+                    </div>
                   </div>
                   <div>
                     <label htmlFor="newPassword" className="block text-sm text-white/70 mb-1">New Password</label>
-                    <input
-                      id="newPassword"
-                      type="password"
-                      value={passwordForm.newPassword}
-                      onChange={(e) => setPasswordForm({ ...passwordForm, newPassword: e.target.value })}
-                      className="w-full px-4 py-2 rounded-lg border outline-none focus:border-indigo-500"
-                      style={{ backgroundColor: 'rgba(255,255,255,0.05)', borderColor: 'rgba(255,255,255,0.1)', color: 'white' }}
-                      required
-                      minLength={6}
-                    />
+                    <div className="relative">
+                      <input
+                        id="newPassword"
+                        type={showNewPassword ? "text" : "password"}
+                        value={passwordForm.newPassword}
+                        onChange={(e) => setPasswordForm({ ...passwordForm, newPassword: e.target.value })}
+                        className="w-full pl-4 pr-10 py-2 rounded-lg border outline-none focus:border-indigo-500"
+                        style={{ backgroundColor: 'rgba(255,255,255,0.05)', borderColor: 'rgba(255,255,255,0.1)', color: 'white' }}
+                        required
+                        minLength={6}
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowNewPassword(!showNewPassword)}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-white/40 hover:text-white/80 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 rounded p-1"
+                        aria-label={showNewPassword ? "Hide new password" : "Show new password"}
+                      >
+                        {showNewPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                      </button>
+                    </div>
                   </div>
                   <div>
                     <label htmlFor="confirmPassword" className="block text-sm text-white/70 mb-1">Confirm New Password</label>
-                    <input
-                      id="confirmPassword"
-                      type="password"
-                      value={passwordForm.confirmPassword}
-                      onChange={(e) => setPasswordForm({ ...passwordForm, confirmPassword: e.target.value })}
-                      className="w-full px-4 py-2 rounded-lg border outline-none focus:border-indigo-500"
-                      style={{ backgroundColor: 'rgba(255,255,255,0.05)', borderColor: 'rgba(255,255,255,0.1)', color: 'white' }}
-                      required
-                    />
+                    <div className="relative">
+                      <input
+                        id="confirmPassword"
+                        type={showConfirmPassword ? "text" : "password"}
+                        value={passwordForm.confirmPassword}
+                        onChange={(e) => setPasswordForm({ ...passwordForm, confirmPassword: e.target.value })}
+                        className="w-full pl-4 pr-10 py-2 rounded-lg border outline-none focus:border-indigo-500"
+                        style={{ backgroundColor: 'rgba(255,255,255,0.05)', borderColor: 'rgba(255,255,255,0.1)', color: 'white' }}
+                        required
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-white/40 hover:text-white/80 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 rounded p-1"
+                        aria-label={showConfirmPassword ? "Hide confirm password" : "Show confirm password"}
+                      >
+                        {showConfirmPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                      </button>
+                    </div>
                   </div>
                   <div className="flex gap-3">
                     <button
@@ -1219,16 +1254,26 @@ export default function AdminPage() {
                   {settings.dashboardProtected && (
                     <div>
                       <label htmlFor="dashboardPassword" className="block text-sm text-white/70 mb-1">Dashboard Password</label>
-                      <input
-                        id="dashboardPassword"
-                        type="password"
-                        value={dashboardPassword}
-                        onChange={(e) => setDashboardPassword(e.target.value)}
-                        className="w-full px-4 py-2 rounded-lg border outline-none focus:border-indigo-500"
-                        style={{ backgroundColor: 'rgba(255,255,255,0.05)', borderColor: 'rgba(255,255,255,0.1)', color: 'white' }}
-                        placeholder={settings.dashboardProtected ? 'Enter new password (leave blank to keep current)' : 'Enter password'}
-                        minLength={4}
-                      />
+                      <div className="relative">
+                        <input
+                          id="dashboardPassword"
+                          type={showDashboardPassword ? "text" : "password"}
+                          value={dashboardPassword}
+                          onChange={(e) => setDashboardPassword(e.target.value)}
+                          className="w-full pl-4 pr-10 py-2 rounded-lg border outline-none focus:border-indigo-500"
+                          style={{ backgroundColor: 'rgba(255,255,255,0.05)', borderColor: 'rgba(255,255,255,0.1)', color: 'white' }}
+                          placeholder={settings.dashboardProtected ? 'Enter new password (leave blank to keep current)' : 'Enter password'}
+                          minLength={4}
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setShowDashboardPassword(!showDashboardPassword)}
+                          className="absolute right-3 top-1/2 -translate-y-1/2 text-white/40 hover:text-white/80 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 rounded p-1"
+                          aria-label={showDashboardPassword ? "Hide dashboard password" : "Show dashboard password"}
+                        >
+                          {showDashboardPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                        </button>
+                      </div>
                       <p className="text-xs text-white/40 mt-1">Minimum 4 characters</p>
                     </div>
                   )}
@@ -2176,14 +2221,24 @@ export default function AdminPage() {
             <form onSubmit={handleDisableTOTP} className="space-y-4">
               <div>
                 <label className="block text-sm text-white/70 mb-1">Current Password</label>
-                <input
-                  type="password"
-                  value={disableTOTPForm.password}
-                  onChange={(e) => setDisableTOTPForm({ ...disableTOTPForm, password: e.target.value })}
-                  className="w-full px-4 py-2 rounded-lg border outline-none focus:border-red-500"
-                  style={{ backgroundColor: 'rgba(255,255,255,0.05)', borderColor: 'rgba(255,255,255,0.1)', color: 'white' }}
-                  required
-                />
+                <div className="relative">
+                  <input
+                    type={showDisableTOTPPassword ? "text" : "password"}
+                    value={disableTOTPForm.password}
+                    onChange={(e) => setDisableTOTPForm({ ...disableTOTPForm, password: e.target.value })}
+                    className="w-full pl-4 pr-10 py-2 rounded-lg border outline-none focus:border-red-500"
+                    style={{ backgroundColor: 'rgba(255,255,255,0.05)', borderColor: 'rgba(255,255,255,0.1)', color: 'white' }}
+                    required
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowDisableTOTPPassword(!showDisableTOTPPassword)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-white/40 hover:text-white/80 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 rounded p-1"
+                    aria-label={showDisableTOTPPassword ? "Hide password" : "Show password"}
+                  >
+                    {showDisableTOTPPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  </button>
+                </div>
               </div>
               <div>
                 <label className="block text-sm text-white/70 mb-1">TOTP Code or Recovery Code</label>
