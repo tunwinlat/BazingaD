@@ -33,6 +33,7 @@ vi.mock('@/lib/cache', () => ({
 vi.mock('bcryptjs', () => ({
   default: {
     compare: vi.fn(),
+    hash: vi.fn(),
   },
 }));
 

@@ -46,7 +46,8 @@ export type RateLimitType = keyof typeof rateLimiters;
  */
 function getClientIP(request: NextRequest): string {
   // Try request.ip first (provided by Next.js in deployed environments)
-  if (request.ip) return request.ip;
+  const reqIp = (request as NextRequest & { ip?: string }).ip;
+  if (reqIp) return reqIp;
 
   // Try various headers to get the real client IP
   const forwarded = request.headers.get('x-forwarded-for');

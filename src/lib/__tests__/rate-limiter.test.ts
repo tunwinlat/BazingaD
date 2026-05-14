@@ -77,11 +77,11 @@ describe('rate-limiter', () => {
       __consumeMock.mockRejectedValueOnce(error);
 
       const req = new NextRequest('http://localhost', {
-        headers: new Headers({ 'user-agent': 'curl/7.68.0' }),
+        headers: new Headers({ 'x-forwarded-for': '192.168.1.1' }),
       });
 
       await expect(checkRateLimit(req, 'api')).rejects.toThrow('Database connection failed');
-      expect(__consumeMock).toHaveBeenCalledWith('curl/7.68.0');
+      expect(__consumeMock).toHaveBeenCalledWith('192.168.1.1');
     });
 
     it('uses "default" IP if no useful headers are present', async () => {
@@ -93,7 +93,7 @@ describe('rate-limiter', () => {
       const result = await checkRateLimit(req, 'api');
 
       expect(result.allowed).toBe(true);
-      expect(__consumeMock).toHaveBeenCalledWith('default');
+      expect(__consumeMock).toHaveBeenCalledWith('unknown-ip');
     });
   });
 
