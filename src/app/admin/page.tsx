@@ -86,12 +86,15 @@ export default function AdminPage() {
   const [trafficSettings, setTrafficSettings] = useState({
     enabled: false,
     apiKey: '',
+    tomTomApiKey: '',
+    primaryProvider: 'google' as 'google' | 'tomtom',
     homeAddress: '',
     workAddress: '',
     travelMode: 'DRIVE' as 'DRIVE' | 'BICYCLE' | 'WALK' | 'TWO_WHEELER' | 'TRANSIT',
     units: 'metric' as 'metric' | 'imperial',
   });
   const [showTrafficApiKey, setShowTrafficApiKey] = useState(false);
+  const [showTomTomApiKey, setShowTomTomApiKey] = useState(false);
 
   // Weather settings
   const [locationLoading, setLocationLoading] = useState(false);
@@ -303,6 +306,8 @@ export default function AdminPage() {
         setTrafficSettings({
           enabled: data.enabled ?? false,
           apiKey: data.apiKey || '',
+          tomTomApiKey: data.tomTomApiKey || '',
+          primaryProvider: data.primaryProvider || 'google',
           homeAddress: data.homeAddress || '',
           workAddress: data.workAddress || '',
           travelMode: data.travelMode || 'DRIVE',
@@ -651,6 +656,8 @@ export default function AdminPage() {
         body: JSON.stringify({
           enabled: trafficSettings.enabled,
           apiKey: trafficSettings.apiKey,
+          tomTomApiKey: trafficSettings.tomTomApiKey,
+          primaryProvider: trafficSettings.primaryProvider,
           homeAddress: trafficSettings.homeAddress,
           workAddress: trafficSettings.workAddress,
           travelMode: trafficSettings.travelMode,
@@ -1566,7 +1573,7 @@ export default function AdminPage() {
                   <MapPin className="w-5 h-5 text-green-400" />
                 </div>
                 <div>
-                  <h3 className="font-semibold">Google Routes API</h3>
+                  <h3 className="font-semibold">Traffic Providers</h3>
                   <p className="text-sm text-white/60">Display commute time information on your dashboard</p>
                 </div>
                 {trafficSettings.enabled && (
@@ -1583,10 +1590,12 @@ export default function AdminPage() {
                   API Usage & Pricing
                 </h4>
                 <p className="text-sm text-white/70 mb-2">
-                  Google Routes API includes a free tier of <strong>10,000 requests per month</strong>.
-                  Beyond that, charges apply. This app caches results for 30 minutes to minimize API calls.
+                  <strong>Google Routes API</strong> includes a free tier of <strong>10,000 requests per month</strong>.
+                  <strong> TomTom API</strong> offers <strong>2,500 requests per day</strong> on the free tier.
+                  This app caches results for 30 minutes to minimize API calls.
                 </p>
                 <p className="text-sm text-white/50">
+                  Configure both providers for automatic failover if one hits rate limits.
                   API calls are only made when the dashboard tab is active and the cache has expired.
                 </p>
               </div>
@@ -1609,7 +1618,24 @@ export default function AdminPage() {
 
                 {trafficSettings.enabled && (
                   <>
-                    {/* API Key */}
+                    {/* Primary Provider */}
+                    <div className="flex items-center gap-3 p-4 rounded-lg" style={{ backgroundColor: 'rgba(255,255,255,0.03)' }}>
+                      <div className="flex-1">
+                        <label className="font-medium">Primary Provider</label>
+                        <p className="text-sm text-white/50">Which provider to use first. The other serves as fallback.</p>
+                      </div>
+                      <select
+                        value={trafficSettings.primaryProvider}
+                        onChange={(e) => setTrafficSettings({ ...trafficSettings, primaryProvider: e.target.value as 'google' | 'tomtom' })}
+                        className="px-3 py-2 rounded-lg border outline-none focus:border-indigo-500"
+                        style={{ backgroundColor: 'rgba(255,255,255,0.05)', borderColor: 'rgba(255,255,255,0.1)', color: 'white' }}
+                      >
+                        <option value="google" style={{ backgroundColor: '#1a1a2e', color: 'white' }}>Google Routes</option>
+                        <option value="tomtom" style={{ backgroundColor: '#1a1a2e', color: 'white' }}>TomTom</option>
+                      </select>
+                    </div>
+
+                    {/* API Keys */}
                     <div className="p-4 rounded-lg space-y-4" style={{ backgroundColor: 'rgba(255,255,255,0.03)' }}>
                       <h4 className="font-medium flex items-center gap-2">
                         <Key className="w-4 h-4" />
@@ -1633,7 +1659,7 @@ export default function AdminPage() {
                             type={showTrafficApiKey ? 'text' : 'password'}
                             value={trafficSettings.apiKey}
                             onChange={(e) => setTrafficSettings({ ...trafficSettings, apiKey: e.target.value })}
-                            placeholder="Enter your Google Routes API key"
+                            placeholder="Enter your Google Routes API key (optional if TomTom is configured)"
                             className="flex-1 px-3 py-2 rounded-lg border outline-none focus:border-indigo-500 text-sm"
                             style={{ backgroundColor: 'rgba(255,255,255,0.05)', borderColor: 'rgba(255,255,255,0.1)', color: 'white' }}
                           />
@@ -1643,6 +1669,37 @@ export default function AdminPage() {
                             style={{ backgroundColor: 'rgba(255,255,255,0.1)' }}
                           >
                             {showTrafficApiKey ? 'Hide' : 'Show'}
+                          </button>
+                        </div>
+                      </div>
+
+                      <div>
+                        <label className="block text-sm text-white/70 mb-1">
+                          TomTom API Key
+                          <a
+                            href="https://developer.tomtom.com/how-to-get-tomtom-api-key"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="ml-2 text-xs text-blue-400 hover:underline"
+                          >
+                            Get API Key →
+                          </a>
+                        </label>
+                        <div className="flex gap-2">
+                          <input
+                            type={showTomTomApiKey ? 'text' : 'password'}
+                            value={trafficSettings.tomTomApiKey}
+                            onChange={(e) => setTrafficSettings({ ...trafficSettings, tomTomApiKey: e.target.value })}
+                            placeholder="Enter your TomTom API key (optional if Google is configured)"
+                            className="flex-1 px-3 py-2 rounded-lg border outline-none focus:border-indigo-500 text-sm"
+                            style={{ backgroundColor: 'rgba(255,255,255,0.05)', borderColor: 'rgba(255,255,255,0.1)', color: 'white' }}
+                          />
+                          <button
+                            onClick={() => setShowTomTomApiKey(!showTomTomApiKey)}
+                            className="px-3 py-2 rounded-lg transition-colors"
+                            style={{ backgroundColor: 'rgba(255,255,255,0.1)' }}
+                          >
+                            {showTomTomApiKey ? 'Hide' : 'Show'}
                           </button>
                         </div>
                       </div>

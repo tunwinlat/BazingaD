@@ -9,9 +9,11 @@ export async function GET() {
 
     return NextResponse.json({
       enabled: settings?.trafficEnabled ?? false,
-      apiKey: auth && settings?.trafficApiKey ? '********' : '', // 🛡️ Sentinel: Mask API key to prevent exposure, even to authenticated users
-      homeAddress: auth ? (settings?.trafficHomeAddress ?? '') : '', // 🛡️ Sentinel: Only expose PII to authenticated users
-      workAddress: auth ? (settings?.trafficWorkAddress ?? '') : '', // 🛡️ Sentinel: Only expose PII to authenticated users
+      apiKey: auth && settings?.trafficApiKey ? '********' : '',
+      tomTomApiKey: auth && settings?.trafficTomTomApiKey ? '********' : '',
+      primaryProvider: settings?.trafficPrimaryProvider ?? 'google',
+      homeAddress: auth ? (settings?.trafficHomeAddress ?? '') : '',
+      workAddress: auth ? (settings?.trafficWorkAddress ?? '') : '',
       travelMode: settings?.trafficTravelMode ?? 'DRIVE',
       units: settings?.trafficUnits ?? 'metric',
     });
@@ -32,7 +34,16 @@ export async function PUT(request: Request) {
     }
 
     const body = await request.json();
-    const { enabled, apiKey, homeAddress, workAddress, travelMode, units } = body;
+    const {
+      enabled,
+      apiKey,
+      tomTomApiKey,
+      primaryProvider,
+      homeAddress,
+      workAddress,
+      travelMode,
+      units,
+    } = body;
 
     // Validate travel mode
     const validModes = ['DRIVE', 'BICYCLE', 'WALK', 'TWO_WHEELER', 'TRANSIT'];
@@ -52,18 +63,40 @@ export async function PUT(request: Request) {
       );
     }
 
+    // Validate primary provider
+    if (primaryProvider && !['google', 'tomtom'].includes(primaryProvider)) {
+      return NextResponse.json(
+        { error: 'Invalid primary provider. Must be "google" or "tomtom".' },
+        { status: 400 }
+      );
+    }
+
     const existingSettings = await prisma.settings.findFirst();
 
-    const updateData: any = {
+    const updateData: {
+      trafficEnabled: boolean;
+      trafficHomeAddress: string | null;
+      trafficWorkAddress: string | null;
+      trafficTravelMode: string;
+      trafficUnits: string;
+      trafficPrimaryProvider: string;
+      trafficApiKey?: string | null;
+      trafficTomTomApiKey?: string | null;
+    } = {
       trafficEnabled: enabled ?? false,
       trafficHomeAddress: homeAddress || null,
       trafficWorkAddress: workAddress || null,
       trafficTravelMode: travelMode ?? 'DRIVE',
       trafficUnits: units ?? 'metric',
+      trafficPrimaryProvider: primaryProvider ?? 'google',
     };
 
     if (apiKey !== undefined && apiKey !== '********') {
       updateData.trafficApiKey = apiKey || null;
+    }
+
+    if (tomTomApiKey !== undefined && tomTomApiKey !== '********') {
+      updateData.trafficTomTomApiKey = tomTomApiKey || null;
     }
 
     if (existingSettings) {

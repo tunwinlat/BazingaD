@@ -67,12 +67,14 @@ model Settings {
   weatherUnits          String   @default("metric") // "metric" or "imperial"
   
   // Traffic settings
-  trafficEnabled        Boolean  @default(false)
-  trafficApiKey         String?  // Google Routes API key
-  trafficHomeAddress    String?  // Home address
-  trafficWorkAddress    String?  // Work address
-  trafficTravelMode     String   @default("DRIVE") // DRIVE, BICYCLE, WALK, TWO_WHEELER, TRANSIT
-  trafficUnits          String   @default("metric") // metric or imperial
+  trafficEnabled           Boolean  @default(false)
+  trafficApiKey            String?  // Google Routes API key
+  trafficTomTomApiKey      String?  // TomTom API key
+  trafficPrimaryProvider   String   @default("google") // 'google' or 'tomtom'
+  trafficHomeAddress       String?  // Home address
+  trafficWorkAddress       String?  // Work address
+  trafficTravelMode        String   @default("DRIVE") // DRIVE, BICYCLE, WALK, TWO_WHEELER, TRANSIT
+  trafficUnits             String   @default("metric") // metric or imperial
   
   createdAt             DateTime @default(now())
   updatedAt             DateTime @updatedAt

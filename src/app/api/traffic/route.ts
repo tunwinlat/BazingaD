@@ -15,9 +15,12 @@ interface TrafficResponse {
   cacheAge?: number; // Age in minutes for debugging
   error?: string;
   errorCode?: string;
+  provider?: string; // Which provider served the data
 }
 
-async function fetchRouteData(
+// ─── Google Routes API ─────────────────────────────────────────────
+
+async function fetchGoogleRouteData(
   origin: string,
   destination: string,
   apiKey: string,
@@ -53,17 +56,16 @@ async function fetchRouteData(
   if (!response.ok) {
     const errorData = await response.json().catch(() => ({}));
 
-    // Handle specific error cases
     if (response.status === 403) {
       throw new Error(
-        'API_KEY_INVALID: The API key is invalid or the Routes API is not enabled. ' +
+        'API_KEY_INVALID: The Google API key is invalid or the Routes API is not enabled. ' +
         'Please enable the Routes API in your Google Cloud Console.'
       );
     }
 
     if (response.status === 429) {
       throw new Error(
-        'RATE_LIMIT_EXCEEDED: You have exceeded the API rate limit. ' +
+        'RATE_LIMIT_EXCEEDED: You have exceeded the Google API rate limit. ' +
         'Please wait a moment before trying again.'
       );
     }
@@ -75,7 +77,6 @@ async function fetchRouteData(
       );
     }
 
-    // 🛡️ Sentinel: Do not reflect raw API error messages to prevent leaking internal configs (e.g., home/work addresses)
     throw new Error(
       `API_ERROR: HTTP ${response.status} - ${response.statusText}`
     );
@@ -92,7 +93,6 @@ async function fetchRouteData(
 
   const route = data.routes[0];
 
-  // Parse duration from proto3 format (e.g., "1234s")
   const parseDuration = (durationStr: string): number => {
     if (!durationStr) return 0;
     const match = durationStr.match(/^(\d+)s$/);
@@ -105,8 +105,166 @@ async function fetchRouteData(
   };
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-function validateSettings(settings: any): NextResponse | null {
+// ─── TomTom API ────────────────────────────────────────────────────
+
+interface TomTomPosition {
+  lat: number;
+  lon: number;
+}
+
+async function geocodeTomTom(address: string, apiKey: string): Promise<TomTomPosition> {
+  const url = `https://api.tomtom.com/search/2/geocode/${encodeURIComponent(address)}.json?key=${apiKey}&limit=1`;
+  const response = await fetch(url);
+
+  if (!response.ok) {
+    throw new Error(
+      `TOMTOM_GEOCODE_ERROR: HTTP ${response.status} - ${response.statusText}`
+    );
+  }
+
+  const data = await response.json();
+
+  if (!data.results || data.results.length === 0) {
+    throw new Error(
+      `ADDRESS_NOT_FOUND: Could not geocode address "${address}" with TomTom.`
+    );
+  }
+
+  const position = data.results[0].position;
+  return { lat: position.lat, lon: position.lon };
+}
+
+function mapGoogleTravelModeToTomTom(mode: string): string {
+  switch (mode) {
+    case 'BICYCLE': return 'bicycle';
+    case 'WALK': return 'pedestrian';
+    case 'TWO_WHEELER': return 'motorcycle';
+    case 'TRANSIT': return 'bus'; // closest approximation
+    case 'DRIVE':
+    default:
+      return 'car';
+  }
+}
+
+async function fetchTomTomRouteData(
+  origin: string,
+  destination: string,
+  apiKey: string,
+  travelMode: string,
+): Promise<RouteData> {
+  // TomTom requires coordinates, so geocode first
+  const [originPos, destPos] = await Promise.all([
+    geocodeTomTom(origin, apiKey),
+    geocodeTomTom(destination, apiKey),
+  ]);
+
+  const tomtomMode = mapGoogleTravelModeToTomTom(travelMode);
+  const locations = `${originPos.lat},${originPos.lon}:${destPos.lat},${destPos.lon}`;
+  const url = `https://api.tomtom.com/routing/1/calculateRoute/${locations}/json?key=${apiKey}&travelMode=${tomtomMode}&computeTravelTimeFor=all`;
+
+  const response = await fetch(url);
+
+  if (!response.ok) {
+    if (response.status === 403) {
+      throw new Error(
+        'API_KEY_INVALID: The TomTom API key is invalid or not authorized.'
+      );
+    }
+    if (response.status === 429) {
+      throw new Error(
+        'RATE_LIMIT_EXCEEDED: You have exceeded the TomTom API rate limit.'
+      );
+    }
+    throw new Error(
+      `API_ERROR: HTTP ${response.status} - ${response.statusText}`
+    );
+  }
+
+  const data = await response.json();
+
+  if (!data.routes || data.routes.length === 0) {
+    throw new Error(
+      'NO_ROUTE_FOUND: Could not find a route between the specified addresses.'
+    );
+  }
+
+  const summary = data.routes[0].summary;
+
+  return {
+    duration: summary.travelTimeInSeconds ?? 0,
+    staticDuration: summary.noTrafficTravelTimeInSeconds ?? summary.travelTimeInSeconds ?? 0,
+  };
+}
+
+// ─── Provider abstraction ──────────────────────────────────────────
+
+type Provider = 'google' | 'tomtom';
+
+interface ProviderConfig {
+  name: Provider;
+  apiKey: string | null | undefined;
+  fetchRoute: (
+    origin: string,
+    destination: string,
+    apiKey: string,
+    travelMode: string,
+    units: string
+  ) => Promise<RouteData>;
+}
+
+async function fetchWithFallback(
+  origin: string,
+  destination: string,
+  primary: ProviderConfig,
+  fallback: ProviderConfig,
+  travelMode: string,
+  units: string
+): Promise<{ data: RouteData; provider: Provider }> {
+  // Try primary first
+  if (primary.apiKey) {
+    try {
+      const data = await primary.fetchRoute(
+        origin,
+        destination,
+        primary.apiKey,
+        travelMode,
+        units
+      );
+      return { data, provider: primary.name };
+    } catch (error) {
+      console.warn(`[Traffic API] ${primary.name} failed:`, error);
+      // If fallback is not configured, re-throw
+      if (!fallback.apiKey) {
+        throw error;
+      }
+      // Otherwise, try fallback
+    }
+  }
+
+  // Try fallback
+  if (fallback.apiKey) {
+    const data = await fallback.fetchRoute(
+      origin,
+      destination,
+      fallback.apiKey,
+      travelMode,
+      units
+    );
+    return { data, provider: fallback.name };
+  }
+
+  throw new Error('No traffic provider configured');
+}
+
+// ─── Validation & helpers ──────────────────────────────────────────
+
+function validateSettings(settings: {
+  trafficEnabled?: boolean;
+  trafficApiKey?: string | null;
+  trafficTomTomApiKey?: string | null;
+  trafficHomeAddress?: string | null;
+  trafficWorkAddress?: string | null;
+} | null): NextResponse | null {
   if (!settings?.trafficEnabled) {
     return NextResponse.json(
       { error: 'Traffic feature is not enabled' },
@@ -114,9 +272,12 @@ function validateSettings(settings: any): NextResponse | null {
     );
   }
 
-  if (!settings.trafficApiKey) {
+  const hasGoogle = !!settings.trafficApiKey;
+  const hasTomTom = !!settings.trafficTomTomApiKey;
+
+  if (!hasGoogle && !hasTomTom) {
     return NextResponse.json(
-      { error: 'API key is not configured' },
+      { error: 'No traffic API provider is configured. Please add a Google or TomTom API key.' },
       { status: 400 }
     );
   }
@@ -138,7 +299,7 @@ function getSafeErrorInfo(error: unknown): { message: string; code: string } {
   if (error instanceof Error) {
     if (error.message.startsWith('API_KEY_INVALID:')) {
       code = 'API_KEY_INVALID';
-      message = 'The API key is invalid or the Routes API is not enabled.';
+      message = 'The API key is invalid or the traffic API is not enabled.';
     } else if (error.message.startsWith('RATE_LIMIT_EXCEEDED:')) {
       code = 'RATE_LIMIT_EXCEEDED';
       message = 'You have exceeded the API rate limit.';
@@ -150,15 +311,22 @@ function getSafeErrorInfo(error: unknown): { message: string; code: string } {
       message = 'Could not find a route between the specified addresses.';
     } else if (error.message.startsWith('API_ERROR:')) {
       code = 'API_ERROR';
-      // Do not expose specific API_ERROR details
     }
   }
 
   return { message, code };
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-function buildCachedResponse(cache: any, cacheAgeMinutes: number, apiError?: Error): TrafficResponse {
+function buildCachedResponse(
+  cache: {
+    homeToWorkDuration: number;
+    homeToWorkStatic: number;
+    workToHomeDuration: number;
+    workToHomeStatic: number;
+  },
+  cacheAgeMinutes: number,
+  apiError?: Error
+): TrafficResponse {
   const response: TrafficResponse = {
     homeToWork: {
       duration: cache.homeToWorkDuration,
@@ -181,9 +349,10 @@ function buildCachedResponse(cache: any, cacheAgeMinutes: number, apiError?: Err
   return response;
 }
 
+// ─── GET handler ───────────────────────────────────────────────────
+
 export async function GET() {
   try {
-    // Get traffic settings
     const settings = await prisma.settings.findFirst();
 
     const settingsError = validateSettings(settings);
@@ -191,69 +360,73 @@ export async function GET() {
 
     const homeAddress = settings!.trafficHomeAddress as string;
     const workAddress = settings!.trafficWorkAddress as string;
-    const apiKey = settings!.trafficApiKey as string;
+    const travelMode = settings!.trafficTravelMode;
+    const units = settings!.trafficUnits;
+    const primaryProvider = (settings!.trafficPrimaryProvider as Provider) || 'google';
 
-    // Check cache - get the most recent entry
+    // Build provider configs
+    const googleConfig: ProviderConfig = {
+      name: 'google',
+      apiKey: settings!.trafficApiKey,
+      fetchRoute: fetchGoogleRouteData,
+    };
+
+    const tomtomConfig: ProviderConfig = {
+      name: 'tomtom',
+      apiKey: settings!.trafficTomTomApiKey,
+      fetchRoute: fetchTomTomRouteData,
+    };
+
+    const [primary, fallback] = primaryProvider === 'google'
+      ? [googleConfig, tomtomConfig]
+      : [tomtomConfig, googleConfig];
+
+    // Check cache
     const cache = await prisma.trafficCache.findFirst({
       orderBy: { cachedAt: 'desc' },
     });
 
-    // Use UTC time for consistent comparison
     const now = new Date();
     const cacheTime = cache ? new Date(cache.cachedAt) : null;
     const cacheAgeMs = cacheTime ? now.getTime() - cacheTime.getTime() : Infinity;
     const cacheAgeMinutes = Math.floor(cacheAgeMs / 60000);
     const isCacheValid = cache && cacheAgeMs < CACHE_DURATION_MS;
 
-    // Return cached data if valid (less than 30 minutes old)
     if (isCacheValid && cache) {
       return NextResponse.json(buildCachedResponse(cache, cacheAgeMinutes));
     }
 
-    // Fetch fresh data from Google Routes API
+    // Fetch fresh data with fallback
     try {
-      const [homeToWork, workToHome] = await Promise.all([
-        fetchRouteData(
-          homeAddress,
-          workAddress,
-          apiKey,
-          settings!.trafficTravelMode,
-          settings!.trafficUnits
-        ),
-        fetchRouteData(
-          workAddress,
-          homeAddress,
-          apiKey,
-          settings!.trafficTravelMode,
-          settings!.trafficUnits
-        ),
+      const [homeToWorkResult, workToHomeResult] = await Promise.all([
+        fetchWithFallback(homeAddress, workAddress, primary, fallback, travelMode, units),
+        fetchWithFallback(workAddress, homeAddress, primary, fallback, travelMode, units),
       ]);
 
-      // Update cache - delete old entries and create new one
-      // This ensures we only keep the latest cache entry
+      // Delete old cache entries and create new one
       await prisma.trafficCache.deleteMany({});
 
       await prisma.trafficCache.create({
         data: {
-          homeToWorkDuration: homeToWork.duration,
-          homeToWorkStatic: homeToWork.staticDuration,
-          workToHomeDuration: workToHome.duration,
-          workToHomeStatic: workToHome.staticDuration,
+          homeToWorkDuration: homeToWorkResult.data.duration,
+          homeToWorkStatic: homeToWorkResult.data.staticDuration,
+          workToHomeDuration: workToHomeResult.data.duration,
+          workToHomeStatic: workToHomeResult.data.staticDuration,
           cachedAt: new Date(),
         },
       });
 
       const response: TrafficResponse = {
-        homeToWork,
-        workToHome,
+        homeToWork: homeToWorkResult.data,
+        workToHome: workToHomeResult.data,
         cached: false,
         cacheAge: 0,
+        provider: homeToWorkResult.provider,
       };
       return NextResponse.json(response);
     } catch (apiError) {
-      console.error('[Traffic API] Error fetching from Google:', apiError);
+      console.error('[Traffic API] Error fetching traffic data:', apiError);
 
-      // If we have any cache (even stale), return it with a warning
       if (cache) {
         const err = apiError instanceof Error ? apiError : new Error('Unknown error');
         return NextResponse.json(buildCachedResponse(cache, cacheAgeMinutes, err));
