@@ -32,3 +32,7 @@
 ## 2026-05-04 - Password Visibility Toggle Padding
 **Learning:** When adding absolute positioned icons inside form inputs (e.g., for password visibility toggles), failing to adjust the input's padding causes typed text to overlap visually with the icon.
 **Action:** Always ensure the corresponding input element's padding is appropriately adjusted (e.g., changing `pr-4` to `pr-12` or `pr-10` in Tailwind depending on icon width and positioning) to maintain input text readability.
+
+## 2026-05-18 - Generic Button Labels
+**Learning:** Screen reader users navigating out of context struggle with generic buttons like "Show" or "Hide".
+**Action:** Always include specific `aria-label` attributes (e.g., "Show Google Routes API key") for buttons that toggle visibility or state using generic text.
