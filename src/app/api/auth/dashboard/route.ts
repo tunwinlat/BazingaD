@@ -5,6 +5,7 @@ import { settingsCache } from '@/lib/cache';
 import bcrypt from 'bcryptjs';
 import { cookies } from 'next/headers';
 import { z } from 'zod';
+import { getClientIP } from '@/lib/ip-utils';
 
 const MAX_BODY_SIZE = 1024 * 1024;
 const CACHE_KEY = 'dashboard_auth_settings';
@@ -147,7 +148,7 @@ export async function POST(request: Request) {
     }
 
     // Rate limiting: Use IP or default string as identifier
-    const ip = request.headers.get('x-forwarded-for') || 'default';
+    const ip = getClientIP(request as any);
     const identifier = `dashboard_${ip}`;
 
     if (isLockedOut(identifier)) {
