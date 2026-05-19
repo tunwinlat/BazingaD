@@ -1664,9 +1664,11 @@ export default function AdminPage() {
                             style={{ backgroundColor: 'rgba(255,255,255,0.05)', borderColor: 'rgba(255,255,255,0.1)', color: 'white' }}
                           />
                           <button
+                            type="button"
                             onClick={() => setShowTrafficApiKey(!showTrafficApiKey)}
                             className="px-3 py-2 rounded-lg transition-colors"
                             style={{ backgroundColor: 'rgba(255,255,255,0.1)' }}
+                            aria-label={showTrafficApiKey ? "Hide Google Routes API key" : "Show Google Routes API key"}
                           >
                             {showTrafficApiKey ? 'Hide' : 'Show'}
                           </button>
@@ -1695,9 +1697,11 @@ export default function AdminPage() {
                             style={{ backgroundColor: 'rgba(255,255,255,0.05)', borderColor: 'rgba(255,255,255,0.1)', color: 'white' }}
                           />
                           <button
+                            type="button"
                             onClick={() => setShowTomTomApiKey(!showTomTomApiKey)}
                             className="px-3 py-2 rounded-lg transition-colors"
                             style={{ backgroundColor: 'rgba(255,255,255,0.1)' }}
+                            aria-label={showTomTomApiKey ? "Hide TomTom API key" : "Show TomTom API key"}
                           >
                             {showTomTomApiKey ? 'Hide' : 'Show'}
                           </button>
