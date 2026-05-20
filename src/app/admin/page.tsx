@@ -1654,21 +1654,22 @@ export default function AdminPage() {
                             Get API Key →
                           </a>
                         </label>
-                        <div className="flex gap-2">
+                        <div className="relative">
                           <input
                             type={showTrafficApiKey ? 'text' : 'password'}
                             value={trafficSettings.apiKey}
                             onChange={(e) => setTrafficSettings({ ...trafficSettings, apiKey: e.target.value })}
                             placeholder="Enter your Google Routes API key (optional if TomTom is configured)"
-                            className="flex-1 px-3 py-2 rounded-lg border outline-none focus:border-indigo-500 text-sm"
+                            className="w-full pl-3 pr-10 py-2 rounded-lg border outline-none focus:border-indigo-500 text-sm"
                             style={{ backgroundColor: 'rgba(255,255,255,0.05)', borderColor: 'rgba(255,255,255,0.1)', color: 'white' }}
                           />
                           <button
+                            type="button"
                             onClick={() => setShowTrafficApiKey(!showTrafficApiKey)}
-                            className="px-3 py-2 rounded-lg transition-colors"
-                            style={{ backgroundColor: 'rgba(255,255,255,0.1)' }}
+                            className="absolute right-3 top-1/2 -translate-y-1/2 text-white/40 hover:text-white/80 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 rounded p-1"
+                            aria-label={showTrafficApiKey ? "Hide Google Routes API key" : "Show Google Routes API key"}
                           >
-                            {showTrafficApiKey ? 'Hide' : 'Show'}
+                            {showTrafficApiKey ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                           </button>
                         </div>
                       </div>
@@ -1685,21 +1686,22 @@ export default function AdminPage() {
                             Get API Key →
                           </a>
                         </label>
-                        <div className="flex gap-2">
+                        <div className="relative">
                           <input
                             type={showTomTomApiKey ? 'text' : 'password'}
                             value={trafficSettings.tomTomApiKey}
                             onChange={(e) => setTrafficSettings({ ...trafficSettings, tomTomApiKey: e.target.value })}
                             placeholder="Enter your TomTom API key (optional if Google is configured)"
-                            className="flex-1 px-3 py-2 rounded-lg border outline-none focus:border-indigo-500 text-sm"
+                            className="w-full pl-3 pr-10 py-2 rounded-lg border outline-none focus:border-indigo-500 text-sm"
                             style={{ backgroundColor: 'rgba(255,255,255,0.05)', borderColor: 'rgba(255,255,255,0.1)', color: 'white' }}
                           />
                           <button
+                            type="button"
                             onClick={() => setShowTomTomApiKey(!showTomTomApiKey)}
-                            className="px-3 py-2 rounded-lg transition-colors"
-                            style={{ backgroundColor: 'rgba(255,255,255,0.1)' }}
+                            className="absolute right-3 top-1/2 -translate-y-1/2 text-white/40 hover:text-white/80 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 rounded p-1"
+                            aria-label={showTomTomApiKey ? "Hide TomTom API key" : "Show TomTom API key"}
                           >
-                            {showTomTomApiKey ? 'Hide' : 'Show'}
+                            {showTomTomApiKey ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                           </button>
                         </div>
                       </div>
