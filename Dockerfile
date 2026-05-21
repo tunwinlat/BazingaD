@@ -1,11 +1,14 @@
 # Build stage
-FROM node:20-alpine AS builder
+FROM node:22-alpine AS builder
 
 WORKDIR /app
 
+# Patch OS packages
+RUN apk upgrade --no-cache
+
 # Install dependencies
 COPY package*.json ./
-RUN npm install -g npm@11.11.0 && npm ci
+RUN npm install -g npm@11.15.0 && npm ci
 
 # Copy prisma schema
 COPY prisma ./prisma/
@@ -24,15 +27,18 @@ RUN npx tsx prisma/seed.ts --check 2>/dev/null || npx tsc prisma/seed.ts --outDi
 RUN npx tsc scripts/reset-admin-password.ts --outDir /app/dist --esModuleInterop --module commonjs --target es2020 --moduleResolution node
 
 # Production dependencies stage
-FROM node:20-alpine AS deps
+FROM node:22-alpine AS deps
 
 WORKDIR /app
 
+# Patch OS packages
+RUN apk upgrade --no-cache
+
 COPY package*.json ./
-RUN npm install -g npm@11.11.0 && npm ci --omit=dev
+RUN npm install -g npm@11.15.0 && npm ci --omit=dev
 
 # Production stage
-FROM node:20-alpine AS runner
+FROM node:22-alpine AS runner
 
 WORKDIR /app
 
@@ -40,8 +46,8 @@ ENV NODE_ENV=production
 ENV DATABASE_URL="file:/app/data/prod.db"
 ENV DOCKER_ENV=true
 
-# Install wget for healthcheck
-RUN apk add --no-cache wget
+# Patch OS packages, install wget for healthcheck, and update npm
+RUN apk upgrade --no-cache && apk add --no-cache wget && npm install -g npm@11.15.0
 
 # Create non-root user
 RUN addgroup -g 1001 -S nodejs && \
