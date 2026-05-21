@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
-import { ArrowLeft, Plus, Trash2, Edit, X, RefreshCw, LogOut, Shield, Key, QrCode, Copy, Check, AlertTriangle, Lock, Settings2, Cloud, MapPin, Thermometer, Globe, Upload, RotateCcw, Loader2, Eye, EyeOff } from 'lucide-react';
+import { ArrowLeft, Plus, Trash2, Edit, X, RefreshCw, LogOut, Shield, Key, QrCode, Copy, Check, AlertTriangle, Lock, Settings2, Cloud, MapPin, Thermometer, Globe, Upload, RotateCcw, Loader2, Eye, EyeOff, ChevronDown, ChevronUp } from 'lucide-react';
 import type { Category, Block, CategoryFormData, BlockFormData } from '@/types';
 
 export default function AdminPage() {
@@ -12,7 +12,8 @@ export default function AdminPage() {
   const [categories, setCategories] = useState<Category[]>([]);
   const [blocks, setBlocks] = useState<Block[]>([]);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<'general' | 'categories' | 'blocks' | 'security' | 'integrations' | 'traffic'>('blocks');
+  const [activeTab, setActiveTab] = useState<'general' | 'categories' | 'blocks' | 'security' | 'integrations'>('blocks');
+  const [expandedIntegration, setExpandedIntegration] = useState<'weather' | 'traffic' | null>('weather');
 
   // Security states
   const [authStatus, setAuthStatus] = useState<{ username: string; totpEnabled: boolean } | null>(null);
@@ -904,16 +905,7 @@ export default function AdminPage() {
             <Cloud className="w-4 h-4" />
             Integrations
           </button>
-          <button
-            onClick={() => setActiveTab('traffic')}
-            className="px-4 py-2 rounded-lg transition-colors flex items-center gap-2"
-            style={{
-              backgroundColor: activeTab === 'traffic' ? '#6366f1' : 'rgba(255,255,255,0.05)',
-            }}
-          >
-            <MapPin className="w-4 h-4" />
-            Traffic
-          </button>
+
         </div>
 
         {activeTab === 'categories' && (
@@ -1365,24 +1357,34 @@ export default function AdminPage() {
           <div>
             <h2 className="text-xl font-semibold mb-6">Integrations</h2>
 
-            {/* Weather Section */}
-            <div className="rounded-xl p-6" style={{ backgroundColor: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)' }}>
-              <div className="flex items-center gap-3 mb-4">
+            {/* Weather Accordion */}
+            <div className="rounded-xl overflow-hidden mb-4" style={{ backgroundColor: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)' }}>
+              <div
+                className="p-4 cursor-pointer flex items-center gap-3"
+                onClick={() => setExpandedIntegration(expandedIntegration === 'weather' ? null : 'weather')}
+              >
                 <div className="w-10 h-10 rounded-lg flex items-center justify-center" style={{ backgroundColor: 'rgba(59, 130, 246, 0.2)' }}>
                   <Cloud className="w-5 h-5 text-blue-400" />
                 </div>
-                <div>
+                <div className="flex-1">
                   <h3 className="font-semibold">Open-Meteo Weather</h3>
                   <p className="text-sm text-white/60">Display weather information on your dashboard</p>
                 </div>
                 {settings.weatherEnabled && (
-                  <span className="ml-auto px-3 py-1 rounded-full text-xs" style={{ backgroundColor: 'rgba(16, 185, 129, 0.2)', color: '#34d399' }}>
+                  <span className="px-3 py-1 rounded-full text-xs" style={{ backgroundColor: 'rgba(16, 185, 129, 0.2)', color: '#34d399' }}>
                     Enabled
                   </span>
                 )}
+                {expandedIntegration === 'weather' ? (
+                  <ChevronUp className="w-5 h-5 text-white/40" />
+                ) : (
+                  <ChevronDown className="w-5 h-5 text-white/40" />
+                )}
               </div>
 
-              <div className="space-y-4">
+              {expandedIntegration === 'weather' && (
+                <div className="px-6 pb-6">
+                  <div className="space-y-4">
                 {/* Enable Toggle */}
                 <div className="flex items-center gap-3 p-4 rounded-lg" style={{ backgroundColor: 'rgba(255,255,255,0.03)' }}>
                   <input
@@ -1558,49 +1560,39 @@ export default function AdminPage() {
                     </button>
                   </>
                 )}
-              </div>
+                  </div>
+                </div>
+              )}
             </div>
-          </div>
-        )}
 
-        {activeTab === 'traffic' && (
-          <div>
-            <h2 className="text-xl font-semibold mb-6">Traffic Information</h2>
-
-            <div className="rounded-xl p-6" style={{ backgroundColor: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)' }}>
-              <div className="flex items-center gap-3 mb-4">
+            {/* Traffic Accordion */}
+            <div className="rounded-xl overflow-hidden" style={{ backgroundColor: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)' }}>
+              <div
+                className="p-4 cursor-pointer flex items-center gap-3"
+                onClick={() => setExpandedIntegration(expandedIntegration === 'traffic' ? null : 'traffic')}
+              >
                 <div className="w-10 h-10 rounded-lg flex items-center justify-center" style={{ backgroundColor: 'rgba(16, 185, 129, 0.2)' }}>
                   <MapPin className="w-5 h-5 text-green-400" />
                 </div>
-                <div>
-                  <h3 className="font-semibold">Traffic Providers</h3>
+                <div className="flex-1">
+                  <h3 className="font-semibold">Traffic Information</h3>
                   <p className="text-sm text-white/60">Display commute time information on your dashboard</p>
                 </div>
                 {trafficSettings.enabled && (
-                  <span className="ml-auto px-3 py-1 rounded-full text-xs" style={{ backgroundColor: 'rgba(16, 185, 129, 0.2)', color: '#34d399' }}>
+                  <span className="px-3 py-1 rounded-full text-xs" style={{ backgroundColor: 'rgba(16, 185, 129, 0.2)', color: '#34d399' }}>
                     Enabled
                   </span>
                 )}
+                {expandedIntegration === 'traffic' ? (
+                  <ChevronUp className="w-5 h-5 text-white/40" />
+                ) : (
+                  <ChevronDown className="w-5 h-5 text-white/40" />
+                )}
               </div>
 
-              {/* Free Tier Notice */}
-              <div className="mb-6 p-4 rounded-lg" style={{ backgroundColor: 'rgba(59, 130, 246, 0.1)', border: '1px solid rgba(59, 130, 246, 0.2)' }}>
-                <h4 className="font-medium text-blue-400 mb-2 flex items-center gap-2">
-                  <AlertTriangle className="w-4 h-4" />
-                  API Usage & Pricing
-                </h4>
-                <p className="text-sm text-white/70 mb-2">
-                  <strong>Google Routes API</strong> includes a free tier of <strong>10,000 requests per month</strong>.
-                  <strong> TomTom API</strong> offers <strong>2,500 requests per day</strong> on the free tier.
-                  This app caches results for 30 minutes to minimize API calls.
-                </p>
-                <p className="text-sm text-white/50">
-                  Configure both providers for automatic failover if one hits rate limits.
-                  API calls are only made when the dashboard tab is active and the cache has expired.
-                </p>
-              </div>
-
-              <div className="space-y-4">
+              {expandedIntegration === 'traffic' && (
+                <div className="px-6 pb-6">
+                  <div className="space-y-4">
                 {/* Enable Toggle */}
                 <div className="flex items-center gap-3 p-4 rounded-lg" style={{ backgroundColor: 'rgba(255,255,255,0.03)' }}>
                   <input
@@ -1786,11 +1778,12 @@ export default function AdminPage() {
                     </button>
                   </>
                 )}
-              </div>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         )}
-
         {activeTab === 'general' && (
           <div>
             <h2 className="text-xl font-semibold mb-6">General Settings</h2>
