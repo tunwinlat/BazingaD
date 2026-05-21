@@ -10,7 +10,8 @@
     "test": "node --experimental-strip-types --test src/__tests__/*.test.ts",
     "db:migrate": "prisma migrate dev",
     "db:seed": "tsx prisma/seed.ts",
-    "db:generate": "prisma generate"
+    "db:generate": "prisma generate",
+    "admin:reset-password": "tsx scripts/reset-admin-password.ts"
   },
   "dependencies": {
     "@prisma/client": "^6.19.2",

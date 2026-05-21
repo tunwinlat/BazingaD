@@ -19,8 +19,9 @@ COPY . .
 # Build the application
 RUN npm run build
 
-# Compile seed script to JavaScript
+# Compile utility scripts to JavaScript for production use
 RUN npx tsx prisma/seed.ts --check 2>/dev/null || npx tsc prisma/seed.ts --outDir /app/dist --esModuleInterop --module commonjs --target es2020 --moduleResolution node
+RUN npx tsc scripts/reset-admin-password.ts --outDir /app/dist --esModuleInterop --module commonjs --target es2020 --moduleResolution node
 
 # Production dependencies stage
 FROM node:20-alpine AS deps
@@ -54,8 +55,9 @@ COPY package*.json ./
 COPY prisma ./prisma/
 RUN npx prisma generate
 
-# Copy compiled seed script and check-and-seed script
+# Copy compiled scripts
 COPY --from=builder /app/dist/seed.js ./prisma/
+COPY --from=builder /app/dist/reset-admin-password.js ./scripts/
 COPY check-and-seed.js ./
 
 # Copy built application

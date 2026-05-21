@@ -187,6 +187,28 @@ Customize your dashboard appearance:
 - **Security Headers** - X-Frame-Options, CSP, HSTS, and more
 - **Dashboard Protection** - Optional password protection for the dashboard
 
+### Resetting a Forgotten Admin Password
+
+If you forget your admin password, you can reset it via the command line. This requires direct access to the server running the application.
+
+**Local Development:**
+
+```bash
+DATABASE_URL=file:./data/dev.db npm run admin:reset-password
+```
+
+**Docker:**
+
+```bash
+docker exec -it startpage-dashboard node scripts/reset-admin-password.js
+```
+
+The script will list available users, prompt for a new password (with hidden input), and invalidate all existing sessions. You can also pass `--clear-totp` to disable 2FA if you've lost access to your authenticator app:
+
+```bash
+docker exec -it startpage-dashboard node scripts/reset-admin-password.js --clear-totp
+```
+
 ## 🔌 API Endpoints
 
 ### Categories & Blocks
