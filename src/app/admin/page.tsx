@@ -127,7 +127,7 @@ export default function AdminPage() {
   useEffect(() => {
     const loadData = async () => {
       try {
-        await Promise.all([
+        const [, isAuth] = await Promise.all([
           fetchData(),
           fetchAuthStatus(),
           fetchSettings(),
@@ -136,9 +136,14 @@ export default function AdminPage() {
           fetchThemes(),
           fetchTrafficSettings()
         ]);
+        // Only reveal the admin UI if the user is authenticated.
+        // When unauthenticated, fetchAuthStatus triggers a redirect to /login;
+        // keeping loading=true prevents the admin UI from flashing before navigation completes.
+        if (isAuth) {
+          setLoading(false);
+        }
       } catch (error) {
         console.error('Failed to load admin data:', error);
-      } finally {
         setLoading(false);
       }
     };
@@ -208,13 +213,16 @@ export default function AdminPage() {
       if (response.ok) {
         const data = await response.json();
         setAuthStatus(data);
+        return true;
       } else if (response.status === 401) {
         // Not authenticated, redirect to login
         router.push('/login');
+        return false;
       }
     } catch (error) {
       console.error('Failed to fetch auth status:', error);
     }
+    return false;
   };
 
   // Convert hours to best unit for display
