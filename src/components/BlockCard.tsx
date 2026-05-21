@@ -35,23 +35,25 @@ export default function BlockCard({ block }: BlockCardProps) {
       <div 
         className="relative w-12 h-12 rounded-xl mb-3 flex items-center justify-center transition-transform duration-300 group-hover:scale-110 overflow-hidden shadow-lg"
       >
-        {/* Base gradient icon */}
+        {/* Icon image (custom or generated gradient) */}
         <img
           src={iconUrl}
           alt=""
           className="absolute inset-0 w-full h-full object-cover"
           aria-hidden="true"
         />
-        
-        {/* Initials overlay */}
-        <span 
-          className="relative z-10 text-white font-bold text-sm tracking-wider drop-shadow-md"
-          style={{ 
-            textShadow: '0 1px 3px rgba(0,0,0,0.3)',
-          }}
-        >
-          {initials}
-        </span>
+
+        {/* Initials overlay — only shown when no custom icon is set */}
+        {!block.icon && (
+          <span
+            className="relative z-10 text-white font-bold text-sm tracking-wider drop-shadow-md"
+            style={{
+              textShadow: '0 1px 3px rgba(0,0,0,0.3)',
+            }}
+          >
+            {initials}
+          </span>
+        )}
       </div>
       
       <div className="relative z-10">
