@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { NextRequest } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { weatherCache } from '@/lib/cache';
 
@@ -41,22 +42,39 @@ function getWindDirection(degrees: number): string {
   return directions[index];
 }
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
-    // Get weather settings
+    // Get weather settings (for enabled check and defaults)
     const settings = await prisma.settings.findFirst();
-    
-    if (!settings?.weatherEnabled || !settings.weatherLatitude || !settings.weatherLongitude) {
+
+    if (!settings?.weatherEnabled) {
       return NextResponse.json(
-        { error: 'Weather not configured' },
+        { error: 'Weather not enabled' },
         { status: 404 }
       );
     }
 
-    const { weatherLatitude: lat, weatherLongitude: lon, weatherUnits: units, weatherLocationName } = settings;
+    // Allow dashboard users to override location via query params
+    const { searchParams } = new URL(request.url);
+    const userLat = searchParams.get('lat');
+    const userLon = searchParams.get('lon');
+    const userUnits = searchParams.get('units');
+    const userLocationName = searchParams.get('locationName');
+
+    const lat = userLat ? parseFloat(userLat) : settings.weatherLatitude;
+    const lon = userLon ? parseFloat(userLon) : settings.weatherLongitude;
+    const units = userUnits || settings.weatherUnits || 'metric';
+    const locationName = userLocationName || settings.weatherLocationName || 'Current Location';
+
+    if (!lat || !lon || isNaN(lat) || isNaN(lon)) {
+      return NextResponse.json(
+        { error: 'Weather location not configured' },
+        { status: 404 }
+      );
+    }
 
     // 🛡️ Sentinel: Check cache first to prevent upstream rate limit exhaustion and DoS
-    const cacheKey = `${lat}_${lon}_${units}_${weatherLocationName}`;
+    const cacheKey = `${lat}_${lon}_${units}_${locationName}`;
     const cachedData = weatherCache.get(cacheKey);
     if (cachedData) {
       return NextResponse.json(cachedData);
@@ -107,7 +125,7 @@ export async function GET() {
         windSpeed: Math.round(current.wind_speed_10m),
         windSpeedUnit: units === 'imperial' ? 'mph' : 'km/h',
         windDirection: getWindDirection(current.wind_direction_10m),
-        locationName: weatherLocationName || 'Current Location',
+        locationName: locationName || 'Current Location',
       };
 
       // 🛡️ Sentinel: Store fetched data in cache
