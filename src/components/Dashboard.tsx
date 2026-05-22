@@ -1,8 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback, memo, useMemo } from 'react';
-import { Plus, FolderPlus } from 'lucide-react';
-import Link from 'next/link';
+import { FolderPlus } from 'lucide-react';
 import CategorySection from './CategorySection';
 import QuickAddModal from './QuickAddModal';
 import TopBar from './TopBar';
@@ -45,7 +44,7 @@ const EmptyState = memo(function EmptyState() {
       <p className="max-w-md mb-8" style={{ color: 'var(--theme-text-muted)' }}>
         Your dashboard is empty. Add your first categories and blocks to get started with your personalized start page.
       </p>
-      <Link
+      <a
         href="/admin"
         className="flex items-center gap-2 px-6 py-3 rounded-xl font-medium transition-all hover:scale-105 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
         style={{
@@ -53,9 +52,8 @@ const EmptyState = memo(function EmptyState() {
           boxShadow: '0 4px 20px var(--theme-surface)',
         }}
       >
-        <Plus className="w-5 h-5" />
         Add Your First Block
-      </Link>
+      </a>
     </div>
   );
 });
@@ -97,12 +95,13 @@ interface DashboardProps {
   isAdmin?: boolean;
   isProtected?: boolean;
   defaultView: ViewMode;
+  openInNewTab?: boolean;
 }
 
 const VIEW_MODE_STORAGE_KEY = 'startpage-view-mode';
 
 // Main Dashboard component
-export default function Dashboard({ isAdmin, isProtected, defaultView }: DashboardProps) {
+export default function Dashboard({ isAdmin, isProtected, defaultView, openInNewTab = true }: DashboardProps) {
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -182,9 +181,10 @@ export default function Dashboard({ isAdmin, isProtected, defaultView }: Dashboa
         isAdmin={isAdmin}
         onAddBlock={handleAddBlock}
         viewMode={viewMode}
+        openInNewTab={openInNewTab}
       />
     ));
-  }, [categories, isAdmin, handleAddBlock, viewMode]);
+  }, [categories, isAdmin, handleAddBlock, viewMode, openInNewTab]);
 
   if (loading) {
     return (

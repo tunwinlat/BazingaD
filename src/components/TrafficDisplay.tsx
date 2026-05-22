@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { Car, AlertTriangle } from 'lucide-react';
+import { Car, AlertTriangle, Info } from 'lucide-react';
 
 interface TrafficData {
   homeToWork: {
@@ -13,7 +13,7 @@ interface TrafficData {
     staticDuration: number;
   } | null;
   cached: boolean;
-  cacheAge?: number; // Age in minutes
+  cacheAge?: number;
   error?: string;
 }
 
@@ -29,7 +29,7 @@ interface TrafficDisplayProps {
 function formatDuration(seconds: number): string {
   const hours = Math.floor(seconds / 3600);
   const minutes = Math.floor((seconds % 3600) / 60);
-  
+
   if (hours > 0) {
     return `${hours}h ${minutes}m`;
   }
@@ -38,32 +38,20 @@ function formatDuration(seconds: number): string {
 
 // Get color based on traffic condition
 function getTrafficColor(duration: number, staticDuration: number): string {
-  if (staticDuration === 0) return '#34d399'; // Green (no data)
-  
+  if (staticDuration === 0) return '#34d399';
   const ratio = duration / staticDuration;
-  
-  if (ratio <= 1.1) {
-    return '#34d399'; // Green - normal traffic
-  } else if (ratio <= 1.3) {
-    return '#fbbf24'; // Yellow - moderate traffic
-  } else {
-    return '#f87171'; // Red - heavy traffic
-  }
+  if (ratio <= 1.1) return '#34d399';
+  if (ratio <= 1.3) return '#fbbf24';
+  return '#f87171';
 }
 
 // Get traffic status text
 function getTrafficStatus(duration: number, staticDuration: number): string {
   if (staticDuration === 0) return 'Normal';
-  
   const ratio = duration / staticDuration;
-  
-  if (ratio <= 1.1) {
-    return 'Good';
-  } else if (ratio <= 1.3) {
-    return 'Moderate';
-  } else {
-    return 'Heavy';
-  }
+  if (ratio <= 1.1) return 'Good';
+  if (ratio <= 1.3) return 'Moderate';
+  return 'Heavy';
 }
 
 export default function TrafficDisplay({ settings }: TrafficDisplayProps) {
@@ -74,7 +62,7 @@ export default function TrafficDisplay({ settings }: TrafficDisplayProps) {
 
   const fetchTrafficData = useCallback(async () => {
     if (!settings?.enabled) return;
-    if (!isVisible) return; // Don't fetch if tab is not visible
+    if (!isVisible) return;
 
     setLoading(true);
     setError(null);
@@ -95,31 +83,19 @@ export default function TrafficDisplay({ settings }: TrafficDisplayProps) {
     }
   }, [settings?.enabled, isVisible]);
 
-  // Initial fetch and visibility handling
   useEffect(() => {
     if (!settings?.enabled) return;
-
-    // Fetch immediately on mount
     fetchTrafficData();
 
-    // Set up visibility change listener
     const handleVisibilityChange = () => {
       const visible = document.visibilityState === 'visible';
       setIsVisible(visible);
-      
-      // Fetch when tab becomes visible
-      if (visible) {
-        fetchTrafficData();
-      }
+      if (visible) fetchTrafficData();
     };
 
     document.addEventListener('visibilitychange', handleVisibilityChange);
-
-    // Set up periodic refresh (every 5 minutes when visible)
     const intervalId = setInterval(() => {
-      if (document.visibilityState === 'visible') {
-        fetchTrafficData();
-      }
+      if (document.visibilityState === 'visible') fetchTrafficData();
     }, 5 * 60 * 1000);
 
     return () => {
@@ -132,94 +108,87 @@ export default function TrafficDisplay({ settings }: TrafficDisplayProps) {
     return null;
   }
 
-  // Show compact error indicator
   if (error) {
     return (
-      <div 
-        className="flex items-center gap-2 px-3 py-1.5 rounded-full text-sm"
+      <div
+        className="flex items-center gap-2 px-3 py-1.5 rounded-full text-xs"
         style={{ backgroundColor: 'rgba(239, 68, 68, 0.2)' }}
         title={error}
       >
-        <AlertTriangle className="w-4 h-4" style={{ color: '#f87171' }} />
+        <AlertTriangle className="w-3.5 h-3.5" style={{ color: '#f87171' }} />
         <span style={{ color: '#f87171' }}>Traffic Error</span>
       </div>
     );
   }
 
-  // Show loading state
   if (loading && !trafficData) {
     return (
-      <div 
-        className="flex items-center gap-2 px-3 py-1.5 rounded-full text-sm animate-pulse"
+      <div
+        className="flex items-center gap-2 px-3 py-1.5 rounded-full text-xs animate-pulse"
         style={{ backgroundColor: 'rgba(255,255,255,0.1)' }}
       >
-        <Car className="w-4 h-4 text-white/50" />
+        <Car className="w-3.5 h-3.5 text-white/50" />
         <span className="text-white/50">Loading...</span>
       </div>
     );
   }
 
-  // Show traffic data
   if (trafficData?.homeToWork && trafficData?.workToHome) {
-    const homeToWorkColor = getTrafficColor(
-      trafficData.homeToWork.duration,
-      trafficData.homeToWork.staticDuration
-    );
-    const workToHomeColor = getTrafficColor(
-      trafficData.workToHome.duration,
-      trafficData.workToHome.staticDuration
-    );
+    const hwColor = getTrafficColor(trafficData.homeToWork.duration, trafficData.homeToWork.staticDuration);
+    const whColor = getTrafficColor(trafficData.workToHome.duration, trafficData.workToHome.staticDuration);
+
+    const cacheTooltip = trafficData.cached
+      ? `Cached ${trafficData.cacheAge ?? '?'} minutes ago`
+      : 'Live data';
 
     return (
-      <div className="flex items-center gap-3">
-        {/* Home to Work */}
-        <div 
-          className="flex items-center gap-2 px-3 py-1.5 rounded-full text-sm"
-          style={{ backgroundColor: `${homeToWorkColor}20` }}
+      <div className="flex flex-col gap-1.5">
+        {/* Home → Work */}
+        <div
+          className="flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs"
+          style={{ backgroundColor: `${hwColor}18` }}
           title={`Home to Work: ${getTrafficStatus(trafficData.homeToWork.duration, trafficData.homeToWork.staticDuration)} traffic`}
         >
-          <Car className="w-4 h-4" style={{ color: homeToWorkColor }} />
-          <span style={{ color: homeToWorkColor }}>
-            → Work: {formatDuration(trafficData.homeToWork.duration)}
-          </span>
+          <Car className="w-3 h-3 flex-shrink-0" style={{ color: hwColor }} />
+          <span style={{ color: hwColor }}>→ Work: {formatDuration(trafficData.homeToWork.duration)}</span>
         </div>
 
-        {/* Work to Home */}
-        <div 
-          className="flex items-center gap-2 px-3 py-1.5 rounded-full text-sm"
-          style={{ backgroundColor: `${workToHomeColor}20` }}
+        {/* Work → Home */}
+        <div
+          className="flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs"
+          style={{ backgroundColor: `${whColor}18` }}
           title={`Work to Home: ${getTrafficStatus(trafficData.workToHome.duration, trafficData.workToHome.staticDuration)} traffic`}
         >
-          <Car className="w-4 h-4" style={{ color: workToHomeColor }} />
-          <span style={{ color: workToHomeColor }}>
-            → Home: {formatDuration(trafficData.workToHome.duration)}
-          </span>
+          <Car className="w-3 h-3 flex-shrink-0" style={{ color: whColor }} />
+          <span style={{ color: whColor }}>→ Home: {formatDuration(trafficData.workToHome.duration)}</span>
         </div>
 
-        {/* Cache indicator */}
+        {/* Cache indicator as small info icon */}
         {trafficData.cached && (
-          <span 
-            className="text-xs text-white/30" 
-            title={`Cached ${trafficData.cacheAge ?? '?'} minutes ago`}
-          >
-            {trafficData.cacheAge !== undefined && trafficData.cacheAge > 30 ? (
-              <span style={{ color: '#f87171' }}>stale ({trafficData.cacheAge}m)</span>
-            ) : (
-              `cached (${trafficData.cacheAge ?? '?'}m)`
-            )}
-          </span>
+          <div className="flex justify-end">
+            <span
+              className="inline-flex items-center gap-1 text-[10px] text-white/30"
+              title={cacheTooltip}
+            >
+              <Info className="w-3 h-3" />
+              {trafficData.cacheAge !== undefined && trafficData.cacheAge > 30 ? (
+                <span style={{ color: '#f87171' }}>stale ({trafficData.cacheAge}m)</span>
+              ) : (
+                <span>cached ({trafficData.cacheAge ?? '?'}m)</span>
+              )}
+            </span>
+          </div>
         )}
       </div>
     );
   }
 
-  // No data yet
   return (
-    <div 
-      className="flex items-center gap-2 px-3 py-1.5 rounded-full text-sm"
+    <div
+      className="flex items-center gap-2 px-3 py-1.5 rounded-full text-xs"
       style={{ backgroundColor: 'rgba(255,255,255,0.05)' }}
     >
-      <Car className="w-4 h-4 text-white/30" />
+      <Car className="w-3.5 h-3.5 text-white/30" />
       <span className="text-white/30">No traffic data</span>
     </div>
   );

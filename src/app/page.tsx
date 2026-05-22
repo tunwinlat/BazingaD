@@ -94,6 +94,15 @@ async function fetchDefaultView(): Promise<ViewMode> {
   }
 }
 
+async function fetchOpenInNewTab(): Promise<boolean> {
+  try {
+    const settings = await prisma.settings.findFirst();
+    return settings?.openInNewTab ?? true;
+  } catch {
+    return true;
+  }
+}
+
 export default async function Home() {
   const access = await checkDashboardAccess();
 
@@ -104,17 +113,19 @@ export default async function Home() {
 
   const categories = await fetchCategories();
   const defaultView = await fetchDefaultView();
+  const openInNewTab = await fetchOpenInNewTab();
 
   return (
     <>
       <Background />
       <div className="min-h-screen px-4 py-8 md:py-10 flex flex-col">
         <div className="max-w-7xl mx-auto w-full flex flex-col flex-1">
-          <Header categories={categories} />
+          <Header categories={categories} openInNewTab={openInNewTab} />
           <Dashboard
             isAdmin={access.isAdmin}
             isProtected={access.protected}
             defaultView={defaultView}
+            openInNewTab={openInNewTab}
           />
           <Footer />
         </div>

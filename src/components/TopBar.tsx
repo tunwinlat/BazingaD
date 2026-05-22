@@ -10,17 +10,17 @@ import Weather from './Weather';
 import TrafficDisplay from './TrafficDisplay';
 import type { ViewMode } from '@/types';
 
-interface TrafficSettings {
-  enabled: boolean;
-  homeAddress: string;
-  workAddress: string;
-}
-
 interface TopBarProps {
   isAdmin?: boolean;
   isProtected?: boolean;
   viewMode?: ViewMode;
   onViewModeChange?: (mode: ViewMode) => void;
+}
+
+interface TrafficSettings {
+  enabled: boolean;
+  homeAddress: string;
+  workAddress: string;
 }
 
 const viewOptions: { value: ViewMode; label: string; icon: React.ReactNode }[] = [
@@ -97,7 +97,7 @@ export default function TopBar({ isAdmin, isProtected, viewMode = 'comfortable',
 
   return (
     <div
-      className="rounded-2xl p-4 mb-6 flex flex-wrap items-center gap-4"
+      className="rounded-2xl p-3 md:p-4 mb-6 flex flex-wrap items-center gap-3 md:gap-4"
       style={{
         backgroundColor: 'rgba(255, 255, 255, 0.05)',
         border: '1px solid rgba(255, 255, 255, 0.1)',
@@ -105,25 +105,25 @@ export default function TopBar({ isAdmin, isProtected, viewMode = 'comfortable',
       }}
     >
       {/* Time & Date */}
-      <div className="flex-shrink-0 min-w-[140px]">
-        <div className="text-3xl md:text-4xl font-bold tracking-tight" style={{ color: 'var(--theme-text)' }}>
+      <div className="flex-shrink-0 min-w-[120px]">
+        <div className="text-2xl md:text-3xl font-bold tracking-tight leading-none" style={{ color: 'var(--theme-text)' }}>
           {time}
         </div>
-        <div className="text-xs mt-0.5" style={{ color: 'var(--theme-text-muted)' }}>
+        <div className="text-[11px] mt-1 leading-tight" style={{ color: 'var(--theme-text-muted)' }}>
           {date}
         </div>
       </div>
 
       {/* Divider */}
-      <div className="hidden md:block w-px h-12 self-center" style={{ backgroundColor: 'rgba(255,255,255,0.1)' }} />
+      <div className="hidden md:block w-px h-10 self-center" style={{ backgroundColor: 'rgba(255,255,255,0.1)' }} />
 
-      {/* Weather */}
-      <div className="flex-1 min-w-[200px]">
+      {/* Weather — constrained width */}
+      <div className="flex-1 min-w-0 max-w-[280px] lg:max-w-[320px]">
         <Weather compact />
       </div>
 
       {/* Divider */}
-      <div className="hidden lg:block w-px h-12 self-center" style={{ backgroundColor: 'rgba(255,255,255,0.1)' }} />
+      <div className="hidden lg:block w-px h-10 self-center" style={{ backgroundColor: 'rgba(255,255,255,0.1)' }} />
 
       {/* Traffic */}
       <div className="flex-shrink-0">
@@ -197,7 +197,7 @@ export default function TopBar({ isAdmin, isProtected, viewMode = 'comfortable',
               <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
               <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
             </span>
-            Admin
+            <span className="hidden sm:inline">Admin</span>
           </Link>
         )}
 
@@ -214,7 +214,7 @@ export default function TopBar({ isAdmin, isProtected, viewMode = 'comfortable',
             <span className="relative flex h-2 w-2">
               <span className="relative inline-flex rounded-full h-2 w-2 bg-amber-500"></span>
             </span>
-            Protected
+            <span className="hidden sm:inline">Protected</span>
           </div>
         )}
 

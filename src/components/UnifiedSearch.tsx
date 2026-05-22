@@ -6,9 +6,10 @@ import type { Category } from '@/types';
 
 interface UnifiedSearchProps {
   categories: Category[];
+  openInNewTab?: boolean;
 }
 
-export default function UnifiedSearch({ categories }: UnifiedSearchProps) {
+export default function UnifiedSearch({ categories, openInNewTab = true }: UnifiedSearchProps) {
   const [query, setQuery] = useState('');
   const [isFocused, setIsFocused] = useState(false);
   const [selectedIndex, setSelectedIndex] = useState(0);
@@ -82,10 +83,19 @@ export default function UnifiedSearch({ categories }: UnifiedSearchProps) {
         if (selectedIndex < filteredBlocks.length) {
           // Open block
           const selected = filteredBlocks[selectedIndex];
-          window.open(selected.url, '_blank');
+          if (openInNewTab) {
+            window.open(selected.url, '_blank');
+          } else {
+            window.location.href = selected.url;
+          }
         } else {
           // Google search
-          window.open(`https://www.google.com/search?q=${encodeURIComponent(query)}`, '_blank');
+          const searchUrl = `https://www.google.com/search?q=${encodeURIComponent(query)}`;
+          if (openInNewTab) {
+            window.open(searchUrl, '_blank');
+          } else {
+            window.location.href = searchUrl;
+          }
         }
         setQuery('');
         inputRef.current?.blur();
@@ -95,7 +105,7 @@ export default function UnifiedSearch({ categories }: UnifiedSearchProps) {
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [isFocused, filteredBlocks, selectedIndex, query, totalResults]);
+  }, [isFocused, filteredBlocks, selectedIndex, query, totalResults, openInNewTab]);
 
   // Click outside to close
   useEffect(() => {
@@ -110,13 +120,22 @@ export default function UnifiedSearch({ categories }: UnifiedSearchProps) {
   }, []);
 
   const handleBlockClick = (url: string) => {
-    window.open(url, '_blank');
+    if (openInNewTab) {
+      window.open(url, '_blank');
+    } else {
+      window.location.href = url;
+    }
     setQuery('');
     setIsFocused(false);
   };
 
   const handleGoogleSearch = () => {
-    window.open(`https://www.google.com/search?q=${encodeURIComponent(query)}`, '_blank');
+    const searchUrl = `https://www.google.com/search?q=${encodeURIComponent(query)}`;
+    if (openInNewTab) {
+      window.open(searchUrl, '_blank');
+    } else {
+      window.location.href = searchUrl;
+    }
     setQuery('');
     setIsFocused(false);
   };

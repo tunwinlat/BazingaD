@@ -33,6 +33,7 @@ export async function GET() {
       favicon: settings?.favicon || null,
       theme: settings?.theme || 'default',
       defaultView: settings?.defaultView || 'comfortable',
+      openInNewTab: settings?.openInNewTab ?? true,
     };
 
     // Store in cache
@@ -67,7 +68,7 @@ export async function PUT(request: Request) {
     }
 
     const body = await request.json();
-    const { siteTitle, favicon, theme, defaultView } = body;
+    const { siteTitle, favicon, theme, defaultView, openInNewTab } = body;
 
     // Validate inputs
     if (siteTitle !== undefined && (typeof siteTitle !== 'string' || siteTitle.length > 100)) {
@@ -106,6 +107,14 @@ export async function PUT(request: Request) {
       }
     }
 
+    // Validate openInNewTab
+    if (openInNewTab !== undefined && typeof openInNewTab !== 'boolean') {
+      return NextResponse.json(
+        { error: 'Invalid openInNewTab value' },
+        { status: 400 }
+      );
+    }
+
     // Get or create settings
     let existingSettings = await prisma.settings.findFirst();
     
@@ -117,6 +126,7 @@ export async function PUT(request: Request) {
           ...(favicon !== undefined && { favicon }),
           ...(theme !== undefined && { theme }),
           ...(defaultView !== undefined && { defaultView }),
+          ...(openInNewTab !== undefined && { openInNewTab }),
         },
       });
     } else {
@@ -126,6 +136,7 @@ export async function PUT(request: Request) {
           favicon: favicon || null,
           theme: theme || 'default',
           defaultView: defaultView || 'comfortable',
+          openInNewTab: openInNewTab ?? true,
         },
       });
     }

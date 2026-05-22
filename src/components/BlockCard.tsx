@@ -4,20 +4,24 @@ import type { Block, ViewMode } from '@/types';
 interface BlockCardProps {
   block: Block;
   viewMode?: ViewMode;
+  openInNewTab?: boolean;
 }
 
-export default function BlockCard({ block, viewMode = 'comfortable' }: BlockCardProps) {
+export default function BlockCard({ block, viewMode = 'comfortable', openInNewTab = true }: BlockCardProps) {
   const iconUrl = getBlockIcon(block);
   const initials = getInitials(block.title);
   const domain = getDomain(block.url);
+
+  const linkProps = openInNewTab
+    ? { target: '_blank', rel: 'noopener noreferrer' }
+    : {};
 
   // List view: horizontal row
   if (viewMode === 'list') {
     return (
       <a
         href={block.url}
-        target="_blank"
-        rel="noopener noreferrer"
+        {...linkProps}
         title={block.description || block.title}
         aria-label={`${block.title}${block.description ? ` - ${block.description}` : ''}`}
         className="group flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 hover:bg-white/5 relative focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
@@ -77,8 +81,7 @@ export default function BlockCard({ block, viewMode = 'comfortable' }: BlockCard
   return (
     <a
       href={block.url}
-      target="_blank"
-      rel="noopener noreferrer"
+      {...linkProps}
       title={block.description || block.title}
       aria-label={`${block.title}${block.description ? ` - ${block.description}` : ''}`}
       className={`group flex flex-col items-center text-center ${padding} rounded-2xl transition-all duration-300 hover:-translate-y-1 relative overflow-hidden focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500`}

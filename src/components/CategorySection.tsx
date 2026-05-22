@@ -8,6 +8,7 @@ interface CategorySectionProps {
   isAdmin?: boolean;
   onAddBlock?: (categoryId: string) => void;
   viewMode?: ViewMode;
+  openInNewTab?: boolean;
 }
 
 const iconMap: Record<string, LucideIcon> = {
@@ -20,19 +21,22 @@ const iconMap: Record<string, LucideIcon> = {
   default: Circle,
 };
 
-const gridClasses: Record<ViewMode, string> = {
-  comfortable: 'grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4',
-  compact: 'grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-8 gap-3',
-  dense: 'grid-cols-4 sm:grid-cols-5 md:grid-cols-6 lg:grid-cols-8 xl:grid-cols-10 gap-2',
-  list: 'grid-cols-1 gap-2',
-};
-
-export default function CategorySection({ category, index, isAdmin, onAddBlock, viewMode = 'comfortable' }: CategorySectionProps) {
+export default function CategorySection({ category, index, isAdmin, onAddBlock, viewMode = 'comfortable', openInNewTab = true }: CategorySectionProps) {
   const Icon = iconMap[category.icon] || iconMap.default;
 
   const sortedBlocks = [...category.blocks].sort((a, b) =>
     a.title.toLowerCase().localeCompare(b.title.toLowerCase())
   );
+
+  // Use literal class strings so Tailwind detects all classes
+  const gridClass =
+    viewMode === 'comfortable'
+      ? 'grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4'
+      : viewMode === 'compact'
+      ? 'grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-8 gap-3'
+      : viewMode === 'dense'
+      ? 'grid grid-cols-4 sm:grid-cols-5 md:grid-cols-6 lg:grid-cols-8 xl:grid-cols-10 gap-2'
+      : 'grid grid-cols-1 gap-2';
 
   return (
     <section
@@ -60,9 +64,9 @@ export default function CategorySection({ category, index, isAdmin, onAddBlock, 
         </span>
       </div>
 
-      <div className={`grid ${gridClasses[viewMode]}`}>
+      <div className={gridClass}>
         {sortedBlocks.map((block) => (
-          <BlockCard key={block.id} block={block} viewMode={viewMode} />
+          <BlockCard key={block.id} block={block} viewMode={viewMode} openInNewTab={openInNewTab} />
         ))}
       </div>
     </section>

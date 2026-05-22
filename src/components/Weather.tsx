@@ -243,12 +243,12 @@ export default function Weather({ compact = false }: WeatherProps) {
           </div>
 
           {/* Location with settings button */}
-          <div className="flex items-center gap-1.5 text-xs text-white/50">
-            <Cloud className="w-3.5 h-3.5" />
-            <span>{weather.locationName}</span>
+          <div className="flex items-center gap-1.5 text-xs text-white/50 min-w-0">
+            <Cloud className="w-3.5 h-3.5 flex-shrink-0" />
+            <span className="truncate max-w-[120px] lg:max-w-[160px]">{weather.locationName}</span>
             <button
               onClick={() => setShowPicker(true)}
-              className="ml-1 p-0.5 rounded hover:bg-white/10 transition-colors"
+              className="ml-1 p-0.5 rounded hover:bg-white/10 transition-colors flex-shrink-0"
               aria-label="Change weather location"
               title="Change weather location"
             >

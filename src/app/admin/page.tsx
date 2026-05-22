@@ -80,6 +80,7 @@ export default function AdminPage() {
     favicon: null as string | null,
     theme: 'default',
     defaultView: 'comfortable',
+    openInNewTab: true,
   });
   const [faviconPreview, setFaviconPreview] = useState<string | null>(null);
   const [availableThemes, setAvailableThemes] = useState<Array<{ id: string; name: string }>>([]);
@@ -285,6 +286,7 @@ export default function AdminPage() {
           favicon: data.favicon || null,
           theme: data.theme || 'default',
           defaultView: data.defaultView || 'comfortable',
+          openInNewTab: data.openInNewTab ?? true,
         });
         setFaviconPreview(data.favicon || null);
       }
@@ -624,6 +626,7 @@ export default function AdminPage() {
           favicon: generalSettings.favicon,
           theme: generalSettings.theme,
           defaultView: generalSettings.defaultView,
+          openInNewTab: generalSettings.openInNewTab,
         }),
       });
 
@@ -1917,6 +1920,21 @@ export default function AdminPage() {
                     <option value="list" style={{ backgroundColor: '#1a1a2e', color: 'white' }}>List (horizontal rows)</option>
                   </select>
                   <p className="text-xs text-white/40 mt-1">Default view mode for new visitors. Users can override this on their device.</p>
+                </div>
+
+                {/* Open in New Tab Toggle */}
+                <div className="flex items-center gap-3 p-4 rounded-lg" style={{ backgroundColor: 'rgba(255,255,255,0.03)' }}>
+                  <input
+                    type="checkbox"
+                    id="openInNewTab"
+                    checked={generalSettings.openInNewTab}
+                    onChange={(e) => setGeneralSettings({ ...generalSettings, openInNewTab: e.target.checked })}
+                    className="w-5 h-5 rounded border-white/20"
+                  />
+                  <label htmlFor="openInNewTab" className="flex-1">
+                    <span className="font-medium text-sm">Open links in new tab</span>
+                    <p className="text-xs text-white/50">When enabled, blocks and search results open in a new browser tab</p>
+                  </label>
                 </div>
 
                 {/* Save Button */}
