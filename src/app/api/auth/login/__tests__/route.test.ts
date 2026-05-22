@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { POST } from '../route';
 import { prisma } from '@/lib/prisma';
-import { createSession, getCookieOptions } from '@/lib/auth';
+import { createSession } from '@/lib/auth';
 import { settingsCache } from '@/lib/cache';
 import bcrypt from 'bcryptjs';
 import * as OTPAuth from 'otpauth';

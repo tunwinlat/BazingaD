@@ -113,6 +113,7 @@ export const settingsUpdateSchema = z.object({
   weatherLongitude: z.number().min(-180).max(180).optional().nullable(),
   weatherLocationName: z.string().max(100).optional().nullable(),
   weatherUnits: z.enum(['metric', 'imperial']).optional(),
+  defaultView: z.enum(['comfortable', 'compact', 'dense', 'list']).optional(),
 });
 
 // Weather API params validation

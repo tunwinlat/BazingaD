@@ -79,6 +79,7 @@ export default function AdminPage() {
     siteTitle: 'Start Page',
     favicon: null as string | null,
     theme: 'default',
+    defaultView: 'comfortable',
   });
   const [faviconPreview, setFaviconPreview] = useState<string | null>(null);
   const [availableThemes, setAvailableThemes] = useState<Array<{ id: string; name: string }>>([]);
@@ -148,6 +149,7 @@ export default function AdminPage() {
       }
     };
     loadData();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {
@@ -244,11 +246,6 @@ export default function AdminPage() {
     }
   };
 
-  // Format hours for display
-  const formatDuration = (hours: number): string => {
-    const { value, unit } = hoursToDisplay(hours);
-    return `${value} ${unit}`;
-  };
 
   const fetchSettings = async () => {
     try {
@@ -287,6 +284,7 @@ export default function AdminPage() {
           siteTitle: data.siteTitle || 'Start Page',
           favicon: data.favicon || null,
           theme: data.theme || 'default',
+          defaultView: data.defaultView || 'comfortable',
         });
         setFaviconPreview(data.favicon || null);
       }
@@ -625,6 +623,7 @@ export default function AdminPage() {
           siteTitle: generalSettings.siteTitle,
           favicon: generalSettings.favicon,
           theme: generalSettings.theme,
+          defaultView: generalSettings.defaultView,
         }),
       });
 
@@ -1835,11 +1834,14 @@ export default function AdminPage() {
                       style={{ backgroundColor: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)' }}
                     >
                       {faviconPreview ? (
-                        <img
-                          src={faviconPreview}
-                          alt="Favicon preview"
-                          className="w-10 h-10 object-contain"
-                        />
+                        <>
+                          {/* eslint-disable-next-line @next/next/no-img-element */}
+                          <img
+                            src={faviconPreview}
+                            alt="Favicon preview"
+                            className="w-10 h-10 object-contain"
+                          />
+                        </>
                       ) : (
                         <span className="text-2xl">🚀</span>
                       )}
@@ -1898,6 +1900,23 @@ export default function AdminPage() {
                     ))}
                   </select>
                   <p className="text-xs text-white/40 mt-1">Choose a color theme for your dashboard</p>
+                </div>
+
+                {/* Default View Selector */}
+                <div>
+                  <label className="block text-sm text-white/70 mb-2">Default Block View</label>
+                  <select
+                    value={generalSettings.defaultView}
+                    onChange={(e) => setGeneralSettings({ ...generalSettings, defaultView: e.target.value })}
+                    className="w-full px-3 py-2 rounded-lg border outline-none focus:border-indigo-500 text-sm"
+                    style={{ backgroundColor: 'rgba(255,255,255,0.05)', borderColor: 'rgba(255,255,255,0.1)', color: 'white' }}
+                  >
+                    <option value="comfortable" style={{ backgroundColor: '#1a1a2e', color: 'white' }}>Comfortable (large cards)</option>
+                    <option value="compact" style={{ backgroundColor: '#1a1a2e', color: 'white' }}>Compact (smaller cards)</option>
+                    <option value="dense" style={{ backgroundColor: '#1a1a2e', color: 'white' }}>Dense (icon-focused)</option>
+                    <option value="list" style={{ backgroundColor: '#1a1a2e', color: 'white' }}>List (horizontal rows)</option>
+                  </select>
+                  <p className="text-xs text-white/40 mt-1">Default view mode for new visitors. Users can override this on their device.</p>
                 </div>
 
                 {/* Save Button */}
@@ -2180,6 +2199,7 @@ export default function AdminPage() {
               <div className="text-center">
                 <p className="text-sm text-white/70 mb-4">Scan this QR code with your authenticator app</p>
                 <div className="inline-block p-4 rounded-xl" style={{ backgroundColor: 'white' }}>
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img src={totpSetupData.qrCode} alt="TOTP QR Code" className="w-48 h-48" />
                 </div>
               </div>

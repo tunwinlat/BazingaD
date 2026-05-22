@@ -1,38 +1,37 @@
-import { test, describe } from 'node:test';
-import assert from 'node:assert';
-import { getDomain } from '../lib/utils.ts';
+import { describe, it, expect } from 'vitest';
+import { getDomain } from '../lib/utils';
 
 describe('getDomain', () => {
-  test('returns domain for standard URL with www', () => {
-    assert.strictEqual(getDomain('https://www.google.com'), 'google.com');
+  it('returns domain for standard URL with www', () => {
+    expect(getDomain('https://www.google.com')).toBe('google.com');
   });
 
-  test('returns domain for standard URL without www', () => {
-    assert.strictEqual(getDomain('https://github.com/twlatx'), 'github.com');
+  it('returns domain for standard URL without www', () => {
+    expect(getDomain('https://github.com/twlatx')).toBe('github.com');
   });
 
-  test('returns domain for URL with subdomain', () => {
-    assert.strictEqual(getDomain('https://app.example.co.uk'), 'app.example.co.uk');
+  it('returns domain for URL with subdomain', () => {
+    expect(getDomain('https://app.example.co.uk')).toBe('app.example.co.uk');
   });
 
-  test('returns domain for URL with port', () => {
-    assert.strictEqual(getDomain('http://localhost:3000'), 'localhost');
+  it('returns domain for URL with port', () => {
+    expect(getDomain('http://localhost:3000')).toBe('localhost');
   });
 
-  test('returns input string for invalid URL (error handling)', () => {
+  it('returns input string for invalid URL (error handling)', () => {
     const invalidUrl = 'not-a-url';
-    assert.strictEqual(getDomain(invalidUrl), invalidUrl);
+    expect(getDomain(invalidUrl)).toBe(invalidUrl);
   });
 
-  test('returns input string for empty string (error handling)', () => {
-    assert.strictEqual(getDomain(''), '');
+  it('returns input string for empty string (error handling)', () => {
+    expect(getDomain('')).toBe('');
   });
 
-  test('returns "null" for string "null" (error handling)', () => {
-    assert.strictEqual(getDomain('null'), 'null');
+  it('returns "null" for string "null" (error handling)', () => {
+    expect(getDomain('null')).toBe('null');
   });
 
-  test('returns domain for URL with multiple subdomains', () => {
-    assert.strictEqual(getDomain('https://very.deep.subdomain.example.com'), 'very.deep.subdomain.example.com');
+  it('returns domain for URL with multiple subdomains', () => {
+    expect(getDomain('https://very.deep.subdomain.example.com')).toBe('very.deep.subdomain.example.com');
   });
 });

@@ -78,6 +78,7 @@ export async function PUT(
     }
 
     // Update category - remove id from data
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const { id: _id, ...updateData } = validatedData;
     // delete updateData.id;
     const category = await prisma.category.update({

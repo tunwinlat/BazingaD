@@ -1,10 +1,13 @@
-import { Briefcase, User, Image, Code, Users, ShoppingCart, Circle, type LucideIcon } from 'lucide-react';
+import { Briefcase, User, Image, Code, Users, ShoppingCart, Circle, Plus, type LucideIcon } from 'lucide-react';
 import BlockCard from './BlockCard';
-import type { Category } from '@/types';
+import type { Category, ViewMode } from '@/types';
 
 interface CategorySectionProps {
   category: Category;
   index: number;
+  isAdmin?: boolean;
+  onAddBlock?: (categoryId: string) => void;
+  viewMode?: ViewMode;
 }
 
 const iconMap: Record<string, LucideIcon> = {
@@ -17,15 +20,22 @@ const iconMap: Record<string, LucideIcon> = {
   default: Circle,
 };
 
-export default function CategorySection({ category, index }: CategorySectionProps) {
+const gridClasses: Record<ViewMode, string> = {
+  comfortable: 'grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4',
+  compact: 'grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-8 gap-3',
+  dense: 'grid-cols-4 sm:grid-cols-5 md:grid-cols-6 lg:grid-cols-8 xl:grid-cols-10 gap-2',
+  list: 'grid-cols-1 gap-2',
+};
+
+export default function CategorySection({ category, index, isAdmin, onAddBlock, viewMode = 'comfortable' }: CategorySectionProps) {
   const Icon = iconMap[category.icon] || iconMap.default;
-  
-  const sortedBlocks = [...category.blocks].sort((a, b) => 
+
+  const sortedBlocks = [...category.blocks].sort((a, b) =>
     a.title.toLowerCase().localeCompare(b.title.toLowerCase())
   );
 
   return (
-    <section 
+    <section
       className="animate-fadeInUp"
       style={{ animationDelay: `${index * 0.1}s` }}
     >
@@ -34,14 +44,25 @@ export default function CategorySection({ category, index }: CategorySectionProp
         <h2 className="text-lg font-semibold text-white uppercase tracking-wider">
           {category.name}
         </h2>
-        <span className="text-xs text-white/50 bg-white/5 px-3 py-1 rounded-full ml-auto">
+        {isAdmin && onAddBlock && (
+          <button
+            onClick={() => onAddBlock(category.id)}
+            className="p-1.5 rounded-lg transition-colors hover:bg-white/10 ml-auto"
+            style={{ backgroundColor: 'rgba(255,255,255,0.05)' }}
+            title={`Add block to ${category.name}`}
+            aria-label={`Add block to ${category.name}`}
+          >
+            <Plus className="w-3.5 h-3.5 text-white/60" />
+          </button>
+        )}
+        <span className="text-xs text-white/50 bg-white/5 px-3 py-1 rounded-full">
           {sortedBlocks.length}
         </span>
       </div>
-      
-      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
+
+      <div className={`grid ${gridClasses[viewMode]}`}>
         {sortedBlocks.map((block) => (
-          <BlockCard key={block.id} block={block} />
+          <BlockCard key={block.id} block={block} viewMode={viewMode} />
         ))}
       </div>
     </section>

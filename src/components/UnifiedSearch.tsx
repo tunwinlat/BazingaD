@@ -218,14 +218,17 @@ export default function UnifiedSearch({ categories }: UnifiedSearchProps) {
                     style={{ backgroundColor: 'rgba(255, 255, 255, 0.05)' }}
                   >
                     {block.icon ? (
-                      <img
-                        src={block.icon}
-                        alt=""
-                        className="w-5 h-5 object-contain"
-                        onError={(e) => {
-                          (e.target as HTMLImageElement).style.display = 'none';
-                        }}
-                      />
+                      <>
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img
+                          src={block.icon}
+                          alt=""
+                          className="w-5 h-5 object-contain"
+                          onError={(e) => {
+                            (e.target as HTMLImageElement).style.display = 'none';
+                          }}
+                        />
+                      </>
                     ) : (
                       <span>🔗</span>
                     )}

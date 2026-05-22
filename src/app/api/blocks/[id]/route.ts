@@ -73,7 +73,8 @@ export async function PUT(
     }
 
     // Update block - remove id from data
-    const updateData = (({ id, ...rest }) => rest)(validatedData);
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const updateData = (({ id: _id, ...rest }) => rest)(validatedData);
     const block = await prisma.block.update({
       where: { id },
       data: updateData,

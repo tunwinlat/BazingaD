@@ -14,6 +14,7 @@ export async function GET() {
       siteTitle: string;
       favicon: string | null;
       theme: string;
+      defaultView: string;
     }>(CACHE_KEY);
     
     if (cached) {
@@ -31,6 +32,7 @@ export async function GET() {
       siteTitle: settings?.siteTitle || 'Start Page',
       favicon: settings?.favicon || null,
       theme: settings?.theme || 'default',
+      defaultView: settings?.defaultView || 'comfortable',
     };
 
     // Store in cache
@@ -65,7 +67,7 @@ export async function PUT(request: Request) {
     }
 
     const body = await request.json();
-    const { siteTitle, favicon, theme } = body;
+    const { siteTitle, favicon, theme, defaultView } = body;
 
     // Validate inputs
     if (siteTitle !== undefined && (typeof siteTitle !== 'string' || siteTitle.length > 100)) {
@@ -93,6 +95,17 @@ export async function PUT(request: Request) {
       }
     }
 
+    // Validate defaultView
+    if (defaultView !== undefined) {
+      const validViews = ['comfortable', 'compact', 'dense', 'list'];
+      if (!validViews.includes(defaultView)) {
+        return NextResponse.json(
+          { error: 'Invalid default view' },
+          { status: 400 }
+        );
+      }
+    }
+
     // Get or create settings
     let existingSettings = await prisma.settings.findFirst();
     
@@ -103,6 +116,7 @@ export async function PUT(request: Request) {
           ...(siteTitle !== undefined && { siteTitle: siteTitle.trim() || 'Start Page' }),
           ...(favicon !== undefined && { favicon }),
           ...(theme !== undefined && { theme }),
+          ...(defaultView !== undefined && { defaultView }),
         },
       });
     } else {
@@ -111,6 +125,7 @@ export async function PUT(request: Request) {
           siteTitle: siteTitle?.trim() || 'Start Page',
           favicon: favicon || null,
           theme: theme || 'default',
+          defaultView: defaultView || 'comfortable',
         },
       });
     }

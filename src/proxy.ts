@@ -75,7 +75,7 @@ function isStaticAsset(pathname: string): boolean {
          /\.(?:jpg|jpeg|gif|png|svg|ico|css|js|woff|woff2|ttf|eot)$/.test(pathname);
 }
 
-export async function middleware(request: NextRequest) {
+export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
   const isDev = process.env.NODE_ENV !== 'production';
   

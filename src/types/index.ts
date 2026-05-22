@@ -41,6 +41,8 @@ export interface CategoryFormData {
   sortOrder?: number;
 }
 
+export type ViewMode = 'comfortable' | 'compact' | 'dense' | 'list';
+
 export type ServiceStatus = 'online' | 'offline' | 'unknown' | 'checking';
 
 export interface ServiceHealth {

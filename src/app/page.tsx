@@ -9,8 +9,7 @@ import Background from '@/components/Background';
 import Header from '@/components/Header';
 import Dashboard from '@/components/Dashboard';
 import Footer from '@/components/Footer';
-import InfoBar from '@/components/InfoBar';
-import DashboardHeader from '@/components/DashboardHeader';
+import type { ViewMode } from '@/types';
 
 async function checkDashboardAccess() {
   const CACHE_KEY = "dashboard_access_settings";
@@ -21,32 +20,32 @@ async function checkDashboardAccess() {
     isProtected = settings?.dashboardProtected ?? false;
     settingsCache.set(CACHE_KEY, { dashboardProtected: isProtected }, 60);
   }
-  
+
   // If not protected, allow access
   if (!isProtected) {
     return { protected: false, hasAccess: true };
   }
-  
+
   // Check if user has admin auth (admins always have dashboard access)
   const auth = await verifyAuth();
   if (auth) {
     return { protected: true, hasAccess: true, isAdmin: true };
   }
-  
+
   // Check dashboard-specific access
   const cookieStore = await cookies();
   const dashboardToken = cookieStore.get('dashboard-token')?.value;
-  
+
   if (dashboardToken) {
     const session = await prisma.session.findUnique({
       where: { token: dashboardToken },
     });
-    
+
     if (session && session.expiresAt > new Date()) {
       return { protected: true, hasAccess: true, isAdmin: false };
     }
   }
-  
+
   // No access - redirect to login
   return { protected: true, hasAccess: false };
 }
@@ -61,7 +60,7 @@ async function fetchCategories() {
         },
       },
     });
-    
+
     // Transform null values to undefined to match TypeScript types
     return categories.map(category => ({
       ...category,
@@ -82,31 +81,41 @@ async function fetchCategories() {
   }
 }
 
+async function fetchDefaultView(): Promise<ViewMode> {
+  try {
+    const settings = await prisma.settings.findFirst();
+    const view = settings?.defaultView;
+    if (view === 'comfortable' || view === 'compact' || view === 'dense' || view === 'list') {
+      return view;
+    }
+    return 'comfortable';
+  } catch {
+    return 'comfortable';
+  }
+}
+
 export default async function Home() {
   const access = await checkDashboardAccess();
-  
+
   // Redirect to login if protected and no access
   if (access.protected && !access.hasAccess) {
     redirect('/dashboard-login');
   }
-  
+
   const categories = await fetchCategories();
-  
+  const defaultView = await fetchDefaultView();
+
   return (
     <>
       <Background />
       <div className="min-h-screen px-4 py-8 md:py-10 flex flex-col">
         <div className="max-w-7xl mx-auto w-full flex flex-col flex-1">
-          {/* Protected indicator and logout */}
-          {access.protected && (
-            <DashboardHeader isAdmin={access.isAdmin} />
-          )}
-          
-          {/* Info Bar - Weather & Traffic */}
-          <InfoBar />
-          
           <Header categories={categories} />
-          <Dashboard />
+          <Dashboard
+            isAdmin={access.isAdmin}
+            isProtected={access.protected}
+            defaultView={defaultView}
+          />
           <Footer />
         </div>
       </div>

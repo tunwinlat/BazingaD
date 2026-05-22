@@ -6,8 +6,6 @@ import QRCode from 'qrcode';
 import { randomBytes } from 'crypto';
 import bcrypt from 'bcryptjs';
 
-const MAX_BODY_SIZE = 1024 * 1024;
-
 // Generate a random recovery code
 function generateRecoveryCode(): string {
   return randomBytes(16).toString('hex').toUpperCase().match(/.{4}/g)?.join('-') || '';

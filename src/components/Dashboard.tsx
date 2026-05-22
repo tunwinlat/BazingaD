@@ -1,10 +1,12 @@
 'use client';
 
 import { useState, useEffect, useCallback, memo, useMemo } from 'react';
-import { Plus } from 'lucide-react';
+import { Plus, FolderPlus } from 'lucide-react';
 import Link from 'next/link';
 import CategorySection from './CategorySection';
-import type { Category } from '@/types';
+import QuickAddModal from './QuickAddModal';
+import TopBar from './TopBar';
+import type { Category, ViewMode } from '@/types';
 
 // Memoized loading skeleton
 const CategorySkeleton = memo(function CategorySkeleton() {
@@ -91,11 +93,46 @@ const ErrorState = memo(function ErrorState({ error, onRetry }: ErrorStateProps)
   );
 });
 
+interface DashboardProps {
+  isAdmin?: boolean;
+  isProtected?: boolean;
+  defaultView: ViewMode;
+}
+
+const VIEW_MODE_STORAGE_KEY = 'startpage-view-mode';
+
 // Main Dashboard component
-export default function Dashboard() {
+export default function Dashboard({ isAdmin, isProtected, defaultView }: DashboardProps) {
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [modalMode, setModalMode] = useState<'block' | 'category' | null>(null);
+  const [defaultCategoryId, setDefaultCategoryId] = useState<string>('');
+
+  // View mode: localStorage override > server default
+  const [viewMode, setViewMode] = useState<ViewMode>(defaultView);
+
+  // Load user's view preference from localStorage on mount
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem(VIEW_MODE_STORAGE_KEY);
+      if (saved === 'comfortable' || saved === 'compact' || saved === 'dense' || saved === 'list') {
+        setViewMode(saved);
+      }
+    } catch {
+      // localStorage not available
+    }
+  }, []);
+
+  // Persist view preference changes to localStorage
+  const handleViewModeChange = useCallback((mode: ViewMode) => {
+    setViewMode(mode);
+    try {
+      localStorage.setItem(VIEW_MODE_STORAGE_KEY, mode);
+    } catch {
+      // localStorage not available
+    }
+  }, []);
 
   const fetchCategories = useCallback(async () => {
     setLoading(true);
@@ -120,41 +157,100 @@ export default function Dashboard() {
     fetchCategories();
   }, [fetchCategories]);
 
+  const handleAddBlock = useCallback((categoryId: string) => {
+    setDefaultCategoryId(categoryId);
+    setModalMode('block');
+  }, []);
+
+  const handleAddCategory = useCallback(() => {
+    setDefaultCategoryId('');
+    setModalMode('category');
+  }, []);
+
+  const handleCloseModal = useCallback(() => {
+    setModalMode(null);
+    setDefaultCategoryId('');
+  }, []);
+
   // Memoize category sections to prevent unnecessary re-renders
   const categorySections = useMemo(() => {
     return categories.map((category, index) => (
-      <CategorySection key={category.id} category={category} index={index} />
+      <CategorySection
+        key={category.id}
+        category={category}
+        index={index}
+        isAdmin={isAdmin}
+        onAddBlock={handleAddBlock}
+        viewMode={viewMode}
+      />
     ));
-  }, [categories]);
+  }, [categories, isAdmin, handleAddBlock, viewMode]);
 
   if (loading) {
     return (
-      <main className="flex-1 flex flex-col">
-        <CategorySkeleton />
-        <CategorySkeleton />
-      </main>
+      <>
+        <TopBar isAdmin={isAdmin} isProtected={isProtected} viewMode={viewMode} onViewModeChange={handleViewModeChange} />
+        <main className="flex-1 flex flex-col">
+          <CategorySkeleton />
+          <CategorySkeleton />
+        </main>
+      </>
     );
   }
 
   if (error) {
     return (
-      <main className="flex-1 flex flex-col">
-        <ErrorState error={error} onRetry={fetchCategories} />
-      </main>
+      <>
+        <TopBar isAdmin={isAdmin} isProtected={isProtected} viewMode={viewMode} onViewModeChange={handleViewModeChange} />
+        <main className="flex-1 flex flex-col">
+          <ErrorState error={error} onRetry={fetchCategories} />
+        </main>
+      </>
     );
   }
 
   if (categories.length === 0) {
     return (
-      <main className="flex-1 flex flex-col">
-        <EmptyState />
-      </main>
+      <>
+        <TopBar isAdmin={isAdmin} isProtected={isProtected} viewMode={viewMode} onViewModeChange={handleViewModeChange} />
+        <main className="flex-1 flex flex-col">
+          <EmptyState />
+        </main>
+      </>
     );
   }
 
   return (
-    <main className="flex-1 flex flex-col gap-8">
-      {categorySections}
-    </main>
+    <>
+      <TopBar isAdmin={isAdmin} isProtected={isProtected} viewMode={viewMode} onViewModeChange={handleViewModeChange} />
+      <main className="flex-1 flex flex-col gap-8">
+        {categorySections}
+
+        {/* Admin quick-add category button */}
+        {isAdmin && (
+          <button
+            onClick={handleAddCategory}
+            className="flex items-center justify-center gap-2 px-6 py-4 rounded-xl transition-all hover:scale-[1.01] border border-dashed"
+            style={{
+              backgroundColor: 'rgba(255,255,255,0.02)',
+              borderColor: 'rgba(255,255,255,0.1)',
+              color: 'rgba(255,255,255,0.4)',
+            }}
+          >
+            <FolderPlus className="w-5 h-5" />
+            <span className="font-medium">Add Category</span>
+          </button>
+        )}
+      </main>
+
+      <QuickAddModal
+        mode={modalMode === 'block' ? 'block' : 'category'}
+        isOpen={modalMode !== null}
+        onClose={handleCloseModal}
+        onSuccess={fetchCategories}
+        categories={categories}
+        defaultCategoryId={defaultCategoryId || undefined}
+      />
+    </>
   );
 }

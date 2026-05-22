@@ -51,6 +51,7 @@ model Settings {
   siteTitle             String   @default("Start Page") // Site title
   favicon               String?  // Base64 encoded favicon SVG or data URL
   theme                 String   @default("default") // Dashboard theme ID
+  defaultView           String   @default("comfortable") // Dashboard default view mode
   
   // Dashboard protection
   dashboardProtected    Boolean  @default(false)
