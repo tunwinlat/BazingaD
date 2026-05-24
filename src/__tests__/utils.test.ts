@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { getDomain } from '../lib/utils';
+import { getDomain } from '../lib/utils.ts';
 
 describe('getDomain', () => {
   it('returns domain for standard URL with www', () => {

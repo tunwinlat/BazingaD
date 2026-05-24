@@ -1,0 +1,4 @@
+## 2026-05-24 - DoS Vulnerability in Custom Rate Limiting Map
+**Vulnerability:** CPU exhaustion Denial of Service (DoS) vulnerability in the login endpoint (`/api/auth/login` and `/api/auth/dashboard`).
+**Learning:** Manual rate limiting using an in-memory `Map` with custom O(N) cleanup logic (iterating through thousands of map entries on each failure) creates a massive CPU bottleneck. Attackers could spam requests to intentionally fill the map and trigger expensive cleanup cycles, hanging the Node.js event loop.
+**Prevention:** Never write custom O(N) cleanup logic for rate limiters. Use established, optimized libraries like `rate-limiter-flexible` which use Redis or efficient memory structures under the hood, and ensure their asynchronous operations (like `get` and `consume`) are properly awaited to avoid race conditions.

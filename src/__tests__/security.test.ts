@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { isSafeUrl } from '../lib/security';
+import { isSafeUrl } from '../lib/security.ts';
 
 describe('isSafeUrl', () => {
   describe('IPv4 Address Validation', () => {
