@@ -35,3 +35,6 @@
 ## 2026-05-20 - API Key Visibility Toggle Consistency
 **Learning:** Using standard `Eye`/`EyeOff` icons for API key visibility toggles (rather than text like "Show"/"Hide") maintains consistency with password inputs, saves horizontal space on mobile, and creates a more cohesive UI language. It requires converting to a relative wrapper and setting correct right-padding to prevent overlap.
 **Action:** Replace generic "Show/Hide" text buttons with accessible `Eye`/`EyeOff` icon buttons using absolute positioning and `aria-label` attributes on inputs containing sensitive tokens or keys.
+## 2026-05-25 - Custom Modals Need ARIA Roles
+**Learning:** Custom modal components built with absolute/fixed positioned `div`s lack inherent semantic meaning. Without explicit ARIA roles, screen readers won't recognize them as modal dialogs, making them inaccessible and confusing for users relying on assistive technology.
+**Action:** Always add `role="dialog"`, `aria-modal="true"`, and an `aria-labelledby` referencing the heading's ID to the container element of custom modal dialogs to ensure proper screen reader support.

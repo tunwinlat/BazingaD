@@ -20,7 +20,12 @@ export default function KeyboardShortcutsModal({ onClose }: KeyboardShortcutsMod
   }, [onClose]);
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center p-4"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="keyboard-shortcuts-title"
+    >
       <div
         className="absolute inset-0 bg-black/60 backdrop-blur-sm"
         onClick={onClose}
@@ -35,7 +40,7 @@ export default function KeyboardShortcutsModal({ onClose }: KeyboardShortcutsMod
       >
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-white/10">
-          <h2 className="text-lg font-semibold">Keyboard Shortcuts</h2>
+          <h2 id="keyboard-shortcuts-title" className="text-lg font-semibold">Keyboard Shortcuts</h2>
           <button
             onClick={onClose}
             aria-label="Close keyboard shortcuts"

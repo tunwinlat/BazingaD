@@ -392,7 +392,12 @@ function WeatherLocationPicker({
   onClose,
 }: PickerProps) {
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center p-4"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="weather-modal-title"
+    >
       {/* Backdrop */}
       <div
         className="absolute inset-0 bg-black/60 backdrop-blur-sm"
@@ -409,7 +414,7 @@ function WeatherLocationPicker({
       >
         {/* Header */}
         <div className="flex items-center justify-between mb-4">
-          <h3 className="text-lg font-semibold text-white flex items-center gap-2">
+          <h3 id="weather-modal-title" className="text-lg font-semibold text-white flex items-center gap-2">
             <MapPin className="w-5 h-5" />
             Weather Location
           </h3>

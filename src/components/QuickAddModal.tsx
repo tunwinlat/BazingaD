@@ -145,6 +145,9 @@ export default function QuickAddModal({
       className="fixed inset-0 z-50 flex items-center justify-center p-4"
       style={{ backgroundColor: 'rgba(0,0,0,0.7)' }}
       onClick={handleClose}
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="quick-add-title"
     >
       <div
         className="w-full max-w-md rounded-2xl p-6 max-h-[90vh] overflow-y-auto"
@@ -155,7 +158,7 @@ export default function QuickAddModal({
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex justify-between items-center mb-6">
-          <h3 className="text-xl font-semibold">
+          <h3 id="quick-add-title" className="text-xl font-semibold">
             {mode === 'block' ? 'Add Block' : 'Add Category'}
           </h3>
           <button
