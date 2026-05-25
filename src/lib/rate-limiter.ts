@@ -5,7 +5,7 @@ import { getClientIP } from './ip-utils';
 export { getClientIP };
 
 // Rate limiters for different endpoints with optimized settings
-const rateLimiters = {
+export const rateLimiters = {
   // Login attempts: 5 per 15 minutes per IP - strict to prevent brute force
   login: new RateLimiterMemory({
     keyPrefix: 'login',
