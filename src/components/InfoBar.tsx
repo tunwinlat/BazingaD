@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { memo, useState, useEffect } from 'react';
 import Weather from './Weather';
 import TrafficDisplay from './TrafficDisplay';
 
@@ -10,13 +10,15 @@ interface TrafficSettings {
   workAddress: string;
 }
 
-export default function InfoBar() {
+function InfoBar() {
   const [trafficSettings, setTrafficSettings] = useState<TrafficSettings | null>(null);
 
   useEffect(() => {
+    const controller = new AbortController();
+
     const fetchTrafficSettings = async () => {
       try {
-        const response = await fetch('/api/settings/traffic');
+        const response = await fetch('/api/settings/traffic', { signal: controller.signal });
         if (response.ok) {
           const data = await response.json();
           setTrafficSettings({
@@ -26,11 +28,15 @@ export default function InfoBar() {
           });
         }
       } catch (error) {
-        console.error('Failed to fetch traffic settings:', error);
+        if (error instanceof Error && error.name !== 'AbortError') {
+          console.error('Failed to fetch traffic settings:', error);
+        }
       }
     };
 
     fetchTrafficSettings();
+
+    return () => controller.abort();
   }, []);
 
   const hasWeather = true; // Weather component handles its own enabled check
@@ -65,3 +71,5 @@ export default function InfoBar() {
     </div>
   );
 }
+
+export default memo(InfoBar);

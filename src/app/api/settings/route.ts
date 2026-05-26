@@ -12,28 +12,17 @@ const MAX_BODY_SIZE = 1024 * 1024;
 export async function GET() {
   try {
     const auth = await verifyAuth();
-    let settings = await prisma.settings.findFirst();
+    const settings = await prisma.settings.findFirst();
 
-    if (!settings) {
-      // Create default settings
-      settings = await prisma.settings.create({
-        data: {
-          dashboardProtected: false,
-          sessionDurationHours: 24,
-          weatherEnabled: false,
-          weatherUnits: 'metric',
-        },
-      });
-    }
-
+    // Return defaults if no settings exist (do NOT mutate DB on GET)
     return NextResponse.json({
-      dashboardProtected: settings.dashboardProtected,
-      sessionDurationHours: settings.sessionDurationHours,
-      weatherEnabled: settings.weatherEnabled,
-      weatherLatitude: auth ? settings.weatherLatitude : null,
-      weatherLongitude: auth ? settings.weatherLongitude : null,
-      weatherLocationName: auth ? settings.weatherLocationName : '',
-      weatherUnits: settings.weatherUnits,
+      dashboardProtected: settings?.dashboardProtected ?? false,
+      sessionDurationHours: settings?.sessionDurationHours ?? 24,
+      weatherEnabled: settings?.weatherEnabled ?? false,
+      weatherLatitude: auth ? settings?.weatherLatitude : null,
+      weatherLongitude: auth ? settings?.weatherLongitude : null,
+      weatherLocationName: auth ? settings?.weatherLocationName : '',
+      weatherUnits: settings?.weatherUnits ?? 'metric',
     });
   } catch (error) {
     console.error('Settings fetch error:', error);
@@ -47,7 +36,7 @@ export async function GET() {
 async function parseAndValidateRequest(request: Request) {
   // Check content length
   const contentLength = request.headers.get('content-length');
-  if (contentLength && parseInt(contentLength) > MAX_BODY_SIZE) {
+  if (contentLength && Number(contentLength) > MAX_BODY_SIZE) {
     return { errorResponse: NextResponse.json({ error: 'Request body too large' }, { status: 413 }) };
   }
 

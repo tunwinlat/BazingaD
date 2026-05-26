@@ -71,7 +71,7 @@ async function createAdminUser(username: string, password: string) {
 
 async function validateSetupRequest(request: Request) {
   const contentLength = request.headers.get('content-length');
-  if (contentLength && parseInt(contentLength) > MAX_BODY_SIZE) {
+  if (contentLength && Number(contentLength) > MAX_BODY_SIZE) {
     return NextResponse.json(
       { error: 'Request body too large' },
       { status: 413 }

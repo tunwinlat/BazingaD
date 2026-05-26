@@ -14,20 +14,27 @@ export async function GET() {
       );
     }
 
+    const now = new Date();
     const sessions = await prisma.session.findMany({
-      where: { userId: auth.userId },
+      where: {
+        userId: auth.userId,
+        expiresAt: { gt: now },
+      },
       orderBy: { createdAt: 'desc' },
+      select: {
+        id: true,
+        createdAt: true,
+        expiresAt: true,
+        token: true,
+      },
     });
 
-    const now = new Date();
-    const activeSessions = sessions
-      .filter(s => s.expiresAt > now)
-      .map(s => ({
-        id: s.id,
-        createdAt: s.createdAt,
-        expiresAt: s.expiresAt,
-        isCurrent: s.token === auth.sessionToken,
-      }));
+    const activeSessions = sessions.map(s => ({
+      id: s.id,
+      createdAt: s.createdAt,
+      expiresAt: s.expiresAt,
+      isCurrent: s.token === auth.sessionToken,
+    }));
 
     return NextResponse.json({ 
       sessions: activeSessions, 

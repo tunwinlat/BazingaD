@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { X, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import type { Category } from '@/types';
@@ -138,6 +138,15 @@ export default function QuickAddModal({
     }
   };
 
+  useEffect(() => {
+    if (!isOpen) return;
+    const handleEscape = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onClose();
+    };
+    window.addEventListener('keydown', handleEscape);
+    return () => window.removeEventListener('keydown', handleEscape);
+  }, [isOpen, onClose]);
+
   if (!isOpen) return null;
 
   return (
@@ -147,6 +156,9 @@ export default function QuickAddModal({
       onClick={handleClose}
     >
       <div
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="quick-add-title"
         className="w-full max-w-md rounded-2xl p-6 max-h-[90vh] overflow-y-auto"
         style={{
           backgroundColor: '#1a1a2e',
@@ -155,10 +167,11 @@ export default function QuickAddModal({
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex justify-between items-center mb-6">
-          <h3 className="text-xl font-semibold">
+          <h3 id="quick-add-title" className="text-xl font-semibold">
             {mode === 'block' ? 'Add Block' : 'Add Category'}
           </h3>
           <button
+            type="button"
             onClick={handleClose}
             className="p-1 hover:bg-white/10 rounded-lg transition-colors"
             aria-label="Close modal"

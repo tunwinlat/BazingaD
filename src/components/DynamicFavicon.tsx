@@ -10,10 +10,11 @@ export default function DynamicFavicon() {
   const [siteTitle, setSiteTitle] = useState<string>('Start Page');
 
   useEffect(() => {
-    // Fetch general settings
+    const controller = new AbortController();
+
     const fetchSettings = async () => {
       try {
-        const response = await fetch('/api/settings/general');
+        const response = await fetch('/api/settings/general', { signal: controller.signal });
         if (response.ok) {
           const data = await response.json();
           if (data.favicon) {
@@ -24,28 +25,40 @@ export default function DynamicFavicon() {
           }
         }
       } catch (error) {
-        console.error('Failed to fetch favicon settings:', error);
+        if (error instanceof Error && error.name !== 'AbortError') {
+          console.error('Failed to fetch favicon settings:', error);
+        }
       }
     };
 
     fetchSettings();
+
+    return () => controller.abort();
   }, []);
 
   useEffect(() => {
     // Update favicon
     const link = document.querySelector('link[rel="icon"]') as HTMLLinkElement;
+    let createdLink: HTMLLinkElement | null = null;
     if (link) {
       link.href = favicon;
     } else {
-      const newLink = document.createElement('link');
-      newLink.rel = 'icon';
-      newLink.type = 'image/svg+xml';
-      newLink.href = favicon;
-      document.head.appendChild(newLink);
+      createdLink = document.createElement('link');
+      createdLink.rel = 'icon';
+      createdLink.type = 'image/svg+xml';
+      createdLink.href = favicon;
+      document.head.appendChild(createdLink);
     }
 
-    // Update title
+    const prevTitle = document.title;
     document.title = siteTitle;
+
+    return () => {
+      if (createdLink) {
+        document.head.removeChild(createdLink);
+      }
+      document.title = prevTitle;
+    };
   }, [favicon, siteTitle]);
 
   return null;

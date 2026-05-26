@@ -127,7 +127,7 @@ export async function POST(request: Request) {
   try {
     // Check content length
     const contentLength = request.headers.get('content-length');
-    if (contentLength && parseInt(contentLength) > MAX_BODY_SIZE) {
+    if (contentLength && Number(contentLength) > MAX_BODY_SIZE) {
       return NextResponse.json(
         { error: 'Request body too large' },
         { status: 413 }
@@ -158,9 +158,17 @@ export async function POST(request: Request) {
       );
     }
 
-    // Find user
+    // Find user (select only needed fields)
     const user = await prisma.user.findUnique({
       where: { username: normalizedUsername },
+      select: {
+        id: true,
+        username: true,
+        password: true,
+        totpEnabled: true,
+        totpVerified: true,
+        totpSecret: true,
+      },
     });
 
     if (!user) {

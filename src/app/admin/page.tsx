@@ -1,13 +1,101 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef, memo } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 import { ArrowLeft, Plus, Trash2, Edit, X, RefreshCw, LogOut, Shield, Key, QrCode, Copy, Check, AlertTriangle, Lock, Settings2, Cloud, MapPin, Thermometer, Globe, Upload, RotateCcw, Loader2, Eye, EyeOff, ChevronDown, ChevronUp } from 'lucide-react';
 import type { Category, Block, CategoryFormData, BlockFormData } from '@/types';
 
-export default function AdminPage() {
+// Convert hours to best unit for display
+const hoursToDisplay = (hours: number): { value: number; unit: 'hours' | 'days' | 'months' } => {
+  if (hours >= 24 * 30) {
+    return { value: Math.round(hours / (24 * 30)), unit: 'months' };
+  } else if (hours >= 24) {
+    return { value: Math.round(hours / 24), unit: 'days' };
+  }
+  return { value: hours, unit: 'hours' };
+};
+
+// Convert display value to hours for API
+const displayToHours = (value: number, unit: 'hours' | 'days' | 'months'): number => {
+  switch (unit) {
+    case 'months': return value * 24 * 30;
+    case 'days': return value * 24;
+    case 'hours': return value;
+  }
+};
+
+
+// ConfirmModal component
+function ConfirmModal({ open, title, message, onConfirm, onCancel }: { open: boolean; title: string; message: string; onConfirm: () => void; onCancel: () => void }) {
+  useEffect(() => {
+    if (!open) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onCancel();
+    };
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [open, onCancel]);
+
+  if (!open) return null;
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ backgroundColor: 'rgba(0,0,0,0.7)' }}>
+      <div role="dialog" aria-modal="true" className="w-full max-w-md rounded-2xl p-6" style={{ backgroundColor: '#1a1a2e', border: '1px solid rgba(255,255,255,0.1)' }}>
+        <h3 className="text-xl font-semibold mb-4">{title}</h3>
+        <p className="text-sm text-white/70 mb-6">{message}</p>
+        <div className="flex gap-3">
+          <button type="button" onClick={onCancel} className="flex-1 px-4 py-2 rounded-lg transition-colors hover:bg-white/10" style={{ backgroundColor: 'rgba(255,255,255,0.05)' }}>
+            Cancel
+          </button>
+          <button type="button" onClick={onConfirm} className="flex-1 px-4 py-2 rounded-lg transition-colors hover:bg-indigo-600" style={{ backgroundColor: '#6366f1' }}>
+            Confirm
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+
+// Escape key handler for modals
+function EscapeHandler({ onEscape }: { onEscape: () => void }) {
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onEscape();
+    };
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [onEscape]);
+  return null;
+}
+
+// LogoutButton component
+function LogoutButton() {
+  const router = useRouter();
+  const handleLogout = async () => {
+    try {
+      await fetch('/api/auth/logout', { method: 'POST' });
+      router.push('/login?logout=success');
+    } catch (error) {
+      console.error('Logout failed:', error);
+    }
+  };
+
+  return (
+    <button
+      type="button"
+      onClick={handleLogout}
+      className="flex items-center gap-2 px-4 py-2 rounded-lg transition-colors hover:bg-red-500/20"
+      style={{ backgroundColor: 'rgba(239, 68, 68, 0.1)', color: '#f87171', border: '1px solid rgba(239, 68, 68, 0.2)' }}
+    >
+      <LogOut className="w-4 h-4" />
+      Logout
+    </button>
+  );
+}
+
+function AdminPage() {
   const router = useRouter();
   const [categories, setCategories] = useState<Category[]>([]);
   const [blocks, setBlocks] = useState<Block[]>([]);
@@ -126,6 +214,15 @@ export default function AdminPage() {
   const [isDeletingCategory, setIsDeletingCategory] = useState<string | null>(null);
   const [isDeletingBlock, setIsDeletingBlock] = useState<string | null>(null);
 
+  // Clipboard copy timeout refs
+  const timeoutRefs = useRef<{ secret: ReturnType<typeof setTimeout> | null; recovery: ReturnType<typeof setTimeout> | null }>({ secret: null, recovery: null });
+
+  // Confirm modal state
+  const [confirmOpen, setConfirmOpen] = useState(false);
+  const [confirmTitle, setConfirmTitle] = useState('');
+  const [confirmMessage, setConfirmMessage] = useState('');
+  const pendingConfirmAction = useRef<(() => void) | null>(null);
+
   useEffect(() => {
     const loadData = async () => {
       try {
@@ -151,6 +248,14 @@ export default function AdminPage() {
     };
     loadData();
     // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  useEffect(() => {
+    const timeouts = timeoutRefs.current;
+    return () => {
+      if (timeouts.secret) clearTimeout(timeouts.secret);
+      if (timeouts.recovery) clearTimeout(timeouts.recovery);
+    };
   }, []);
 
   useEffect(() => {
@@ -228,24 +333,7 @@ export default function AdminPage() {
     return false;
   };
 
-  // Convert hours to best unit for display
-  const hoursToDisplay = (hours: number): { value: number; unit: 'hours' | 'days' | 'months' } => {
-    if (hours >= 24 * 30) {
-      return { value: Math.round(hours / (24 * 30)), unit: 'months' };
-    } else if (hours >= 24) {
-      return { value: Math.round(hours / 24), unit: 'days' };
-    }
-    return { value: hours, unit: 'hours' };
-  };
 
-  // Convert display value to hours for API
-  const displayToHours = (value: number, unit: 'hours' | 'days' | 'months'): number => {
-    switch (unit) {
-      case 'months': return value * 24 * 30;
-      case 'days': return value * 24;
-      case 'hours': return value;
-    }
-  };
 
 
   const fetchSettings = async () => {
@@ -424,10 +512,12 @@ export default function AdminPage() {
     navigator.clipboard.writeText(text);
     if (type === 'secret') {
       setCopiedSecret(true);
-      setTimeout(() => setCopiedSecret(false), 2000);
+      if (timeoutRefs.current.secret) clearTimeout(timeoutRefs.current.secret);
+      timeoutRefs.current.secret = setTimeout(() => setCopiedSecret(false), 2000);
     } else {
       setCopiedRecovery(true);
-      setTimeout(() => setCopiedRecovery(false), 2000);
+      if (timeoutRefs.current.recovery) clearTimeout(timeoutRefs.current.recovery);
+      timeoutRefs.current.recovery = setTimeout(() => setCopiedRecovery(false), 2000);
     }
   };
 
@@ -463,23 +553,41 @@ export default function AdminPage() {
     }
   };
 
+  const openConfirm = (title: string, message: string, action: () => void) => {
+    setConfirmTitle(title);
+    setConfirmMessage(message);
+    pendingConfirmAction.current = action;
+    setConfirmOpen(true);
+  };
+
+  const handleConfirm = () => {
+    pendingConfirmAction.current?.();
+    pendingConfirmAction.current = null;
+    setConfirmOpen(false);
+  };
+
+  const handleCancelConfirm = () => {
+    pendingConfirmAction.current = null;
+    setConfirmOpen(false);
+  };
+
   const handleLogoutAllSessions = async () => {
-    if (!confirm('This will log out all users from all sessions, including yourself. Continue?')) return;
+    openConfirm('Logout All Sessions', 'This will log out all users from all sessions, including yourself. Continue?', async () => {
+      try {
+        const response = await fetch('/api/auth/sessions', {
+          method: 'DELETE',
+        });
 
-    try {
-      const response = await fetch('/api/auth/sessions', {
-        method: 'DELETE',
-      });
-
-      if (response.ok) {
-        toast.success('All sessions logged out. You will be redirected to login.');
-        router.push('/login');
-      } else {
-        toast.error('Failed to logout sessions');
+        if (response.ok) {
+          toast.success('All sessions logged out. You will be redirected to login.');
+          router.push('/login');
+        } else {
+          toast.error('Failed to logout sessions');
+        }
+      } catch (error) {
+        console.error('Logout all error:', error);
       }
-    } catch (error) {
-      console.error('Logout all error:', error);
-    }
+    });
   };
 
   // Weather handlers
@@ -754,45 +862,47 @@ export default function AdminPage() {
   };
 
   const handleDeleteCategory = async (id: string) => {
-    if (!confirm('Delete this category? All blocks in it will be deleted too.')) return;
-    setIsDeletingCategory(id);
-    try {
-      const response = await fetch(`/api/categories/${id}`, { method: 'DELETE' });
+    openConfirm('Delete Category', 'Delete this category? All blocks in it will be deleted too.', async () => {
+      setIsDeletingCategory(id);
+      try {
+        const response = await fetch(`/api/categories/${id}`, { method: 'DELETE' });
 
-      if (!response.ok) {
-        const data = await response.json();
-        throw new Error(data.error || 'Failed to delete category');
+        if (!response.ok) {
+          const data = await response.json();
+          throw new Error(data.error || 'Failed to delete category');
+        }
+
+        toast.success('Category deleted successfully');
+        fetchData();
+      } catch (error) {
+        console.error('Failed to delete category:', error);
+        toast.error(error instanceof Error ? error.message : 'Failed to delete category');
+      } finally {
+        setIsDeletingCategory(null);
       }
-
-      toast.success('Category deleted successfully');
-      fetchData();
-    } catch (error) {
-      console.error('Failed to delete category:', error);
-      toast.error(error instanceof Error ? error.message : 'Failed to delete category');
-    } finally {
-      setIsDeletingCategory(null);
-    }
+    });
   };
 
   const handleDeleteBlock = async (id: string) => {
-    if (!confirm('Delete this block?')) return;
-    setIsDeletingBlock(id);
-    try {
-      const response = await fetch(`/api/blocks/${id}`, { method: 'DELETE' });
+    openConfirm('Delete Block', 'Delete this block?', async () => {
+      setIsDeletingBlock(id);
+      try {
+        const response = await fetch(`/api/blocks/${id}`, { method: 'DELETE' });
 
-      if (!response.ok) {
-        const data = await response.json();
-        throw new Error(data.error || 'Failed to delete block');
+        if (!response.ok) {
+          const data = await response.json();
+          throw new Error(data.error || 'Failed to delete block');
+        }
+
+        toast.success('Block deleted successfully');
+        fetchData();
+      } catch (error) {
+        console.error('Failed to delete block:', error);
+        toast.error(error instanceof Error ? error.message : 'Failed to delete block');
+      } finally {
+        setIsDeletingBlock(null);
       }
-
-      toast.success('Block deleted successfully');
-      fetchData();
-    } catch (error) {
-      console.error('Failed to delete block:', error);
-      toast.error(error instanceof Error ? error.message : 'Failed to delete block');
-    } finally {
-      setIsDeletingBlock(null);
-    }
+    });
   };
 
   const handleCheckHealth = async (blockId: string) => {
@@ -816,28 +926,6 @@ export default function AdminPage() {
     setEditingBlock(null);
   };
 
-  // Logout button component
-  function LogoutButton() {
-    const handleLogout = async () => {
-      try {
-        await fetch('/api/auth/logout', { method: 'POST' });
-        router.push('/login?logout=success');
-      } catch (error) {
-        console.error('Logout failed:', error);
-      }
-    };
-
-    return (
-      <button
-        onClick={handleLogout}
-        className="flex items-center gap-2 px-4 py-2 rounded-lg transition-colors hover:bg-red-500/20"
-        style={{ backgroundColor: 'rgba(239, 68, 68, 0.1)', color: '#f87171', border: '1px solid rgba(239, 68, 68, 0.2)' }}
-      >
-        <LogOut className="w-4 h-4" />
-        Logout
-      </button>
-    );
-  }
 
   if (loading) {
     return (
@@ -868,6 +956,7 @@ export default function AdminPage() {
 
         <div className="flex gap-4 mb-6">
           <button
+            type="button"
             onClick={() => setActiveTab('blocks')}
             className="px-4 py-2 rounded-lg transition-colors"
             style={{
@@ -877,6 +966,7 @@ export default function AdminPage() {
             Blocks ({blocks.length})
           </button>
           <button
+            type="button"
             onClick={() => setActiveTab('categories')}
             className="px-4 py-2 rounded-lg transition-colors"
             style={{
@@ -886,6 +976,7 @@ export default function AdminPage() {
             Categories ({categories.length})
           </button>
           <button
+            type="button"
             onClick={() => setActiveTab('general')}
             className="px-4 py-2 rounded-lg transition-colors flex items-center gap-2"
             style={{
@@ -896,6 +987,7 @@ export default function AdminPage() {
             General
           </button>
           <button
+            type="button"
             onClick={() => setActiveTab('security')}
             className="px-4 py-2 rounded-lg transition-colors flex items-center gap-2"
             style={{
@@ -906,6 +998,7 @@ export default function AdminPage() {
             Security
           </button>
           <button
+            type="button"
             onClick={() => setActiveTab('integrations')}
             className="px-4 py-2 rounded-lg transition-colors flex items-center gap-2"
             style={{
@@ -923,6 +1016,7 @@ export default function AdminPage() {
             <div className="flex justify-between items-center mb-4">
               <h2 className="text-xl font-semibold">Categories</h2>
               <button
+                type="button"
                 onClick={() => { setEditingCategory(null); setShowCategoryForm(true); }}
                 className="flex items-center gap-2 px-4 py-2 rounded-lg transition-colors"
                 style={{ backgroundColor: '#6366f1' }}
@@ -951,6 +1045,7 @@ export default function AdminPage() {
                       <td className="p-4">{cat.blocks?.length || 0}</td>
                       <td className="p-4 text-right">
                         <button
+                          type="button"
                           onClick={() => { setEditingCategory(cat); setShowCategoryForm(true); }}
                           className="p-2 rounded-lg mr-2 transition-colors hover:bg-white/10"
                           aria-label="Edit category"
@@ -958,6 +1053,7 @@ export default function AdminPage() {
                           <Edit className="w-4 h-4" />
                         </button>
                         <button
+                          type="button"
                           onClick={() => handleDeleteCategory(cat.id)}
                           className="p-2 rounded-lg transition-colors hover:bg-red-500/20 disabled:opacity-50 disabled:cursor-not-allowed"
                           style={{ color: '#f87171' }}
@@ -980,6 +1076,7 @@ export default function AdminPage() {
             <div className="flex justify-between items-center mb-4">
               <h2 className="text-xl font-semibold">Blocks</h2>
               <button
+                type="button"
                 onClick={() => { setEditingBlock(null); setShowBlockForm(true); }}
                 className="flex items-center gap-2 px-4 py-2 rounded-lg transition-colors"
                 style={{ backgroundColor: '#6366f1' }}
@@ -1027,6 +1124,7 @@ export default function AdminPage() {
                       <td className="p-4 text-right">
                         {block.isMonitored && (
                           <button
+                            type="button"
                             onClick={() => handleCheckHealth(block.id)}
                             className="p-2 rounded-lg mr-2 transition-colors hover:bg-white/10"
                             title="Check health"
@@ -1036,6 +1134,7 @@ export default function AdminPage() {
                           </button>
                         )}
                         <button
+                          type="button"
                           onClick={() => { setEditingBlock(block); setShowBlockForm(true); }}
                           className="p-2 rounded-lg mr-2 transition-colors hover:bg-white/10"
                           aria-label="Edit block"
@@ -1043,6 +1142,7 @@ export default function AdminPage() {
                           <Edit className="w-4 h-4" />
                         </button>
                         <button
+                          type="button"
                           onClick={() => handleDeleteBlock(block.id)}
                           className="p-2 rounded-lg transition-colors hover:bg-red-500/20 disabled:opacity-50 disabled:cursor-not-allowed"
                           style={{ color: '#f87171' }}
@@ -1078,6 +1178,7 @@ export default function AdminPage() {
 
               {!showPasswordChange ? (
                 <button
+                  type="button"
                   onClick={() => setShowPasswordChange(true)}
                   className="px-4 py-2 rounded-lg transition-colors"
                   style={{ backgroundColor: 'rgba(255,255,255,0.1)' }}
@@ -1197,6 +1298,7 @@ export default function AdminPage() {
 
               {!authStatus?.totpEnabled ? (
                 <button
+                  type="button"
                   onClick={handleSetupTOTP}
                   className="px-4 py-2 rounded-lg transition-colors flex items-center gap-2"
                   style={{ backgroundColor: '#6366f1' }}
@@ -1206,6 +1308,7 @@ export default function AdminPage() {
                 </button>
               ) : (
                 <button
+                  type="button"
                   onClick={() => setShowDisableTOTP(true)}
                   className="px-4 py-2 rounded-lg transition-colors"
                   style={{ backgroundColor: 'rgba(239, 68, 68, 0.2)', color: '#f87171' }}
@@ -1238,6 +1341,7 @@ export default function AdminPage() {
 
               {!showDashboardSettings ? (
                 <button
+                  type="button"
                   onClick={() => setShowDashboardSettings(true)}
                   className="px-4 py-2 rounded-lg transition-colors"
                   style={{ backgroundColor: 'rgba(255,255,255,0.1)' }}
@@ -1351,6 +1455,7 @@ export default function AdminPage() {
               </div>
 
               <button
+                type="button"
                 onClick={handleLogoutAllSessions}
                 className="px-4 py-2 rounded-lg transition-colors flex items-center gap-2"
                 style={{ backgroundColor: 'rgba(239, 68, 68, 0.2)', color: '#f87171' }}
@@ -1433,6 +1538,7 @@ export default function AdminPage() {
                             style={{ backgroundColor: 'rgba(255,255,255,0.05)', borderColor: 'rgba(255,255,255,0.1)', color: 'white' }}
                           />
                           <button
+                            type="button"
                             onClick={handleLocationSearch}
                             disabled={locationSearchLoading}
                             className="px-4 py-2 rounded-lg transition-colors disabled:opacity-50"
@@ -1454,6 +1560,7 @@ export default function AdminPage() {
                           >
                             {locationSearchResults.map((location, index) => (
                               <button
+                                type="button"
                                 key={index}
                                 onClick={() => handleSelectLocation(location)}
                                 className="w-full px-3 py-2 text-left text-sm hover:bg-white/5 transition-colors border-b border-white/5 last:border-0"
@@ -1479,6 +1586,7 @@ export default function AdminPage() {
 
                       {/* Get Location Button */}
                       <button
+                        type="button"
                         onClick={handleGetLocation}
                         disabled={locationLoading}
                         className="flex items-center gap-2 px-4 py-2 rounded-lg transition-colors disabled:opacity-50"
@@ -1562,6 +1670,7 @@ export default function AdminPage() {
 
                     {/* Save Button */}
                     <button
+                      type="button"
                       onClick={handleSaveWeatherSettings}
                       className="w-full px-4 py-2 rounded-lg transition-colors"
                       style={{ backgroundColor: '#6366f1' }}
@@ -1780,6 +1889,7 @@ export default function AdminPage() {
 
                     {/* Save Button */}
                     <button
+                      type="button"
                       onClick={handleSaveTrafficSettings}
                       className="w-full px-4 py-2 rounded-lg transition-colors"
                       style={{ backgroundColor: '#6366f1' }}
@@ -1876,6 +1986,7 @@ export default function AdminPage() {
 
                     {faviconPreview && (
                       <button
+                        type="button"
                         onClick={handleResetFavicon}
                         className="flex items-center gap-2 px-4 py-2 rounded-lg transition-colors"
                         style={{ backgroundColor: 'rgba(255,255,255,0.1)', color: 'white' }}
@@ -1939,6 +2050,7 @@ export default function AdminPage() {
 
                 {/* Save Button */}
                 <button
+                  type="button"
                   onClick={handleSaveGeneralSettings}
                   className="w-full px-4 py-2 rounded-lg transition-colors"
                   style={{ backgroundColor: '#6366f1' }}
@@ -1953,18 +2065,22 @@ export default function AdminPage() {
 
       {/* Category Form Modal */}
       {showCategoryForm && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4"
-          style={{ backgroundColor: 'rgba(0,0,0,0.7)' }}>
-          <div className="w-full max-w-md rounded-2xl p-6"
-            style={{
-              backgroundColor: '#1a1a2e',
-              border: '1px solid rgba(255,255,255,0.1)',
-            }}>
+        <>
+          <EscapeHandler onEscape={closeCategoryForm} />
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4"
+            style={{ backgroundColor: 'rgba(0,0,0,0.7)' }}>
+            <div className="w-full max-w-md rounded-2xl p-6"
+              role="dialog"
+              aria-modal="true"
+              style={{
+                backgroundColor: '#1a1a2e',
+                border: '1px solid rgba(255,255,255,0.1)',
+              }}>
             <div className="flex justify-between items-center mb-6">
               <h3 className="text-xl font-semibold">
                 {editingCategory ? 'Edit Category' : 'Add Category'}
               </h3>
-              <button onClick={closeCategoryForm} className="p-1 hover:bg-white/10 rounded-lg" aria-label="Close modal">
+              <button type="button" onClick={closeCategoryForm} className="p-1 hover:bg-white/10 rounded-lg" aria-label="Close modal">
                 <X className="w-5 h-5" />
               </button>
             </div>
@@ -2036,22 +2152,27 @@ export default function AdminPage() {
             </form>
           </div>
         </div>
+        </>
       )}
 
       {/* Block Form Modal */}
       {showBlockForm && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4"
-          style={{ backgroundColor: 'rgba(0,0,0,0.7)' }}>
-          <div className="w-full max-w-md rounded-2xl p-6 max-h-[90vh] overflow-y-auto"
-            style={{
-              backgroundColor: '#1a1a2e',
-              border: '1px solid rgba(255,255,255,0.1)',
-            }}>
+        <>
+          <EscapeHandler onEscape={closeBlockForm} />
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4"
+            style={{ backgroundColor: 'rgba(0,0,0,0.7)' }}>
+            <div className="w-full max-w-md rounded-2xl p-6 max-h-[90vh] overflow-y-auto"
+              role="dialog"
+              aria-modal="true"
+              style={{
+                backgroundColor: '#1a1a2e',
+                border: '1px solid rgba(255,255,255,0.1)',
+              }}>
             <div className="flex justify-between items-center mb-6">
               <h3 className="text-xl font-semibold">
                 {editingBlock ? 'Edit Block' : 'Add Block'}
               </h3>
-              <button onClick={closeBlockForm} className="p-1 hover:bg-white/10 rounded-lg" aria-label="Close modal">
+              <button type="button" onClick={closeBlockForm} className="p-1 hover:bg-white/10 rounded-lg" aria-label="Close modal">
                 <X className="w-5 h-5" />
               </button>
             </div>
@@ -2199,15 +2320,18 @@ export default function AdminPage() {
             </form>
           </div>
         </div>
+        </>
       )}
 
       {/* TOTP Setup Modal */}
       {showTOTPSetup && totpSetupData && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ backgroundColor: 'rgba(0,0,0,0.7)' }}>
-          <div className="w-full max-w-md rounded-2xl p-6 max-h-[90vh] overflow-y-auto" style={{ backgroundColor: '#1a1a2e', border: '1px solid rgba(255,255,255,0.1)' }}>
+        <>
+          <EscapeHandler onEscape={() => { setShowTOTPSetup(false); setTotpSetupData(null); }} />
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ backgroundColor: 'rgba(0,0,0,0.7)' }}>
+            <div className="w-full max-w-md rounded-2xl p-6 max-h-[90vh] overflow-y-auto" role="dialog" aria-modal="true" style={{ backgroundColor: '#1a1a2e', border: '1px solid rgba(255,255,255,0.1)' }}>
             <div className="flex justify-between items-center mb-6">
               <h3 className="text-xl font-semibold">Setup Two-Factor Authentication</h3>
-              <button onClick={() => { setShowTOTPSetup(false); setTotpSetupData(null); }} className="p-1 hover:bg-white/10 rounded-lg" aria-label="Close modal">
+              <button type="button" onClick={() => { setShowTOTPSetup(false); setTotpSetupData(null); }} className="p-1 hover:bg-white/10 rounded-lg" aria-label="Close modal">
                 <X className="w-5 h-5" />
               </button>
             </div>
@@ -2230,6 +2354,7 @@ export default function AdminPage() {
                     {totpSetupData.secret}
                   </code>
                   <button
+                    type="button"
                     onClick={() => copyToClipboard(totpSetupData.secret, 'secret')}
                     className="p-2 rounded-lg transition-colors hover:bg-white/10"
                     style={{ backgroundColor: 'rgba(255,255,255,0.05)' }}
@@ -2252,6 +2377,7 @@ export default function AdminPage() {
                     {totpSetupData.recoveryCode}
                   </code>
                   <button
+                    type="button"
                     onClick={() => copyToClipboard(totpSetupData.recoveryCode, 'recovery')}
                     className="p-2 rounded-lg transition-colors"
                     style={{ backgroundColor: 'rgba(245, 158, 11, 0.2)' }}
@@ -2297,15 +2423,18 @@ export default function AdminPage() {
             </div>
           </div>
         </div>
+        </>
       )}
 
       {/* Disable TOTP Modal */}
       {showDisableTOTP && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ backgroundColor: 'rgba(0,0,0,0.7)' }}>
-          <div className="w-full max-w-md rounded-2xl p-6" style={{ backgroundColor: '#1a1a2e', border: '1px solid rgba(255,255,255,0.1)' }}>
+        <>
+          <EscapeHandler onEscape={() => { setShowDisableTOTP(false); setDisableTOTPForm({ password: '', code: '' }); }} />
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ backgroundColor: 'rgba(0,0,0,0.7)' }}>
+            <div className="w-full max-w-md rounded-2xl p-6" role="dialog" aria-modal="true" style={{ backgroundColor: '#1a1a2e', border: '1px solid rgba(255,255,255,0.1)' }}>
             <div className="flex justify-between items-center mb-6">
               <h3 className="text-xl font-semibold text-red-400">Disable Two-Factor Authentication</h3>
-              <button onClick={() => { setShowDisableTOTP(false); setDisableTOTPForm({ password: '', code: '' }); }} className="p-1 hover:bg-white/10 rounded-lg" aria-label="Close modal">
+              <button type="button" onClick={() => { setShowDisableTOTP(false); setDisableTOTPForm({ password: '', code: '' }); }} className="p-1 hover:bg-white/10 rounded-lg" aria-label="Close modal">
                 <X className="w-5 h-5" />
               </button>
             </div>
@@ -2371,7 +2500,17 @@ export default function AdminPage() {
             </form>
           </div>
         </div>
+        </>
       )}
+      <ConfirmModal
+        open={confirmOpen}
+        title={confirmTitle}
+        message={confirmMessage}
+        onConfirm={handleConfirm}
+        onCancel={handleCancelConfirm}
+      />
     </div>
   );
 }
+
+export default memo(AdminPage);

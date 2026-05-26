@@ -61,16 +61,22 @@ export async function GET(request: NextRequest) {
     const userUnits = searchParams.get('units');
     const userLocationName = searchParams.get('locationName');
 
-    const lat = userLat ? parseFloat(userLat) : settings.weatherLatitude;
-    const lon = userLon ? parseFloat(userLon) : settings.weatherLongitude;
+    const lat = userLat ? parseFloat(userLat) : (settings.weatherLatitude ?? NaN);
+    const lon = userLon ? parseFloat(userLon) : (settings.weatherLongitude ?? NaN);
     const units = userUnits || settings.weatherUnits || 'metric';
-    const locationName = userLocationName || settings.weatherLocationName || 'Current Location';
+    let locationName = userLocationName || settings.weatherLocationName || 'Current Location';
 
-    if (!lat || !lon || isNaN(lat) || isNaN(lon)) {
+    // Validate coordinate bounds
+    if (isNaN(lat) || isNaN(lon) || lat < -90 || lat > 90 || lon < -180 || lon > 180) {
       return NextResponse.json(
-        { error: 'Weather location not configured' },
-        { status: 404 }
+        { error: 'Invalid coordinates' },
+        { status: 400 }
       );
+    }
+
+    // Prevent cache key abuse
+    if (locationName.length > 100) {
+      locationName = locationName.substring(0, 100);
     }
 
     // 🛡️ Sentinel: Check cache first to prevent upstream rate limit exhaustion and DoS

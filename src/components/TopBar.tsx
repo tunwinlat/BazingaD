@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { memo, useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import {
@@ -30,7 +30,7 @@ const viewOptions: { value: ViewMode; label: string; icon: React.ReactNode }[] =
   { value: 'list', label: 'List', icon: <List className="w-4 h-4" /> },
 ];
 
-export default function TopBar({ isAdmin, isProtected, viewMode = 'comfortable', onViewModeChange }: TopBarProps) {
+function TopBar({ isAdmin, isProtected, viewMode = 'comfortable', onViewModeChange }: TopBarProps) {
   const router = useRouter();
   const [time, setTime] = useState('--:--');
   const [date, setDate] = useState('');
@@ -53,9 +53,11 @@ export default function TopBar({ isAdmin, isProtected, viewMode = 'comfortable',
 
   // Fetch traffic settings
   useEffect(() => {
+    const controller = new AbortController();
+
     const fetchTraffic = async () => {
       try {
-        const response = await fetch('/api/settings/traffic');
+        const response = await fetch('/api/settings/traffic', { signal: controller.signal });
         if (response.ok) {
           const data = await response.json();
           setTrafficSettings({
@@ -65,10 +67,14 @@ export default function TopBar({ isAdmin, isProtected, viewMode = 'comfortable',
           });
         }
       } catch (error) {
-        console.error('Failed to fetch traffic settings:', error);
+        if (error instanceof Error && error.name !== 'AbortError') {
+          console.error('Failed to fetch traffic settings:', error);
+        }
       }
     };
     fetchTraffic();
+
+    return () => controller.abort();
   }, []);
 
   // Close view menu on click outside
@@ -97,7 +103,7 @@ export default function TopBar({ isAdmin, isProtected, viewMode = 'comfortable',
 
   return (
     <div
-      className="rounded-2xl p-3 md:p-4 mb-6 flex flex-wrap items-center gap-3 md:gap-4"
+      className="rounded-2xl p-3 md:p-4 mb-6 flex flex-wrap items-center gap-2 sm:gap-3 md:gap-4"
       style={{
         backgroundColor: 'rgba(255, 255, 255, 0.05)',
         border: '1px solid rgba(255, 255, 255, 0.1)',
@@ -131,7 +137,7 @@ export default function TopBar({ isAdmin, isProtected, viewMode = 'comfortable',
       </div>
 
       {/* Right-side actions */}
-      <div className="flex items-center gap-2 ml-auto">
+      <div className="flex items-center gap-2 w-full sm:w-auto sm:ml-auto justify-end">
         {/* View mode toggle */}
         {onViewModeChange && (
           <div className="relative" ref={viewMenuRef}>
@@ -241,3 +247,5 @@ export default function TopBar({ isAdmin, isProtected, viewMode = 'comfortable',
     </div>
   );
 }
+
+export default memo(TopBar);

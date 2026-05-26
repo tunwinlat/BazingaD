@@ -26,6 +26,9 @@ export default function KeyboardShortcutsModal({ onClose }: KeyboardShortcutsMod
         onClick={onClose}
       />
       <div
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="keyboard-shortcuts-title"
         className="relative w-full max-w-md rounded-2xl overflow-hidden"
         style={{
           backgroundColor: 'rgba(30, 30, 50, 0.95)',
@@ -35,8 +38,9 @@ export default function KeyboardShortcutsModal({ onClose }: KeyboardShortcutsMod
       >
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-white/10">
-          <h2 className="text-lg font-semibold">Keyboard Shortcuts</h2>
+          <h2 id="keyboard-shortcuts-title" className="text-lg font-semibold">Keyboard Shortcuts</h2>
           <button
+            type="button"
             onClick={onClose}
             aria-label="Close keyboard shortcuts"
             className="p-1.5 rounded-lg hover:bg-white/10 transition-colors"

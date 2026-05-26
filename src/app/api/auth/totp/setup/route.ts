@@ -22,9 +22,15 @@ export async function GET() {
       );
     }
 
-    // Get the authenticated user
+    // Get the authenticated user (select only needed fields)
     const user = await prisma.user.findUnique({
       where: { id: auth.userId },
+      select: {
+        id: true,
+        username: true,
+        totpEnabled: true,
+        totpVerified: true,
+      },
     });
     
     if (!user) {

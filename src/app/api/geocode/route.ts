@@ -68,6 +68,7 @@ export async function GET(request: Request) {
       headers: {
         'Accept': 'application/json',
       },
+      signal: AbortSignal.timeout(10000),
     });
 
     if (!response.ok) {

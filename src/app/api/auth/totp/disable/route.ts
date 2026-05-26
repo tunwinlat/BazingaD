@@ -18,7 +18,7 @@ const disableTotpSchema = z.object({
  */
 function checkContentLength(request: Request): NextResponse | null {
   const contentLength = request.headers.get('content-length');
-  if (contentLength && parseInt(contentLength) > MAX_BODY_SIZE) {
+  if (contentLength && Number(contentLength) > MAX_BODY_SIZE) {
     return NextResponse.json(
       { error: 'Request body too large' },
       { status: 413 }
@@ -131,6 +131,14 @@ export async function POST(request: Request) {
 
     const user = await prisma.user.findUnique({
       where: { id: auth.userId },
+      select: {
+        id: true,
+        username: true,
+        password: true,
+        totpEnabled: true,
+        totpSecret: true,
+        recoveryCode: true,
+      },
     });
     
     if (!user) {

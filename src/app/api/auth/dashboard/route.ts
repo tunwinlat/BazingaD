@@ -86,9 +86,10 @@ export async function GET() {
     const dashboardToken = cookieStore.get('dashboard-token')?.value;
 
     let hasDashboardAccess = false;
-    if (dashboardToken) {
+    if (dashboardToken && dashboardToken.startsWith('dash_')) {
       const session = await prisma.session.findUnique({
         where: { token: dashboardToken },
+        select: { expiresAt: true },
       });
 
       if (session && session.expiresAt > new Date()) {
@@ -115,7 +116,7 @@ export async function POST(request: Request) {
   try {
     // Check content length
     const contentLength = request.headers.get('content-length');
-    if (contentLength && parseInt(contentLength) > MAX_BODY_SIZE) {
+    if (contentLength && Number(contentLength) > MAX_BODY_SIZE) {
       return NextResponse.json(
         { error: 'Request body too large' },
         { status: 413 }

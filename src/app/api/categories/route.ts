@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { verifyAuth } from '@/lib/auth';
 import { categoriesCache } from '@/lib/cache';
+import { categoryCreateSchema } from '@/lib/validation';
 
 const CACHE_KEY = 'categories_with_blocks';
 
@@ -51,6 +52,8 @@ export async function GET() {
   }
 }
 
+const MAX_BODY_SIZE = 1024 * 1024;
+
 // POST /api/categories - Create a new category
 export async function POST(request: Request) {
   try {
@@ -59,21 +62,28 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const body = await request.json();
-    const { name, icon, sortOrder } = body;
+    const contentLength = request.headers.get('content-length');
+    if (contentLength && Number(contentLength) > MAX_BODY_SIZE) {
+      return NextResponse.json({ error: 'Request body too large' }, { status: 413 });
+    }
 
-    if (!name?.trim()) {
+    const body = await request.json();
+    const validated = categoryCreateSchema.safeParse(body);
+
+    if (!validated.success) {
       return NextResponse.json(
-        { error: 'Name is required' },
+        { error: validated.error.issues[0]?.message || 'Validation error' },
         { status: 400 }
       );
     }
 
+    const { name, icon, sortOrder } = validated.data;
+
     const category = await prisma.category.create({
       data: {
-        name: name.trim(),
-        icon: icon || 'default',
-        sortOrder: sortOrder ?? 0,
+        name,
+        icon,
+        sortOrder,
       },
       include: {
         blocks: true,

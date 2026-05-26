@@ -27,12 +27,19 @@ export async function GET() {
   }
 }
 
+const MAX_BODY_SIZE = 1024 * 1024;
+
 // POST /api/blocks - Create a new block
 export async function POST(request: Request) {
   try {
     const auth = await verifyAuth();
     if (!auth) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    const contentLength = request.headers.get('content-length');
+    if (contentLength && Number(contentLength) > MAX_BODY_SIZE) {
+      return NextResponse.json({ error: 'Request body too large' }, { status: 413 });
     }
 
     const body = await request.json();

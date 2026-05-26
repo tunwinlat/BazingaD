@@ -26,11 +26,18 @@ export async function GET() {
   }
 }
 
+const MAX_BODY_SIZE = 1024 * 1024;
+
 export async function PUT(request: Request) {
   try {
     const auth = await verifyAuth();
     if (!auth) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    const contentLength = request.headers.get('content-length');
+    if (contentLength && Number(contentLength) > MAX_BODY_SIZE) {
+      return NextResponse.json({ error: 'Request body too large' }, { status: 413 });
     }
 
     const body = await request.json();
@@ -44,6 +51,14 @@ export async function PUT(request: Request) {
       travelMode,
       units,
     } = body;
+
+    // Validate address lengths to prevent DB abuse
+    if (homeAddress !== undefined && typeof homeAddress === 'string' && homeAddress.length > 500) {
+      return NextResponse.json({ error: 'Home address too long' }, { status: 400 });
+    }
+    if (workAddress !== undefined && typeof workAddress === 'string' && workAddress.length > 500) {
+      return NextResponse.json({ error: 'Work address too long' }, { status: 400 });
+    }
 
     // Validate travel mode
     const validModes = ['DRIVE', 'BICYCLE', 'WALK', 'TWO_WHEELER', 'TRANSIT'];

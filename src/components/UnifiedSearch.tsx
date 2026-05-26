@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef, useMemo } from 'react';
+import { memo, useState, useEffect, useRef, useMemo } from 'react';
 import { Search, ExternalLink, Globe, X } from 'lucide-react';
 import type { Category } from '@/types';
 
@@ -9,12 +9,18 @@ interface UnifiedSearchProps {
   openInNewTab?: boolean;
 }
 
-export default function UnifiedSearch({ categories, openInNewTab = true }: UnifiedSearchProps) {
+function UnifiedSearch({ categories, openInNewTab = true }: UnifiedSearchProps) {
   const [query, setQuery] = useState('');
   const [isFocused, setIsFocused] = useState(false);
   const [selectedIndex, setSelectedIndex] = useState(0);
   const inputRef = useRef<HTMLInputElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
+
+  // Use refs to access latest state in global keydown listener without re-registering
+  const stateRef = useRef({ query, isFocused, selectedIndex, openInNewTab });
+  useEffect(() => {
+    stateRef.current = { query, isFocused, selectedIndex, openInNewTab };
+  }, [query, isFocused, selectedIndex, openInNewTab]);
 
   // Flatten all blocks for searching
   const allBlocks = useMemo(() => {
@@ -38,9 +44,6 @@ export default function UnifiedSearch({ categories, openInNewTab = true }: Unifi
     );
   }, [query, allBlocks]);
 
-  // Total results including Google search option
-  const totalResults = filteredBlocks.length + (query.trim() ? 1 : 0);
-
   // Reset selected index when results change
   useEffect(() => {
     // We intentionally reset selected index when query or results change
@@ -50,6 +53,8 @@ export default function UnifiedSearch({ categories, openInNewTab = true }: Unifi
   // Keyboard shortcuts
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
+      const state = stateRef.current;
+
       // '/' to focus search
       if (e.key === '/' && !['INPUT', 'TEXTAREA'].includes((e.target as HTMLElement).tagName)) {
         e.preventDefault();
@@ -62,14 +67,16 @@ export default function UnifiedSearch({ categories, openInNewTab = true }: Unifi
         setIsFocused(false);
       }
 
-      if (!isFocused || totalResults === 0) return;
+      if (!state.isFocused) return;
+
+      const currentBlocks = filteredBlocksRef.current;
+      const currentTotal = currentBlocks.length + (state.query.trim() ? 1 : 0);
+      if (currentTotal === 0) return;
 
       // Arrow navigation
       if (e.key === 'ArrowDown') {
         e.preventDefault();
-        setSelectedIndex((prev) =>
-          prev < totalResults - 1 ? prev + 1 : prev
-        );
+        setSelectedIndex((prev) => (prev < currentTotal - 1 ? prev + 1 : prev));
       }
 
       if (e.key === 'ArrowUp') {
@@ -80,18 +87,17 @@ export default function UnifiedSearch({ categories, openInNewTab = true }: Unifi
       // Enter to open
       if (e.key === 'Enter') {
         e.preventDefault();
-        if (selectedIndex < filteredBlocks.length) {
-          // Open block
-          const selected = filteredBlocks[selectedIndex];
-          if (openInNewTab) {
+        const idx = stateRef.current.selectedIndex;
+        if (idx < currentBlocks.length) {
+          const selected = currentBlocks[idx];
+          if (state.openInNewTab) {
             window.open(selected.url, '_blank');
           } else {
             window.location.href = selected.url;
           }
         } else {
-          // Google search
-          const searchUrl = `https://www.google.com/search?q=${encodeURIComponent(query)}`;
-          if (openInNewTab) {
+          const searchUrl = `https://www.google.com/search?q=${encodeURIComponent(state.query)}`;
+          if (state.openInNewTab) {
             window.open(searchUrl, '_blank');
           } else {
             window.location.href = searchUrl;
@@ -105,7 +111,13 @@ export default function UnifiedSearch({ categories, openInNewTab = true }: Unifi
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [isFocused, filteredBlocks, selectedIndex, query, totalResults, openInNewTab]);
+  }, []);
+
+  // Keep filteredBlocks in a ref for the keydown handler
+  const filteredBlocksRef = useRef(filteredBlocks);
+  useEffect(() => {
+    filteredBlocksRef.current = filteredBlocks;
+  }, [filteredBlocks]);
 
   // Click outside to close
   useEffect(() => {
@@ -323,3 +335,5 @@ export default function UnifiedSearch({ categories, openInNewTab = true }: Unifi
     </div>
   );
 }
+
+export default memo(UnifiedSearch);

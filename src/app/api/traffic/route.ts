@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { verifyAuth } from '@/lib/auth';
 
 const CACHE_DURATION_MS = 30 * 60 * 1000; // 30 minutes
 
@@ -36,6 +37,7 @@ async function fetchGoogleRouteData(
         'X-Goog-Api-Key': apiKey,
         'X-Goog-FieldMask': 'routes.duration,routes.staticDuration',
       },
+      signal: AbortSignal.timeout(15000),
       body: JSON.stringify({
         origin: { address: origin },
         destination: { address: destination },
@@ -114,7 +116,7 @@ interface TomTomPosition {
 
 async function geocodeTomTom(address: string, apiKey: string): Promise<TomTomPosition> {
   const url = `https://api.tomtom.com/search/2/geocode/${encodeURIComponent(address)}.json?key=${apiKey}&limit=1`;
-  const response = await fetch(url);
+  const response = await fetch(url, { signal: AbortSignal.timeout(10000) });
 
   if (!response.ok) {
     throw new Error(
@@ -162,7 +164,7 @@ async function fetchTomTomRouteData(
   const locations = `${originPos.lat},${originPos.lon}:${destPos.lat},${destPos.lon}`;
   const url = `https://api.tomtom.com/routing/1/calculateRoute/${locations}/json?key=${apiKey}&travelMode=${tomtomMode}&computeTravelTimeFor=all`;
 
-  const response = await fetch(url);
+  const response = await fetch(url, { signal: AbortSignal.timeout(15000) });
 
   if (!response.ok) {
     if (response.status === 403) {
@@ -353,6 +355,11 @@ function buildCachedResponse(
 
 export async function GET() {
   try {
+    const auth = await verifyAuth();
+    if (!auth) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
     const settings = await prisma.settings.findFirst();
 
     const settingsError = validateSettings(settings);

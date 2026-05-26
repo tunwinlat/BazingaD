@@ -54,6 +54,8 @@ export async function GET() {
   }
 }
 
+const MAX_BODY_SIZE = 1024 * 1024;
+
 // Update general settings
 export async function PUT(request: Request) {
   try {
@@ -65,6 +67,11 @@ export async function PUT(request: Request) {
         { error: 'Unauthorized' },
         { status: 401 }
       );
+    }
+
+    const contentLength = request.headers.get('content-length');
+    if (contentLength && Number(contentLength) > MAX_BODY_SIZE) {
+      return NextResponse.json({ error: 'Request body too large' }, { status: 413 });
     }
 
     const body = await request.json();

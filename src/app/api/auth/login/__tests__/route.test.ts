@@ -115,7 +115,17 @@ describe('Login API', () => {
 
       expect(response.status).toBe(401);
       expect(data).toEqual({ error: 'Invalid credentials' });
-      expect(prisma.user.findUnique).toHaveBeenCalledWith({ where: { username: 'testuser' } });
+      expect(prisma.user.findUnique).toHaveBeenCalledWith({
+        where: { username: 'testuser' },
+        select: {
+          id: true,
+          username: true,
+          password: true,
+          totpEnabled: true,
+          totpVerified: true,
+          totpSecret: true,
+        },
+      });
     });
 
     it('returns 401 for invalid credentials (wrong password)', async () => {
@@ -123,8 +133,8 @@ describe('Login API', () => {
         id: '1',
         username: 'testuser',
         password: 'hashedpassword',
-      } as unknown as ReturnType<typeof prisma.user.findUnique>);
-      vi.mocked(bcrypt.compare).mockResolvedValue(false);
+      } as any);
+      vi.mocked(bcrypt.compare as any).mockResolvedValue(false);
 
       const request = createRequest(validLoginData);
       const response = await POST(request);
@@ -141,8 +151,8 @@ describe('Login API', () => {
         username: 'testuser',
         password: 'hashedpassword',
         totpEnabled: false,
-      } as unknown as ReturnType<typeof prisma.user.findUnique>);
-      vi.mocked(bcrypt.compare).mockResolvedValue(true);
+      } as any);
+      vi.mocked(bcrypt.compare as any).mockResolvedValue(true);
       vi.mocked(createSession).mockResolvedValue('session-token-123');
       vi.mocked(settingsCache.get).mockReturnValue({ sessionDurationHours: 24 });
 
@@ -170,8 +180,8 @@ describe('Login API', () => {
     };
 
     it('returns 202 if TOTP is required but not provided', async () => {
-      vi.mocked(prisma.user.findUnique).mockResolvedValue(mockUserWithTOTP as unknown as ReturnType<typeof prisma.user.findUnique>);
-      vi.mocked(bcrypt.compare).mockResolvedValue(true);
+      vi.mocked(prisma.user.findUnique).mockResolvedValue(mockUserWithTOTP as any);
+      vi.mocked(bcrypt.compare as any).mockResolvedValue(true);
 
       const request = createRequest({ username: 'testuser_totp', password: 'password123' });
       const response = await POST(request);
@@ -182,8 +192,8 @@ describe('Login API', () => {
     });
 
     it('returns 401 for invalid TOTP code', async () => {
-      vi.mocked(prisma.user.findUnique).mockResolvedValue(mockUserWithTOTP as unknown as ReturnType<typeof prisma.user.findUnique>);
-      vi.mocked(bcrypt.compare).mockResolvedValue(true);
+      vi.mocked(prisma.user.findUnique).mockResolvedValue(mockUserWithTOTP as any);
+      vi.mocked(bcrypt.compare as any).mockResolvedValue(true);
 
       const mockValidate = vi.fn().mockReturnValue(null); // null means invalid
       vi.mocked(OTPAuth.TOTP).mockImplementation(function() { return { validate: mockValidate } as unknown as OTPAuth.TOTP; });
@@ -198,8 +208,8 @@ describe('Login API', () => {
     });
 
     it('successfully logs in with valid TOTP', async () => {
-      vi.mocked(prisma.user.findUnique).mockResolvedValue(mockUserWithTOTP as unknown as ReturnType<typeof prisma.user.findUnique>);
-      vi.mocked(bcrypt.compare).mockResolvedValue(true);
+      vi.mocked(prisma.user.findUnique).mockResolvedValue(mockUserWithTOTP as any);
+      vi.mocked(bcrypt.compare as any).mockResolvedValue(true);
 
       const mockValidate = vi.fn().mockReturnValue(0); // 0 or any non-null means valid
       vi.mocked(OTPAuth.TOTP).mockImplementation(function() { return { validate: mockValidate } as unknown as OTPAuth.TOTP; });
@@ -246,8 +256,8 @@ describe('Login API', () => {
         username: 'lockoutuser2',
         password: 'hashedpassword',
         totpEnabled: false,
-      } as unknown as ReturnType<typeof prisma.user.findUnique>);
-      vi.mocked(bcrypt.compare).mockResolvedValue(true);
+      } as any);
+      vi.mocked(bcrypt.compare as any).mockResolvedValue(true);
       vi.mocked(createSession).mockResolvedValue('session');
       vi.mocked(settingsCache.get).mockReturnValue({ sessionDurationHours: 24 });
 

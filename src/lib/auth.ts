@@ -33,7 +33,11 @@ export async function verifyAuth(): Promise<{ userId: string; sessionToken: stri
     // Find session with user
     const session = await prisma.session.findUnique({
       where: { token },
-      include: { user: true },
+      include: {
+        user: {
+          select: { passwordChangedAt: true },
+        },
+      },
     });
     
     if (!session) return null;
@@ -70,7 +74,11 @@ export async function verifyAuthFromRequest(request: NextRequest): Promise<{ use
     // Find session with user
     const session = await prisma.session.findUnique({
       where: { token },
-      include: { user: true },
+      include: {
+        user: {
+          select: { passwordChangedAt: true },
+        },
+      },
     });
     
     if (!session) return null;

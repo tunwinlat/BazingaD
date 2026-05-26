@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { memo, useState, useEffect, useCallback } from 'react';
 import { Cloud, Wind, Compass, Loader2, MapPin, Settings, X, Navigation, RotateCcw } from 'lucide-react';
 
 interface WeatherData {
@@ -36,7 +36,7 @@ interface WeatherProps {
 
 const STORAGE_KEY = 'weather-user-location';
 
-export default function Weather({ compact = false }: WeatherProps) {
+function Weather({ compact = false }: WeatherProps) {
   const [weather, setWeather] = useState<WeatherData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -71,10 +71,12 @@ export default function Weather({ compact = false }: WeatherProps) {
   }, [userLocation]);
 
   const fetchWeather = useCallback(async () => {
+    const controller = new AbortController();
+
     try {
       const [settingsRes, weatherRes] = await Promise.all([
-        fetch('/api/settings'),
-        fetch(buildWeatherUrl()),
+        fetch('/api/settings', { signal: controller.signal }),
+        fetch(buildWeatherUrl(), { signal: controller.signal }),
       ]);
 
       if (settingsRes.ok) {
@@ -98,13 +100,27 @@ export default function Weather({ compact = false }: WeatherProps) {
     } finally {
       setLoading(false);
     }
+
+    return () => controller.abort();
   }, [buildWeatherUrl]);
 
   useEffect(() => {
-    setLoading(true);
-    fetchWeather();
-    const interval = setInterval(fetchWeather, 10 * 60 * 1000);
-    return () => clearInterval(interval);
+    let intervalId: ReturnType<typeof setInterval>;
+
+    const run = async () => {
+      setLoading(true);
+      const cleanup = await fetchWeather();
+      intervalId = setInterval(() => {
+        fetchWeather();
+      }, 10 * 60 * 1000);
+      return cleanup;
+    };
+
+    const promise = run();
+    return () => {
+      promise.then(cleanup => cleanup?.());
+      clearInterval(intervalId);
+    };
   }, [fetchWeather]);
 
   const handleSearch = async () => {
@@ -168,7 +184,7 @@ export default function Weather({ compact = false }: WeatherProps) {
       },
       () => {
         setGeoLoading(false);
-        alert('Unable to retrieve your location. Please check your browser permissions.');
+        setError('Unable to retrieve your location. Please check your browser permissions.');
       },
       { timeout: 10000 }
     );
@@ -215,7 +231,7 @@ export default function Weather({ compact = false }: WeatherProps) {
   if (compact) {
     return (
       <>
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-2 sm:gap-4 flex-wrap">
           {/* Temperature & Icon */}
           <div className="flex items-center gap-2">
             <span className="text-2xl">{weather.icon}</span>
@@ -227,16 +243,16 @@ export default function Weather({ compact = false }: WeatherProps) {
             </div>
           </div>
 
-          {/* Divider */}
-          <div className="w-px h-8" style={{ backgroundColor: 'rgba(255,255,255,0.1)' }} />
+          {/* Divider - hidden on very small screens */}
+          <div className="hidden sm:block w-px h-8" style={{ backgroundColor: 'rgba(255,255,255,0.1)' }} />
 
-          {/* Wind Info */}
-          <div className="flex items-center gap-3 text-sm text-white/70">
+          {/* Wind Info - wraps on small screens */}
+          <div className="flex items-center gap-2 sm:gap-3 text-xs sm:text-sm text-white/70">
             <div className="flex items-center gap-1">
               <Wind className="w-3.5 h-3.5" />
               <span>{weather.windSpeed} {weather.windSpeedUnit}</span>
             </div>
-            <div className="flex items-center gap-1">
+            <div className="hidden sm:flex items-center gap-1">
               <Compass className="w-3.5 h-3.5" />
               <span>{weather.windDirection}</span>
             </div>
@@ -245,7 +261,7 @@ export default function Weather({ compact = false }: WeatherProps) {
           {/* Location with settings button */}
           <div className="flex items-center gap-1.5 text-xs text-white/50 min-w-0">
             <Cloud className="w-3.5 h-3.5 flex-shrink-0" />
-            <span className="truncate max-w-[120px] lg:max-w-[160px]">{weather.locationName}</span>
+            <span className="truncate max-w-[80px] sm:max-w-[120px] lg:max-w-[160px]">{weather.locationName}</span>
             <button
               onClick={() => setShowPicker(true)}
               className="ml-1 p-0.5 rounded hover:bg-white/10 transition-colors flex-shrink-0"
@@ -360,6 +376,8 @@ export default function Weather({ compact = false }: WeatherProps) {
   );
 }
 
+export default memo(Weather);
+
 // ------------------------------------------------------------------
 // Location Picker Modal
 // ------------------------------------------------------------------
@@ -391,6 +409,14 @@ function WeatherLocationPicker({
   onReset,
   onClose,
 }: PickerProps) {
+  useEffect(() => {
+    const handleEscape = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onClose();
+    };
+    window.addEventListener('keydown', handleEscape);
+    return () => window.removeEventListener('keydown', handleEscape);
+  }, [onClose]);
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       {/* Backdrop */}
@@ -401,6 +427,9 @@ function WeatherLocationPicker({
 
       {/* Modal */}
       <div
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="weather-location-title"
         className="relative w-full max-w-md rounded-2xl p-6 shadow-2xl"
         style={{
           backgroundColor: 'rgba(20, 20, 35, 0.95)',
@@ -409,11 +438,12 @@ function WeatherLocationPicker({
       >
         {/* Header */}
         <div className="flex items-center justify-between mb-4">
-          <h3 className="text-lg font-semibold text-white flex items-center gap-2">
+          <h3 id="weather-location-title" className="text-lg font-semibold text-white flex items-center gap-2">
             <MapPin className="w-5 h-5" />
             Weather Location
           </h3>
           <button
+            type="button"
             onClick={onClose}
             className="p-1 rounded-lg hover:bg-white/10 transition-colors text-white/60 hover:text-white"
             aria-label="Close"

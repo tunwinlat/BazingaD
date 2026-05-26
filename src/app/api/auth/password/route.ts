@@ -15,7 +15,7 @@ interface ValidationResult<T> {
 // Check content length to prevent large payloads
 function validateContentLength(request: Request): NextResponse | null {
   const contentLength = request.headers.get('content-length');
-  if (contentLength && parseInt(contentLength) > MAX_BODY_SIZE) {
+  if (contentLength && Number(contentLength) > MAX_BODY_SIZE) {
     return NextResponse.json(
       { error: 'Request body too large' },
       { status: 413 }
@@ -70,7 +70,7 @@ async function validateNewPasswordParams(newPassword: string, userPasswordHash: 
 }
 
 // Perform the DB updates and session management
-async function updatePasswordAndSessions(userId: string, newPassword: string, currentSessionToken: string) {
+async function updatePasswordAndSessions(userId: string, newPassword: string) {
   // Hash and save new password with higher cost
   const hashedPassword = await bcrypt.hash(newPassword, 12);
 
@@ -82,12 +82,9 @@ async function updatePasswordAndSessions(userId: string, newPassword: string, cu
     },
   });
 
-  // Delete all sessions except current to force re-login elsewhere
+  // Delete ALL sessions to force re-login everywhere with the new password
   await prisma.session.deleteMany({
-    where: {
-      userId: userId,
-      token: { not: currentSessionToken },
-    },
+    where: { userId: userId },
   });
 }
 
@@ -152,7 +149,7 @@ export async function PUT(request: Request) {
     const newPasswordError = await validateNewPasswordParams(newPassword, user.password);
     if (newPasswordError) return newPasswordError;
 
-    await updatePasswordAndSessions(user.id, newPassword, auth.sessionToken);
+    await updatePasswordAndSessions(user.id, newPassword);
 
     const response = NextResponse.json({ 
       success: true, 

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { memo, useState, useEffect, useCallback } from 'react';
 import { Car, AlertTriangle, Info } from 'lucide-react';
 
 interface TrafficData {
@@ -54,7 +54,7 @@ function getTrafficStatus(duration: number, staticDuration: number): string {
   return 'Heavy';
 }
 
-export default function TrafficDisplay({ settings }: TrafficDisplayProps) {
+function TrafficDisplay({ settings }: TrafficDisplayProps) {
   const [trafficData, setTrafficData] = useState<TrafficData | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -103,6 +103,15 @@ export default function TrafficDisplay({ settings }: TrafficDisplayProps) {
       clearInterval(intervalId);
     };
   }, [settings?.enabled, fetchTrafficData]);
+
+  // Cleanup: reset state when unmounted or settings change significantly
+  useEffect(() => {
+    return () => {
+      setTrafficData(null);
+      setError(null);
+      setLoading(false);
+    };
+  }, []);
 
   if (!settings?.enabled) {
     return null;
@@ -193,3 +202,5 @@ export default function TrafficDisplay({ settings }: TrafficDisplayProps) {
     </div>
   );
 }
+
+export default memo(TrafficDisplay);

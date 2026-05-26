@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef, useEffect } from 'react';
+import { memo, useState, useRef, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { LogOut, Loader2, LayoutGrid, Grid2X2, LayoutTemplate, List, Check } from 'lucide-react';
@@ -19,7 +19,7 @@ const viewOptions: { value: ViewMode; label: string; icon: React.ReactNode }[] =
   { value: 'list', label: 'List', icon: <List className="w-4 h-4" /> },
 ];
 
-export default function DashboardHeader({ isAdmin, viewMode = 'comfortable', onViewModeChange }: DashboardHeaderProps) {
+function DashboardHeader({ isAdmin, viewMode = 'comfortable', onViewModeChange }: DashboardHeaderProps) {
   const router = useRouter();
   const [isLoggingOut, setIsLoggingOut] = useState(false);
   const [showViewMenu, setShowViewMenu] = useState(false);
@@ -157,3 +157,5 @@ export default function DashboardHeader({ isAdmin, viewMode = 'comfortable', onV
     </div>
   );
 }
+
+export default memo(DashboardHeader);
