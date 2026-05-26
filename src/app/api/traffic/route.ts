@@ -1,6 +1,5 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { verifyAuth } from '@/lib/auth';
 
 const CACHE_DURATION_MS = 30 * 60 * 1000; // 30 minutes
 
@@ -355,11 +354,6 @@ function buildCachedResponse(
 
 export async function GET() {
   try {
-    const auth = await verifyAuth();
-    if (!auth) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-
     const settings = await prisma.settings.findFirst();
 
     const settingsError = validateSettings(settings);
