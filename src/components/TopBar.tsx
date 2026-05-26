@@ -168,6 +168,7 @@ function TopBar({ isAdmin, isProtected, viewMode = 'comfortable', onViewModeChan
                 {viewOptions.map((option) => (
                   <button
                     key={option.value}
+                    type="button"
                     onClick={() => {
                       onViewModeChange(option.value);
                       setShowViewMenu(false);

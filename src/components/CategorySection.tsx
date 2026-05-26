@@ -1,4 +1,4 @@
-import { memo, useMemo } from 'react';
+import { useMemo } from 'react';
 import { Briefcase, User, Image, Code, Users, ShoppingCart, Circle, Plus, type LucideIcon } from 'lucide-react';
 import BlockCard from './BlockCard';
 import type { Category, ViewMode } from '@/types';
@@ -22,7 +22,7 @@ const iconMap: Record<string, LucideIcon> = {
   default: Circle,
 };
 
-function CategorySection({ category, index, isAdmin, onAddBlock, viewMode = 'comfortable', openInNewTab = true }: CategorySectionProps) {
+export default function CategorySection({ category, index, isAdmin, onAddBlock, viewMode = 'comfortable', openInNewTab = true }: CategorySectionProps) {
   const Icon = iconMap[category.icon] || iconMap.default;
 
   const sortedBlocks = useMemo(
@@ -31,17 +31,14 @@ function CategorySection({ category, index, isAdmin, onAddBlock, viewMode = 'com
   );
 
   // Use literal class strings so Tailwind detects all classes
-  const gridClass = useMemo(
-    () =>
-      viewMode === 'comfortable'
-        ? 'grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4'
-        : viewMode === 'compact'
-        ? 'grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-8 gap-3'
-        : viewMode === 'dense'
-        ? 'grid grid-cols-4 sm:grid-cols-5 md:grid-cols-6 lg:grid-cols-8 xl:grid-cols-10 gap-2'
-        : 'grid grid-cols-1 gap-2',
-    [viewMode]
-  );
+  const gridClass =
+    viewMode === 'comfortable'
+      ? 'grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4'
+      : viewMode === 'compact'
+      ? 'grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-8 gap-3'
+      : viewMode === 'dense'
+      ? 'grid grid-cols-4 sm:grid-cols-5 md:grid-cols-6 lg:grid-cols-8 xl:grid-cols-10 gap-2'
+      : 'grid grid-cols-1 gap-2';
 
   return (
     <section
@@ -77,5 +74,3 @@ function CategorySection({ category, index, isAdmin, onAddBlock, viewMode = 'com
     </section>
   );
 }
-
-export default memo(CategorySection);

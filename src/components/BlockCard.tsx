@@ -1,4 +1,3 @@
-import { memo } from 'react';
 import { getInitials, getDomain, getBlockIcon } from '@/lib/utils';
 import type { Block, ViewMode } from '@/types';
 
@@ -8,7 +7,7 @@ interface BlockCardProps {
   openInNewTab?: boolean;
 }
 
-function BlockCard({ block, viewMode = 'comfortable', openInNewTab = true }: BlockCardProps) {
+export default function BlockCard({ block, viewMode = 'comfortable', openInNewTab = true }: BlockCardProps) {
   const iconUrl = getBlockIcon(block);
   const initials = getInitials(block.title);
   const domain = getDomain(block.url);
@@ -144,5 +143,3 @@ function BlockCard({ block, viewMode = 'comfortable', openInNewTab = true }: Blo
     </a>
   );
 }
-
-export default memo(BlockCard);
