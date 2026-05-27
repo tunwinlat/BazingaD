@@ -1,10 +1,10 @@
 'use client';
 
-import { memo, useState, useEffect, useRef } from 'react';
+import { memo, useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import {
-  LogOut, Loader2, LayoutGrid, Grid2X2, LayoutTemplate, List, Check,
+  LogOut, Loader2, LayoutGrid, Grid2X2, LayoutTemplate, List,
 } from 'lucide-react';
 import Weather from './Weather';
 import TrafficDisplay from './TrafficDisplay';
@@ -35,9 +35,7 @@ function TopBar({ isAdmin, isProtected, viewMode = 'comfortable', onViewModeChan
   const [time, setTime] = useState('--:--');
   const [date, setDate] = useState('');
   const [isLoggingOut, setIsLoggingOut] = useState(false);
-  const [showViewMenu, setShowViewMenu] = useState(false);
   const [trafficSettings, setTrafficSettings] = useState<TrafficSettings | null>(null);
-  const viewMenuRef = useRef<HTMLDivElement>(null);
 
   // Clock
   useEffect(() => {
@@ -77,17 +75,6 @@ function TopBar({ isAdmin, isProtected, viewMode = 'comfortable', onViewModeChan
     return () => controller.abort();
   }, []);
 
-  // Close view menu on click outside
-  useEffect(() => {
-    const handler = (e: MouseEvent) => {
-      if (viewMenuRef.current && !viewMenuRef.current.contains(e.target as Node)) {
-        setShowViewMenu(false);
-      }
-    };
-    document.addEventListener('mousedown', handler);
-    return () => document.removeEventListener('mousedown', handler);
-  }, []);
-
   const handleLogout = async () => {
     setIsLoggingOut(true);
     try {
@@ -98,8 +85,6 @@ function TopBar({ isAdmin, isProtected, viewMode = 'comfortable', onViewModeChan
       setIsLoggingOut(false);
     }
   };
-
-  const currentViewLabel = viewOptions.find(v => v.value === viewMode)?.label || 'Comfortable';
 
   return (
     <div
@@ -138,54 +123,34 @@ function TopBar({ isAdmin, isProtected, viewMode = 'comfortable', onViewModeChan
 
       {/* Right-side actions */}
       <div className="flex items-center gap-2 w-full sm:w-auto sm:ml-auto justify-end">
-        {/* View mode toggle */}
+        {/* View mode selector — segmented icon buttons */}
         {onViewModeChange && (
-          <div className="relative" ref={viewMenuRef}>
-            <button
-              onClick={() => setShowViewMenu(!showViewMenu)}
-              className="flex items-center gap-2 px-3 py-1.5 rounded-full text-sm transition-colors hover:bg-white/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
-              style={{
-                backgroundColor: 'rgba(255,255,255,0.05)',
-                border: '1px solid rgba(255,255,255,0.1)',
-              }}
-              title="Change view"
-              aria-label="Change view mode"
-              aria-expanded={showViewMenu}
-            >
-              {viewOptions.find(v => v.value === viewMode)?.icon}
-              <span className="hidden sm:inline">{currentViewLabel}</span>
-            </button>
-
-            {showViewMenu && (
-              <div
-                className="absolute right-0 top-full mt-2 rounded-xl overflow-hidden z-50 min-w-[160px]"
+          <div
+            className="flex items-center gap-0.5 p-1 rounded-lg"
+            style={{
+              backgroundColor: 'rgba(255,255,255,0.05)',
+              border: '1px solid rgba(255,255,255,0.1)',
+            }}
+            role="group"
+            aria-label="View mode"
+          >
+            {viewOptions.map((option) => (
+              <button
+                key={option.value}
+                type="button"
+                onClick={() => onViewModeChange(option.value)}
+                title={option.label}
+                aria-label={option.label}
+                aria-pressed={viewMode === option.value}
+                className="p-1.5 rounded-md transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
                 style={{
-                  backgroundColor: '#1a1a2e',
-                  border: '1px solid rgba(255,255,255,0.1)',
-                  boxShadow: '0 8px 32px rgba(0,0,0,0.4)',
+                  backgroundColor: viewMode === option.value ? 'rgba(99,102,241,0.25)' : 'transparent',
+                  color: viewMode === option.value ? '#a5b4fc' : 'rgba(255,255,255,0.4)',
                 }}
               >
-                {viewOptions.map((option) => (
-                  <button
-                    key={option.value}
-                    type="button"
-                    onClick={() => {
-                      onViewModeChange(option.value);
-                      setShowViewMenu(false);
-                    }}
-                    className="w-full flex items-center gap-3 px-4 py-2.5 text-sm transition-colors hover:bg-white/5 text-left"
-                    style={{
-                      color: viewMode === option.value ? '#818cf8' : 'rgba(255,255,255,0.8)',
-                      backgroundColor: viewMode === option.value ? 'rgba(99,102,241,0.1)' : undefined,
-                    }}
-                  >
-                    {option.icon}
-                    <span className="flex-1">{option.label}</span>
-                    {viewMode === option.value && <Check className="w-3.5 h-3.5" />}
-                  </button>
-                ))}
-              </div>
-            )}
+                {option.icon}
+              </button>
+            ))}
           </div>
         )}
 
