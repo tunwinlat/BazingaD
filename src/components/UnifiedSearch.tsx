@@ -96,7 +96,7 @@ function UnifiedSearch({ categories, openInNewTab = true }: UnifiedSearchProps) 
             window.location.href = selected.url;
           }
         } else {
-          const searchUrl = `https://www.google.com/search?q=${encodeURIComponent(state.query)}`;
+          const searchUrl = `https://www.google.com/search?q=${encodeURIComponent(state.query)}&udm=50`;
           if (state.openInNewTab) {
             window.open(searchUrl, '_blank');
           } else {
@@ -142,7 +142,7 @@ function UnifiedSearch({ categories, openInNewTab = true }: UnifiedSearchProps) 
   };
 
   const handleGoogleSearch = () => {
-    const searchUrl = `https://www.google.com/search?q=${encodeURIComponent(query)}`;
+    const searchUrl = `https://www.google.com/search?q=${encodeURIComponent(query)}&udm=50`;
     if (openInNewTab) {
       window.open(searchUrl, '_blank');
     } else {
