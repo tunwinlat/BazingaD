@@ -169,6 +169,8 @@ function AdminPage() {
     theme: 'default',
     defaultView: 'comfortable',
     openInNewTab: true,
+    navTransitionEnabled: false,
+    navTransitionType: 'overlay' as 'overlay' | 'exit',
   });
   const [faviconPreview, setFaviconPreview] = useState<string | null>(null);
   const [availableThemes, setAvailableThemes] = useState<Array<{ id: string; name: string }>>([]);
@@ -375,6 +377,8 @@ function AdminPage() {
           theme: data.theme || 'default',
           defaultView: data.defaultView || 'comfortable',
           openInNewTab: data.openInNewTab ?? true,
+          navTransitionEnabled: data.navTransitionEnabled ?? false,
+          navTransitionType: data.navTransitionType === 'exit' ? 'exit' : 'overlay',
         });
         setFaviconPreview(data.favicon || null);
       }
@@ -735,6 +739,8 @@ function AdminPage() {
           theme: generalSettings.theme,
           defaultView: generalSettings.defaultView,
           openInNewTab: generalSettings.openInNewTab,
+          navTransitionEnabled: generalSettings.navTransitionEnabled,
+          navTransitionType: generalSettings.navTransitionType,
         }),
       });
 
@@ -2047,6 +2053,67 @@ function AdminPage() {
                     <p className="text-xs text-white/50">When enabled, blocks and search results open in a new browser tab</p>
                   </label>
                 </div>
+
+                {/* Navigation Transition Toggle */}
+                <div className="flex items-center gap-3 p-4 rounded-lg" style={{ backgroundColor: 'rgba(255,255,255,0.03)' }}>
+                  <input
+                    type="checkbox"
+                    id="navTransitionEnabled"
+                    checked={generalSettings.navTransitionEnabled}
+                    onChange={(e) => setGeneralSettings({ ...generalSettings, navTransitionEnabled: e.target.checked })}
+                    className="w-5 h-5 rounded border-white/20"
+                  />
+                  <label htmlFor="navTransitionEnabled" className="flex-1">
+                    <span className="font-medium text-sm">Enable navigation transition</span>
+                    <p className="text-xs text-white/50">Show a visual transition when opening links in the same tab</p>
+                  </label>
+                </div>
+
+                {/* Transition Type Selector (only when enabled and same-tab) */}
+                {generalSettings.navTransitionEnabled && !generalSettings.openInNewTab && (
+                  <div className="p-4 rounded-lg -mt-2" style={{ backgroundColor: 'rgba(255,255,255,0.02)' }}>
+                    <label className="block text-sm text-white/70 mb-2">Transition Style</label>
+                    <div className="flex gap-2">
+                      <button
+                        type="button"
+                        onClick={() => setGeneralSettings({ ...generalSettings, navTransitionType: 'overlay' })}
+                        className="flex-1 px-4 py-3 rounded-lg text-sm text-left transition-all border"
+                        style={{
+                          backgroundColor: generalSettings.navTransitionType === 'overlay' ? 'rgba(99, 102, 241, 0.2)' : 'rgba(255,255,255,0.03)',
+                          borderColor: generalSettings.navTransitionType === 'overlay' ? 'rgba(99, 102, 241, 0.4)' : 'rgba(255,255,255,0.1)',
+                          color: generalSettings.navTransitionType === 'overlay' ? '#818cf8' : 'white',
+                        }}
+                      >
+                        <span className="font-medium">Launch Overlay</span>
+                        <p className="text-xs mt-1" style={{ color: generalSettings.navTransitionType === 'overlay' ? '#a5b4fc' : 'rgba(255,255,255,0.4)' }}>
+                          Full-screen glassmorphism overlay with icon and spinner
+                        </p>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setGeneralSettings({ ...generalSettings, navTransitionType: 'exit' })}
+                        className="flex-1 px-4 py-3 rounded-lg text-sm text-left transition-all border"
+                        style={{
+                          backgroundColor: generalSettings.navTransitionType === 'exit' ? 'rgba(99, 102, 241, 0.2)' : 'rgba(255,255,255,0.03)',
+                          borderColor: generalSettings.navTransitionType === 'exit' ? 'rgba(99, 102, 241, 0.4)' : 'rgba(255,255,255,0.1)',
+                          color: generalSettings.navTransitionType === 'exit' ? '#818cf8' : 'white',
+                        }}
+                      >
+                        <span className="font-medium">Exit Fade</span>
+                        <p className="text-xs mt-1" style={{ color: generalSettings.navTransitionType === 'exit' ? '#a5b4fc' : 'rgba(255,255,255,0.4)' }}>
+                          Darken the dashboard with a brief fade-out effect
+                        </p>
+                      </button>
+                    </div>
+                  </div>
+                )}
+
+                {/* Transition hint when enabled but new-tab is on */}
+                {generalSettings.navTransitionEnabled && generalSettings.openInNewTab && (
+                  <div className="p-3 rounded-lg -mt-2 text-xs" style={{ backgroundColor: 'rgba(245, 158, 11, 0.08)', border: '1px solid rgba(245, 158, 11, 0.2)', color: '#fbbf24' }}>
+                    ⚠️ Navigation transitions only apply when &quot;Open links in new tab&quot; is disabled. Currently, links will still open in new tabs.
+                  </div>
+                )}
 
                 {/* Save Button */}
                 <button

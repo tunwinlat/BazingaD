@@ -2,14 +2,22 @@
 
 import { memo, useState, useEffect, useRef, useMemo } from 'react';
 import { Search, ExternalLink, Globe, X } from 'lucide-react';
+import { triggerTransition } from '@/lib/navTransition';
 import type { Category } from '@/types';
 
 interface UnifiedSearchProps {
   categories: Category[];
   openInNewTab?: boolean;
+  navTransitionEnabled?: boolean;
+  navTransitionType?: 'overlay' | 'exit';
 }
 
-function UnifiedSearch({ categories, openInNewTab = true }: UnifiedSearchProps) {
+function UnifiedSearch({
+  categories,
+  openInNewTab = true,
+  navTransitionEnabled = false,
+  navTransitionType = 'overlay',
+}: UnifiedSearchProps) {
   const [query, setQuery] = useState('');
   const [isFocused, setIsFocused] = useState(false);
   const [selectedIndex, setSelectedIndex] = useState(0);
@@ -17,15 +25,15 @@ function UnifiedSearch({ categories, openInNewTab = true }: UnifiedSearchProps) 
   const containerRef = useRef<HTMLDivElement>(null);
 
   // Use refs to access latest state in global keydown listener without re-registering
-  const stateRef = useRef({ query, isFocused, selectedIndex, openInNewTab });
+  const stateRef = useRef({ query, isFocused, selectedIndex, openInNewTab, navTransitionEnabled, navTransitionType });
   useEffect(() => {
-    stateRef.current = { query, isFocused, selectedIndex, openInNewTab };
-  }, [query, isFocused, selectedIndex, openInNewTab]);
+    stateRef.current = { query, isFocused, selectedIndex, openInNewTab, navTransitionEnabled, navTransitionType };
+  }, [query, isFocused, selectedIndex, openInNewTab, navTransitionEnabled, navTransitionType]);
 
   // Flatten all blocks for searching
   const allBlocks = useMemo(() => {
-    return categories.flatMap(category =>
-      (category.blocks || []).map(block => ({
+    return categories.flatMap((category) =>
+      (category.blocks || []).map((block) => ({
         ...block,
         categoryName: category.name,
       }))
@@ -49,6 +57,16 @@ function UnifiedSearch({ categories, openInNewTab = true }: UnifiedSearchProps) 
     // We intentionally reset selected index when query or results change
     setSelectedIndex(0);
   }, [filteredBlocks.length, query]);
+
+  const navigateTo = (url: string, title?: string, icon?: string) => {
+    if (openInNewTab) {
+      window.open(url, '_blank');
+    } else if (navTransitionEnabled) {
+      triggerTransition(url, title, icon, navTransitionType);
+    } else {
+      window.location.href = url;
+    }
+  };
 
   // Keyboard shortcuts
   useEffect(() => {
@@ -90,18 +108,10 @@ function UnifiedSearch({ categories, openInNewTab = true }: UnifiedSearchProps) 
         const idx = stateRef.current.selectedIndex;
         if (idx < currentBlocks.length) {
           const selected = currentBlocks[idx];
-          if (state.openInNewTab) {
-            window.open(selected.url, '_blank');
-          } else {
-            window.location.href = selected.url;
-          }
+          navigateTo(selected.url, selected.title, selected.icon || undefined);
         } else {
           const searchUrl = `https://www.google.com/search?q=${encodeURIComponent(state.query)}&udm=50`;
-          if (state.openInNewTab) {
-            window.open(searchUrl, '_blank');
-          } else {
-            window.location.href = searchUrl;
-          }
+          navigateTo(searchUrl, `Search: ${state.query}`);
         }
         setQuery('');
         inputRef.current?.blur();
@@ -111,6 +121,7 @@ function UnifiedSearch({ categories, openInNewTab = true }: UnifiedSearchProps) 
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Keep filteredBlocks in a ref for the keydown handler
@@ -131,23 +142,15 @@ function UnifiedSearch({ categories, openInNewTab = true }: UnifiedSearchProps) 
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  const handleBlockClick = (url: string) => {
-    if (openInNewTab) {
-      window.open(url, '_blank');
-    } else {
-      window.location.href = url;
-    }
+  const handleBlockClick = (block: (typeof allBlocks)[number]) => {
+    navigateTo(block.url, block.title, block.icon || undefined);
     setQuery('');
     setIsFocused(false);
   };
 
   const handleGoogleSearch = () => {
     const searchUrl = `https://www.google.com/search?q=${encodeURIComponent(query)}&udm=50`;
-    if (openInNewTab) {
-      window.open(searchUrl, '_blank');
-    } else {
-      window.location.href = searchUrl;
-    }
+    navigateTo(searchUrl, `Search: ${query}`);
     setQuery('');
     setIsFocused(false);
   };
@@ -175,7 +178,7 @@ function UnifiedSearch({ categories, openInNewTab = true }: UnifiedSearchProps) 
           placeholder="Search your blocks or the web..."
           aria-label="Search your blocks or the web"
           role="combobox"
-          aria-expanded={isFocused && query.trim() ? "true" : "false"}
+          aria-expanded={isFocused && query.trim() ? 'true' : 'false'}
           aria-controls="search-results"
           aria-activedescendant={isFocused && query.trim() ? `search-result-${selectedIndex}` : undefined}
           aria-autocomplete="list"
@@ -224,23 +227,18 @@ function UnifiedSearch({ categories, openInNewTab = true }: UnifiedSearchProps) 
           {/* Block Results */}
           {filteredBlocks.length > 0 && (
             <div className="py-2">
-              <div className="px-4 py-1 text-xs text-white/40 uppercase tracking-wider">
-                Your Blocks
-              </div>
+              <div className="px-4 py-1 text-xs text-white/40 uppercase tracking-wider">Your Blocks</div>
               {filteredBlocks.map((block, index) => (
                 <button
                   id={`search-result-${index}`}
                   role="option"
                   aria-selected={index === selectedIndex}
                   key={block.id}
-                  onClick={() => handleBlockClick(block.url)}
+                  onClick={() => handleBlockClick(block)}
                   onMouseEnter={() => setSelectedIndex(index)}
                   className="w-full flex items-center gap-3 px-4 py-2.5 text-left transition-colors"
                   style={{
-                    backgroundColor:
-                      index === selectedIndex
-                        ? 'rgba(99, 102, 241, 0.2)'
-                        : 'transparent',
+                    backgroundColor: index === selectedIndex ? 'rgba(99, 102, 241, 0.2)' : 'transparent',
                   }}
                 >
                   {/* Icon */}
@@ -268,9 +266,7 @@ function UnifiedSearch({ categories, openInNewTab = true }: UnifiedSearchProps) 
                   {/* Content */}
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2">
-                      <span className="font-medium text-white text-sm truncate">
-                        {block.title}
-                      </span>
+                      <span className="font-medium text-white text-sm truncate">{block.title}</span>
                       <span
                         className="text-xs px-1.5 py-0.5 rounded-full flex-shrink-0"
                         style={{ backgroundColor: 'rgba(255, 255, 255, 0.1)', fontSize: '10px' }}
@@ -278,11 +274,7 @@ function UnifiedSearch({ categories, openInNewTab = true }: UnifiedSearchProps) 
                         {block.categoryName}
                       </span>
                     </div>
-                    {block.description && (
-                      <p className="text-xs text-white/50 truncate">
-                        {block.description}
-                      </p>
-                    )}
+                    {block.description && <p className="text-xs text-white/50 truncate">{block.description}</p>}
                   </div>
 
                   <ExternalLink className="w-3.5 h-3.5 text-white/30 flex-shrink-0" />
@@ -303,9 +295,7 @@ function UnifiedSearch({ categories, openInNewTab = true }: UnifiedSearchProps) 
                 className="w-full flex items-center gap-3 px-4 py-2.5 text-left transition-colors"
                 style={{
                   backgroundColor:
-                    selectedIndex === filteredBlocks.length
-                      ? 'rgba(99, 102, 241, 0.2)'
-                      : 'transparent',
+                    selectedIndex === filteredBlocks.length ? 'rgba(99, 102, 241, 0.2)' : 'transparent',
                 }}
               >
                 <div
@@ -326,9 +316,7 @@ function UnifiedSearch({ categories, openInNewTab = true }: UnifiedSearchProps) 
 
           {/* Empty State */}
           {filteredBlocks.length === 0 && (
-            <div className="px-4 py-3 text-sm text-white/40">
-              No blocks found. Press Enter to search Google.
-            </div>
+            <div className="px-4 py-3 text-sm text-white/40">No blocks found. Press Enter to search Google.</div>
           )}
         </div>
       )}

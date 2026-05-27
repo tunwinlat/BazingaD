@@ -62,9 +62,9 @@ async function fetchCategories() {
     });
 
     // Transform null values to undefined to match TypeScript types
-    return categories.map(category => ({
+    return categories.map((category) => ({
       ...category,
-      blocks: category.blocks.map(block => ({
+      blocks: category.blocks.map((block) => ({
         ...block,
         description: block.description ?? undefined,
         icon: block.icon ?? undefined,
@@ -103,6 +103,27 @@ async function fetchOpenInNewTab(): Promise<boolean> {
   }
 }
 
+async function fetchNavTransitionEnabled(): Promise<boolean> {
+  try {
+    const settings = await prisma.settings.findFirst();
+    return settings?.navTransitionEnabled ?? false;
+  } catch {
+    return false;
+  }
+}
+
+async function fetchNavTransitionType(): Promise<'overlay' | 'exit'> {
+  try {
+    const settings = await prisma.settings.findFirst();
+    if (settings?.navTransitionType === 'overlay' || settings?.navTransitionType === 'exit') {
+      return settings.navTransitionType;
+    }
+    return 'overlay';
+  } catch {
+    return 'overlay';
+  }
+}
+
 export default async function Home() {
   const access = await checkDashboardAccess();
 
@@ -114,18 +135,27 @@ export default async function Home() {
   const categories = await fetchCategories();
   const defaultView = await fetchDefaultView();
   const openInNewTab = await fetchOpenInNewTab();
+  const navTransitionEnabled = await fetchNavTransitionEnabled();
+  const navTransitionType = await fetchNavTransitionType();
 
   return (
     <>
       <Background />
       <div className="min-h-screen px-4 py-8 md:py-10 flex flex-col">
         <div className="max-w-7xl mx-auto w-full flex flex-col flex-1">
-          <Header categories={categories} openInNewTab={openInNewTab} />
+          <Header
+            categories={categories}
+            openInNewTab={openInNewTab}
+            navTransitionEnabled={navTransitionEnabled}
+            navTransitionType={navTransitionType}
+          />
           <Dashboard
             isAdmin={access.isAdmin}
             isProtected={access.protected}
             defaultView={defaultView}
             openInNewTab={openInNewTab}
+            navTransitionEnabled={navTransitionEnabled}
+            navTransitionType={navTransitionType}
           />
           <Footer />
         </div>

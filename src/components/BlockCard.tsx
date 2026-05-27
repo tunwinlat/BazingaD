@@ -1,13 +1,22 @@
 import { getInitials, getDomain, getBlockIcon } from '@/lib/utils';
+import { triggerTransition } from '@/lib/navTransition';
 import type { Block, ViewMode } from '@/types';
 
 interface BlockCardProps {
   block: Block;
   viewMode?: ViewMode;
   openInNewTab?: boolean;
+  navTransitionEnabled?: boolean;
+  navTransitionType?: 'overlay' | 'exit';
 }
 
-export default function BlockCard({ block, viewMode = 'comfortable', openInNewTab = true }: BlockCardProps) {
+export default function BlockCard({
+  block,
+  viewMode = 'comfortable',
+  openInNewTab = true,
+  navTransitionEnabled = false,
+  navTransitionType = 'overlay',
+}: BlockCardProps) {
   const iconUrl = getBlockIcon(block);
   const initials = getInitials(block.title);
   const domain = getDomain(block.url);
@@ -16,12 +25,20 @@ export default function BlockCard({ block, viewMode = 'comfortable', openInNewTa
     ? { target: '_blank', rel: 'noopener noreferrer' }
     : {};
 
+  const handleClick = (e: React.MouseEvent) => {
+    if (!openInNewTab && navTransitionEnabled) {
+      e.preventDefault();
+      triggerTransition(block.url, block.title, block.icon || undefined, navTransitionType);
+    }
+  };
+
   // List view: horizontal row
   if (viewMode === 'list') {
     return (
       <a
         href={block.url}
         {...linkProps}
+        onClick={handleClick}
         title={block.description || block.title}
         aria-label={`${block.title}${block.description ? ` - ${block.description}` : ''}`}
         className="group flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 hover:bg-white/5 relative focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
@@ -59,8 +76,12 @@ export default function BlockCard({ block, viewMode = 'comfortable', openInNewTa
           <div
             className="w-2 h-2 rounded-full flex-shrink-0"
             style={{
-              backgroundColor: block.lastStatus === 'online' ? '#10b981' :
-                              block.lastStatus === 'offline' ? '#ef4444' : '#f59e0b'
+              backgroundColor:
+                block.lastStatus === 'online'
+                  ? '#10b981'
+                  : block.lastStatus === 'offline'
+                    ? '#ef4444'
+                    : '#f59e0b',
             }}
           />
         )}
@@ -82,6 +103,7 @@ export default function BlockCard({ block, viewMode = 'comfortable', openInNewTa
     <a
       href={block.url}
       {...linkProps}
+      onClick={handleClick}
       title={block.description || block.title}
       aria-label={`${block.title}${block.description ? ` - ${block.description}` : ''}`}
       className={`group flex flex-col items-center text-center ${padding} rounded-2xl transition-all duration-300 hover:-translate-y-1 relative overflow-hidden focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500`}
@@ -135,8 +157,12 @@ export default function BlockCard({ block, viewMode = 'comfortable', openInNewTa
         <div
           className="absolute top-2 right-2 w-2 h-2 rounded-full"
           style={{
-            backgroundColor: block.lastStatus === 'online' ? '#10b981' :
-                            block.lastStatus === 'offline' ? '#ef4444' : '#f59e0b'
+            backgroundColor:
+              block.lastStatus === 'online'
+                ? '#10b981'
+                : block.lastStatus === 'offline'
+                  ? '#ef4444'
+                  : '#f59e0b',
           }}
         />
       )}

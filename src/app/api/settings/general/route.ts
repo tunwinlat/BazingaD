@@ -15,6 +15,9 @@ export async function GET() {
       favicon: string | null;
       theme: string;
       defaultView: string;
+      openInNewTab: boolean;
+      navTransitionEnabled: boolean;
+      navTransitionType: string;
     }>(CACHE_KEY);
     
     if (cached) {
@@ -34,6 +37,8 @@ export async function GET() {
       theme: settings?.theme || 'default',
       defaultView: settings?.defaultView || 'comfortable',
       openInNewTab: settings?.openInNewTab ?? true,
+      navTransitionEnabled: settings?.navTransitionEnabled ?? false,
+      navTransitionType: settings?.navTransitionType || 'overlay',
     };
 
     // Store in cache
@@ -75,7 +80,7 @@ export async function PUT(request: Request) {
     }
 
     const body = await request.json();
-    const { siteTitle, favicon, theme, defaultView, openInNewTab } = body;
+    const { siteTitle, favicon, theme, defaultView, openInNewTab, navTransitionEnabled, navTransitionType } = body;
 
     // Validate inputs
     if (siteTitle !== undefined && (typeof siteTitle !== 'string' || siteTitle.length > 100)) {
@@ -122,6 +127,25 @@ export async function PUT(request: Request) {
       );
     }
 
+    // Validate navTransitionEnabled
+    if (navTransitionEnabled !== undefined && typeof navTransitionEnabled !== 'boolean') {
+      return NextResponse.json(
+        { error: 'Invalid navTransitionEnabled value' },
+        { status: 400 }
+      );
+    }
+
+    // Validate navTransitionType
+    if (navTransitionType !== undefined) {
+      const validTypes = ['overlay', 'exit'];
+      if (!validTypes.includes(navTransitionType)) {
+        return NextResponse.json(
+          { error: 'Invalid navTransitionType value' },
+          { status: 400 }
+        );
+      }
+    }
+
     // Get or create settings
     let existingSettings = await prisma.settings.findFirst();
     
@@ -134,6 +158,8 @@ export async function PUT(request: Request) {
           ...(theme !== undefined && { theme }),
           ...(defaultView !== undefined && { defaultView }),
           ...(openInNewTab !== undefined && { openInNewTab }),
+          ...(navTransitionEnabled !== undefined && { navTransitionEnabled }),
+          ...(navTransitionType !== undefined && { navTransitionType }),
         },
       });
     } else {
@@ -144,6 +170,8 @@ export async function PUT(request: Request) {
           theme: theme || 'default',
           defaultView: defaultView || 'comfortable',
           openInNewTab: openInNewTab ?? true,
+          navTransitionEnabled: navTransitionEnabled ?? false,
+          navTransitionType: navTransitionType || 'overlay',
         },
       });
     }

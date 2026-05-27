@@ -53,6 +53,8 @@ model Settings {
   theme                 String   @default("default") // Dashboard theme ID
   defaultView           String   @default("comfortable") // Dashboard default view mode
   openInNewTab          Boolean  @default(true) // Whether to open blocks in new tab
+  navTransitionEnabled  Boolean  @default(false) // Show transition animation when opening links in same tab
+  navTransitionType     String   @default("overlay") // "overlay" or "exit"
   
   // Dashboard protection
   dashboardProtected    Boolean  @default(false)

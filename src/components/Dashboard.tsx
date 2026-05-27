@@ -5,6 +5,7 @@ import { FolderPlus } from 'lucide-react';
 import CategorySection from './CategorySection';
 import QuickAddModal from './QuickAddModal';
 import TopBar from './TopBar';
+import NavTransition from './NavTransition';
 import type { Category, ViewMode } from '@/types';
 
 // Memoized loading skeleton
@@ -73,9 +74,7 @@ const ErrorState = memo(function ErrorState({ error, onRetry }: ErrorStateProps)
       >
         <span className="text-4xl">⚠️</span>
       </div>
-      <h2 className="text-2xl font-semibold text-white mb-2">
-        Failed to load dashboard
-      </h2>
+      <h2 className="text-2xl font-semibold text-white mb-2">Failed to load dashboard</h2>
       <p className="text-white/60 max-w-md mb-2">{error}</p>
       <button
         onClick={onRetry}
@@ -96,12 +95,21 @@ interface DashboardProps {
   isProtected?: boolean;
   defaultView: ViewMode;
   openInNewTab?: boolean;
+  navTransitionEnabled?: boolean;
+  navTransitionType?: 'overlay' | 'exit';
 }
 
 const VIEW_MODE_STORAGE_KEY = 'startpage-view-mode';
 
 // Main Dashboard component
-export default function Dashboard({ isAdmin, isProtected, defaultView, openInNewTab = true }: DashboardProps) {
+export default function Dashboard({
+  isAdmin,
+  isProtected,
+  defaultView,
+  openInNewTab = true,
+  navTransitionEnabled = false,
+  navTransitionType = 'overlay',
+}: DashboardProps) {
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -182,9 +190,11 @@ export default function Dashboard({ isAdmin, isProtected, defaultView, openInNew
         onAddBlock={handleAddBlock}
         viewMode={viewMode}
         openInNewTab={openInNewTab}
+        navTransitionEnabled={navTransitionEnabled}
+        navTransitionType={navTransitionType}
       />
     ));
-  }, [categories, isAdmin, handleAddBlock, viewMode, openInNewTab]);
+  }, [categories, isAdmin, handleAddBlock, viewMode, openInNewTab, navTransitionEnabled, navTransitionType]);
 
   if (loading) {
     return (
@@ -194,6 +204,7 @@ export default function Dashboard({ isAdmin, isProtected, defaultView, openInNew
           <CategorySkeleton />
           <CategorySkeleton />
         </main>
+        <NavTransition />
       </>
     );
   }
@@ -205,6 +216,7 @@ export default function Dashboard({ isAdmin, isProtected, defaultView, openInNew
         <main className="flex-1 flex flex-col">
           <ErrorState error={error} onRetry={fetchCategories} />
         </main>
+        <NavTransition />
       </>
     );
   }
@@ -216,6 +228,7 @@ export default function Dashboard({ isAdmin, isProtected, defaultView, openInNew
         <main className="flex-1 flex flex-col">
           <EmptyState />
         </main>
+        <NavTransition />
       </>
     );
   }
@@ -251,6 +264,8 @@ export default function Dashboard({ isAdmin, isProtected, defaultView, openInNew
         categories={categories}
         defaultCategoryId={defaultCategoryId || undefined}
       />
+
+      <NavTransition />
     </>
   );
 }
