@@ -195,7 +195,7 @@ function Weather({ compact = false, minimal = false }: WeatherProps) {
         setGeoLoading(false);
         let msg = 'Unable to retrieve your location. Please check your browser permissions.';
         if (err.code === err.PERMISSION_DENIED) {
-          msg = 'Location permission denied. Please enable location access in your browser settings.';
+          msg = 'Location access was blocked. If you already allowed browser permission, it may be blocked by a site policy or proxy. Try searching for your city instead.';
         } else if (err.code === err.POSITION_UNAVAILABLE) {
           msg = 'Location information unavailable.';
         } else if (err.code === err.TIMEOUT) {
