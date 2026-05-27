@@ -6,57 +6,14 @@ import { loginSchema } from '@/lib/validation';
 import bcrypt from 'bcryptjs';
 import * as OTPAuth from 'otpauth';
 import { ZodError } from 'zod';
+import { RateLimiterMemory } from 'rate-limiter-flexible';
 
 const MAX_BODY_SIZE = 1024 * 1024;
 
-// Track failed login attempts in memory (for rate limiting)
-// In production, use Redis or database
-const failedAttempts = new Map<string, { count: number; lastAttempt: number }>();
-const MAX_FAILED_ATTEMPTS = 5;
-const LOCKOUT_DURATION_MS = 15 * 60 * 1000; // 15 minutes
-
-function isLockedOut(identifier: string): boolean {
-  const attempt = failedAttempts.get(identifier);
-  if (!attempt) return false;
-
-  if (attempt.count >= MAX_FAILED_ATTEMPTS) {
-    const timeSinceLastAttempt = Date.now() - attempt.lastAttempt;
-    if (timeSinceLastAttempt < LOCKOUT_DURATION_MS) {
-      return true;
-    }
-    // Reset after lockout period
-    failedAttempts.delete(identifier);
-  }
-  return false;
-}
-
-function recordFailedAttempt(identifier: string): void {
-  // 🛡️ Sentinel: Prevent memory exhaustion (DoS) by capping map size
-  if (failedAttempts.size >= 10000) {
-    const now = Date.now();
-    for (const [key, attempt] of failedAttempts.entries()) {
-      if (now - attempt.lastAttempt > LOCKOUT_DURATION_MS) {
-        failedAttempts.delete(key);
-      }
-    }
-    // If still too large, forcefully clear older entries
-    if (failedAttempts.size >= 10000) {
-      failedAttempts.clear();
-    }
-  }
-
-  const existing = failedAttempts.get(identifier);
-  if (existing) {
-    existing.count++;
-    existing.lastAttempt = Date.now();
-  } else {
-    failedAttempts.set(identifier, { count: 1, lastAttempt: Date.now() });
-  }
-}
-
-function recordSuccessfulAttempt(identifier: string): void {
-  failedAttempts.delete(identifier);
-}
+const loginRateLimiter = new RateLimiterMemory({
+  points: 5,
+  duration: 15 * 60, // 15 minutes
+});
 
 async function getSessionDurationHours(): Promise<number> {
   const CACHE_KEY = 'general_settings';
@@ -88,7 +45,7 @@ interface TOTPUser {
   totpSecret: string | null;
 }
 
-function verifyTOTP(user: TOTPUser, totpToken: string | undefined): NextResponse | null {
+async function verifyTOTP(user: TOTPUser, totpToken: string | undefined): Promise<NextResponse | null> {
   if (!user.totpEnabled || !user.totpVerified || !user.totpSecret) {
     return null;
   }
@@ -113,7 +70,11 @@ function verifyTOTP(user: TOTPUser, totpToken: string | undefined): NextResponse
 
   const isTOTPValid = totp.validate({ token: totpToken, window: 1 }) !== null;
   if (!isTOTPValid) {
-    recordFailedAttempt(user.username.toLowerCase());
+    try {
+      await loginRateLimiter.consume(user.username.toLowerCase());
+    } catch {
+      // Ignore
+    }
     return NextResponse.json(
       { error: 'Invalid authentication code' },
       { status: 401 }
@@ -151,11 +112,16 @@ export async function POST(request: Request) {
     const normalizedUsername = username.toLowerCase();
 
     // Check for lockout (using username as identifier)
-    if (isLockedOut(normalizedUsername)) {
-      return NextResponse.json(
-        { error: 'Account temporarily locked due to too many failed attempts. Please try again later.' },
-        { status: 429 }
-      );
+    try {
+      const res = await loginRateLimiter.get(normalizedUsername);
+      if (res !== null && res.consumedPoints >= 5) {
+        return NextResponse.json(
+          { error: 'Account temporarily locked due to too many failed attempts. Please try again later.' },
+          { status: 429 }
+        );
+      }
+    } catch {
+      // Ignore
     }
 
     // Find user (select only needed fields)
@@ -176,7 +142,11 @@ export async function POST(request: Request) {
       // compared to a static dummy hash which may leak timing differences.
       await bcrypt.hash(password, 12);
 
-      recordFailedAttempt(normalizedUsername);
+      try {
+        await loginRateLimiter.consume(normalizedUsername);
+      } catch {
+        // Ignore
+      }
       return NextResponse.json(
         { error: 'Invalid credentials' },
         { status: 401 }
@@ -187,7 +157,11 @@ export async function POST(request: Request) {
     const isValid = await bcrypt.compare(password, user.password);
 
     if (!isValid) {
-      recordFailedAttempt(normalizedUsername);
+      try {
+        await loginRateLimiter.consume(normalizedUsername);
+      } catch {
+        // Ignore
+      }
       return NextResponse.json(
         { error: 'Invalid credentials' },
         { status: 401 }
@@ -195,13 +169,13 @@ export async function POST(request: Request) {
     }
 
     // Verify TOTP code if enabled
-    const totpResponse = verifyTOTP(user, totpToken);
+    const totpResponse = await verifyTOTP(user, totpToken);
     if (totpResponse) {
       return totpResponse;
     }
 
     // Clear failed attempts on successful login
-    recordSuccessfulAttempt(normalizedUsername);
+    await loginRateLimiter.delete(normalizedUsername);
 
     // Get session duration from settings
     const sessionHours = await getSessionDurationHours();

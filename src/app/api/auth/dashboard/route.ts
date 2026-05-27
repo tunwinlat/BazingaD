@@ -6,6 +6,7 @@ import bcrypt from 'bcryptjs';
 import { cookies } from 'next/headers';
 import { z } from 'zod';
 import { getClientIP } from '@/lib/ip-utils';
+import { RateLimiterMemory } from 'rate-limiter-flexible';
 
 const MAX_BODY_SIZE = 1024 * 1024;
 const CACHE_KEY = 'dashboard_auth_settings';
@@ -14,55 +15,10 @@ const dashboardLoginSchema = z.object({
   password: z.string().min(1, 'Password is required').max(128, 'Password must not exceed 128 characters'),
 });
 
-// Track failed login attempts in memory (for rate limiting)
-// In production, use Redis or database
-const failedAttempts = new Map<string, { count: number; lastAttempt: number }>();
-const MAX_FAILED_ATTEMPTS = 5;
-const LOCKOUT_DURATION_MS = 15 * 60 * 1000; // 15 minutes
-
-function isLockedOut(identifier: string): boolean {
-  const attempt = failedAttempts.get(identifier);
-  if (!attempt) return false;
-
-  if (attempt.count >= MAX_FAILED_ATTEMPTS) {
-    const timeSinceLastAttempt = Date.now() - attempt.lastAttempt;
-    if (timeSinceLastAttempt < LOCKOUT_DURATION_MS) {
-      return true;
-    }
-    // Reset after lockout period
-    failedAttempts.delete(identifier);
-  }
-  return false;
-}
-
-function recordFailedAttempt(identifier: string): void {
-  // 🛡️ Sentinel: Prevent memory exhaustion (DoS) by capping map size
-  if (failedAttempts.size >= 10000) {
-    const now = Date.now();
-    const entries = Array.from(failedAttempts.entries());
-    for (const [key, attempt] of entries) {
-      if (now - attempt.lastAttempt > LOCKOUT_DURATION_MS) {
-        failedAttempts.delete(key);
-      }
-    }
-    // If still too large, forcefully clear older entries
-    if (failedAttempts.size >= 10000) {
-      failedAttempts.clear();
-    }
-  }
-
-  const existing = failedAttempts.get(identifier);
-  if (existing) {
-    existing.count++;
-    existing.lastAttempt = Date.now();
-  } else {
-    failedAttempts.set(identifier, { count: 1, lastAttempt: Date.now() });
-  }
-}
-
-function recordSuccessfulAttempt(identifier: string): void {
-  failedAttempts.delete(identifier);
-}
+const dashboardRateLimiter = new RateLimiterMemory({
+  points: 5,
+  duration: 15 * 60, // 15 minutes
+});
 
 // Check if dashboard is protected
 export async function GET() {
@@ -152,11 +108,16 @@ export async function POST(request: Request) {
     const ip = getClientIP(request as any);
     const identifier = `dashboard_${ip}`;
 
-    if (isLockedOut(identifier)) {
-      return NextResponse.json(
-        { error: 'Too many login attempts. Please try again later.' },
-        { status: 429 }
-      );
+    try {
+      const res = await dashboardRateLimiter.get(identifier);
+      if (res !== null && res.consumedPoints >= 5) {
+        return NextResponse.json(
+          { error: 'Too many login attempts. Please try again later.' },
+          { status: 429 }
+        );
+      }
+    } catch {
+      // Ignore
     }
 
     if (!dashboardProtected) {
@@ -178,7 +139,11 @@ export async function POST(request: Request) {
     const isValid = await bcrypt.compare(password, settings.dashboardPassword);
 
     if (!isValid) {
-      recordFailedAttempt(identifier);
+      try {
+        await dashboardRateLimiter.consume(identifier);
+      } catch {
+        // Ignore
+      }
       return NextResponse.json(
         { error: 'Invalid password' },
         { status: 401 }
@@ -186,7 +151,7 @@ export async function POST(request: Request) {
     }
 
     // Successful login
-    recordSuccessfulAttempt(identifier);
+    await dashboardRateLimiter.delete(identifier);
 
     // Get first user for session relation
     const user = await prisma.user.findFirst();
