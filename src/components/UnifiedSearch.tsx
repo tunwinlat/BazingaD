@@ -61,6 +61,17 @@ function UnifiedSearch({
 
   const isUrlQuery = useMemo(() => looksLikeUrl(query), [query]);
 
+  // Sync isFocused with actual DOM focus on mount (autoFocus may not fire onFocus)
+  useEffect(() => {
+    // Small delay to ensure autoFocus has applied and browser focus is stable
+    const timeout = setTimeout(() => {
+      if (inputRef.current && document.activeElement === inputRef.current) {
+        setIsFocused(true);
+      }
+    }, 50);
+    return () => clearTimeout(timeout);
+  }, []);
+
   // Use refs to access latest state in global keydown listener without re-registering
   const stateRef = useRef({ query, isFocused, selectedIndex, openInNewTab, navTransitionEnabled, navTransitionType, isUrlQuery });
   useEffect(() => {
