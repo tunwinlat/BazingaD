@@ -152,7 +152,8 @@ export default function Dashboard({
       });
       if (!response.ok) throw new Error('Failed to fetch');
       const data = await response.json();
-      setCategories(data);
+      // Filter out disabled and empty categories client-side as well
+      setCategories(data.filter((cat: Category) => !cat.disabled && cat.blocks?.length > 0));
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Unknown error');
     } finally {

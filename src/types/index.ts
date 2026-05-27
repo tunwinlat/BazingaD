@@ -19,6 +19,7 @@ export interface Category {
   name: string;
   icon: string;
   sortOrder: number;
+  disabled: boolean;
   blocks: Block[];
 }
 
@@ -39,6 +40,7 @@ export interface CategoryFormData {
   name: string;
   icon: string;
   sortOrder?: number;
+  disabled?: boolean;
 }
 
 export type ViewMode = 'comfortable' | 'compact' | 'dense' | 'list';

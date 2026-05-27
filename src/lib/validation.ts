@@ -93,6 +93,7 @@ export const categoryCreateSchema = z.object({
     .default('default')
     .transform(val => val.trim()),
   sortOrder: z.number().int().default(0),
+  disabled: z.boolean().default(false),
 });
 
 export const categoryUpdateSchema = categoryCreateSchema.partial().extend({

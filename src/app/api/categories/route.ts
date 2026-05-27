@@ -21,7 +21,10 @@ export async function GET() {
       });
     }
 
+    const auth = await verifyAuth();
+
     const categories = await prisma.category.findMany({
+      where: auth ? undefined : { disabled: false },
       include: {
         blocks: {
           orderBy: {
@@ -77,13 +80,14 @@ export async function POST(request: Request) {
       );
     }
 
-    const { name, icon, sortOrder } = validated.data;
+    const { name, icon, sortOrder, disabled } = validated.data;
 
     const category = await prisma.category.create({
       data: {
         name,
         icon,
         sortOrder,
+        disabled,
       },
       include: {
         blocks: true,

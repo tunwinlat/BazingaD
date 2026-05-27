@@ -4,7 +4,7 @@ import { useState, useEffect, useRef, memo } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
-import { ArrowLeft, Plus, Trash2, Edit, X, RefreshCw, LogOut, Shield, Key, QrCode, Copy, Check, AlertTriangle, Lock, Settings2, Cloud, MapPin, Thermometer, Globe, Upload, RotateCcw, Loader2, Eye, EyeOff, ChevronDown, ChevronUp } from 'lucide-react';
+import { ArrowLeft, Plus, Trash2, Edit, X, RefreshCw, LogOut, Shield, Key, QrCode, Copy, Check, AlertTriangle, Lock, Settings2, Cloud, MapPin, Thermometer, Globe, Upload, RotateCcw, Loader2, Eye, EyeOff, ChevronDown, ChevronUp, GripVertical } from 'lucide-react';
 import type { Category, Block, CategoryFormData, BlockFormData } from '@/types';
 
 // Convert hours to best unit for display
@@ -120,7 +120,7 @@ function AdminPage() {
   const [editingBlock, setEditingBlock] = useState<Block | null>(null);
 
   // Form data
-  const [categoryForm, setCategoryForm] = useState<CategoryFormData>({ name: '', icon: 'default', sortOrder: 0 });
+  const [categoryForm, setCategoryForm] = useState<CategoryFormData>({ name: '', icon: 'default', sortOrder: 0, disabled: false });
   const [blockForm, setBlockForm] = useState<BlockFormData>({
     title: '',
     url: '',
@@ -216,6 +216,11 @@ function AdminPage() {
   const [isDeletingCategory, setIsDeletingCategory] = useState<string | null>(null);
   const [isDeletingBlock, setIsDeletingBlock] = useState<string | null>(null);
 
+  // Drag and drop state
+  const [draggedId, setDraggedId] = useState<string | null>(null);
+  const [dragOverId, setDragOverId] = useState<string | null>(null);
+  const [isReordering, setIsReordering] = useState(false);
+
   // Clipboard copy timeout refs
   const timeoutRefs = useRef<{ secret: ReturnType<typeof setTimeout> | null; recovery: ReturnType<typeof setTimeout> | null }>({ secret: null, recovery: null });
 
@@ -266,9 +271,10 @@ function AdminPage() {
         name: editingCategory.name,
         icon: editingCategory.icon,
         sortOrder: editingCategory.sortOrder,
+        disabled: editingCategory.disabled,
       });
     } else {
-      setCategoryForm({ name: '', icon: 'default', sortOrder: 0 });
+      setCategoryForm({ name: '', icon: 'default', sortOrder: 0, disabled: false });
     }
   }, [editingCategory]);
 
@@ -922,6 +928,91 @@ function AdminPage() {
     }
   };
 
+  // Drag and drop handlers
+  const handleDragStart = (e: React.DragEvent, id: string) => {
+    setDraggedId(id);
+    e.dataTransfer.effectAllowed = 'move';
+    // Required for Firefox
+    e.dataTransfer.setData('text/plain', id);
+  };
+
+  const handleDragOver = (e: React.DragEvent, id: string) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+    if (id !== draggedId) {
+      setDragOverId(id);
+    }
+  };
+
+  const handleDragLeave = () => {
+    setDragOverId(null);
+  };
+
+  const handleDrop = async (e: React.DragEvent, targetId: string) => {
+    e.preventDefault();
+    setDragOverId(null);
+
+    if (!draggedId || draggedId === targetId) {
+      setDraggedId(null);
+      return;
+    }
+
+    const draggedIndex = categories.findIndex((c) => c.id === draggedId);
+    const targetIndex = categories.findIndex((c) => c.id === targetId);
+
+    if (draggedIndex === -1 || targetIndex === -1) {
+      setDraggedId(null);
+      return;
+    }
+
+    // Reorder locally
+    const newCategories = [...categories];
+    const [removed] = newCategories.splice(draggedIndex, 1);
+    newCategories.splice(targetIndex, 0, removed);
+
+    // Update sortOrder for all categories
+    const updatedCategories = newCategories.map((cat, index) => ({
+      ...cat,
+      sortOrder: index,
+    }));
+
+    setCategories(updatedCategories);
+    setDraggedId(null);
+
+    // Persist to server
+    setIsReordering(true);
+    try {
+      const response = await fetch('/api/categories/reorder', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          categories: updatedCategories.map((cat) => ({
+            id: cat.id,
+            sortOrder: cat.sortOrder,
+          })),
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to save order');
+      }
+
+      toast.success('Categories reordered');
+    } catch (error) {
+      console.error('Failed to reorder categories:', error);
+      toast.error('Failed to save category order');
+      // Revert by refetching
+      fetchData();
+    } finally {
+      setIsReordering(false);
+    }
+  };
+
+  const handleDragEnd = () => {
+    setDraggedId(null);
+    setDragOverId(null);
+  };
+
   const closeCategoryForm = () => {
     setShowCategoryForm(false);
     setEditingCategory(null);
@@ -1037,18 +1128,50 @@ function AdminPage() {
               <table className="w-full">
                 <thead style={{ backgroundColor: 'rgba(255,255,255,0.05)' }}>
                   <tr>
+                    <th className="text-left p-4 w-10"></th>
                     <th className="text-left p-4">Name</th>
                     <th className="text-left p-4">Icon</th>
                     <th className="text-left p-4">Blocks</th>
+                    <th className="text-left p-4">Status</th>
                     <th className="text-right p-4">Actions</th>
                   </tr>
                 </thead>
                 <tbody>
                   {categories.map((cat) => (
-                    <tr key={cat.id} style={{ borderTop: '1px solid rgba(255,255,255,0.1)' }}>
-                      <td className="p-4">{cat.name}</td>
+                    <tr
+                      key={cat.id}
+                      draggable
+                      onDragStart={(e) => handleDragStart(e, cat.id)}
+                      onDragOver={(e) => handleDragOver(e, cat.id)}
+                      onDragLeave={handleDragLeave}
+                      onDrop={(e) => handleDrop(e, cat.id)}
+                      onDragEnd={handleDragEnd}
+                      className="transition-colors cursor-move"
+                      style={{
+                        borderTop: '1px solid rgba(255,255,255,0.1)',
+                        backgroundColor: dragOverId === cat.id ? 'rgba(99,102,241,0.15)' : draggedId === cat.id ? 'rgba(255,255,255,0.03)' : 'transparent',
+                        opacity: draggedId === cat.id ? 0.5 : 1,
+                      }}
+                    >
+                      <td className="p-4">
+                        <GripVertical className="w-4 h-4 text-white/30" />
+                      </td>
+                      <td className="p-4">
+                        <span className={cat.disabled ? 'text-white/40 line-through' : ''}>{cat.name}</span>
+                      </td>
                       <td className="p-4">{cat.icon}</td>
                       <td className="p-4">{cat.blocks?.length || 0}</td>
+                      <td className="p-4">
+                        {cat.disabled ? (
+                          <span className="text-xs px-2 py-1 rounded-full" style={{ backgroundColor: 'rgba(239,68,68,0.15)', color: '#f87171' }}>
+                            Disabled
+                          </span>
+                        ) : (
+                          <span className="text-xs px-2 py-1 rounded-full" style={{ backgroundColor: 'rgba(16,185,129,0.15)', color: '#34d399' }}>
+                            Active
+                          </span>
+                        )}
+                      </td>
                       <td className="p-4 text-right">
                         <button
                           type="button"
@@ -1064,7 +1187,7 @@ function AdminPage() {
                           className="p-2 rounded-lg transition-colors hover:bg-red-500/20 disabled:opacity-50 disabled:cursor-not-allowed"
                           style={{ color: '#f87171' }}
                           aria-label="Delete category"
-                          disabled={isDeletingCategory === cat.id}
+                          disabled={isDeletingCategory === cat.id || isReordering}
                         >
                           {isDeletingCategory === cat.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
                         </button>
@@ -2195,6 +2318,19 @@ function AdminPage() {
                   onChange={(e) => setCategoryForm({ ...categoryForm, sortOrder: parseInt(e.target.value) || 0 })}
                   className="w-full px-4 py-2 rounded-lg bg-white/5 border border-white/10 text-white outline-none focus:border-indigo-500"
                 />
+              </div>
+
+              <div className="flex items-center gap-3">
+                <input
+                  type="checkbox"
+                  id="category-disabled"
+                  checked={categoryForm.disabled || false}
+                  onChange={(e) => setCategoryForm({ ...categoryForm, disabled: e.target.checked })}
+                  className="w-4 h-4 rounded border-white/30 bg-white/5 text-indigo-500 focus:ring-indigo-500"
+                />
+                <label htmlFor="category-disabled" className="text-sm text-white/70">
+                  Disabled (hidden from dashboard)
+                </label>
               </div>
 
               <div className="flex gap-3 pt-4">

@@ -1,5 +1,6 @@
 import { getInitials, getDomain, getBlockIcon } from '@/lib/utils';
 import { triggerTransition } from '@/lib/navTransition';
+import { ExternalLink } from 'lucide-react';
 import type { Block, ViewMode } from '@/types';
 
 interface BlockCardProps {
@@ -41,13 +42,20 @@ export default function BlockCard({
         onClick={handleClick}
         title={block.description || block.title}
         aria-label={`${block.title}${block.description ? ` - ${block.description}` : ''}`}
-        className="group flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 hover:bg-white/5 relative focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
+        className="group flex items-center gap-4 px-5 py-3.5 rounded-xl transition-all duration-200 relative focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
         style={{
           backgroundColor: 'var(--theme-surface)',
           border: '1px solid var(--theme-surface-border)',
         }}
+        onMouseEnter={(e) => {
+          (e.currentTarget as HTMLElement).style.backgroundColor = 'rgba(255,255,255,0.07)';
+        }}
+        onMouseLeave={(e) => {
+          (e.currentTarget as HTMLElement).style.backgroundColor = 'var(--theme-surface)';
+        }}
       >
-        <div className="relative w-8 h-8 rounded-lg flex items-center justify-center overflow-hidden shadow-lg flex-shrink-0">
+        {/* Icon */}
+        <div className="relative w-9 h-9 rounded-lg flex items-center justify-center overflow-hidden shadow-lg flex-shrink-0">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             src={iconUrl}
@@ -64,27 +72,35 @@ export default function BlockCard({
             </span>
           )}
         </div>
+
+        {/* Content */}
         <div className="flex-1 min-w-0">
           <div className="text-sm font-medium truncate" style={{ color: 'var(--theme-text)' }}>
             {block.title}
           </div>
-          <div className="text-xs truncate" style={{ color: 'var(--theme-text-muted)' }}>
-            {domain}
+          <div className="text-xs truncate mt-0.5" style={{ color: 'var(--theme-text-muted)' }}>
+            {block.description || domain}
           </div>
         </div>
-        {block.isMonitored && block.lastStatus && (
-          <div
-            className="w-2 h-2 rounded-full flex-shrink-0"
-            style={{
-              backgroundColor:
-                block.lastStatus === 'online'
-                  ? '#10b981'
-                  : block.lastStatus === 'offline'
-                    ? '#ef4444'
-                    : '#f59e0b',
-            }}
-          />
-        )}
+
+        {/* Right side: status + action */}
+        <div className="flex items-center gap-3 flex-shrink-0">
+          {block.isMonitored && block.lastStatus && (
+            <div
+              className="w-2 h-2 rounded-full"
+              style={{
+                backgroundColor:
+                  block.lastStatus === 'online'
+                    ? '#10b981'
+                    : block.lastStatus === 'offline'
+                      ? '#ef4444'
+                      : '#f59e0b',
+              }}
+              title={`Status: ${block.lastStatus}`}
+            />
+          )}
+          <ExternalLink className="w-4 h-4 text-white/20 group-hover:text-white/50 transition-colors duration-200" />
+        </div>
       </a>
     );
   }

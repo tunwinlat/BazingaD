@@ -3,7 +3,11 @@
 import { useState } from 'react';
 import KeyboardShortcutsModal from './KeyboardShortcutsModal';
 
-export default function Footer() {
+interface FooterProps {
+  isAdmin?: boolean;
+}
+
+export default function Footer({ isAdmin }: FooterProps) {
   const [showShortcuts, setShowShortcuts] = useState(false);
 
   return (
@@ -18,7 +22,7 @@ export default function Footer() {
         </button>
       </footer>
 
-      {showShortcuts && <KeyboardShortcutsModal onClose={() => setShowShortcuts(false)} />}
+      {showShortcuts && <KeyboardShortcutsModal isAdmin={isAdmin} onClose={() => setShowShortcuts(false)} />}
     </>
   );
 }

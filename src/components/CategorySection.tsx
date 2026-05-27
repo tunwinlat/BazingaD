@@ -49,7 +49,7 @@ export default function CategorySection({
         ? 'grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-8 gap-3'
         : viewMode === 'dense'
           ? 'grid grid-cols-4 sm:grid-cols-5 md:grid-cols-6 lg:grid-cols-8 xl:grid-cols-10 gap-2'
-          : 'grid grid-cols-1 gap-2';
+          : 'grid grid-cols-1 gap-3 max-w-4xl mx-auto';
 
   return (
     <section className="animate-fadeInUp" style={{ animationDelay: `${index * 0.1}s` }}>

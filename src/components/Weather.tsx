@@ -48,6 +48,7 @@ function Weather({ compact = false, minimal = false }: WeatherProps) {
   const [searchResults, setSearchResults] = useState<GeocodeResult[]>([]);
   const [searching, setSearching] = useState(false);
   const [geoLoading, setGeoLoading] = useState(false);
+  const [geoError, setGeoError] = useState('');
 
   // Load user location preference from localStorage on mount
   useEffect(() => {
@@ -61,24 +62,23 @@ function Weather({ compact = false, minimal = false }: WeatherProps) {
     }
   }, []);
 
-  const buildWeatherUrl = useCallback(() => {
-    const params = new URLSearchParams();
-    if (userLocation) {
-      params.append('lat', userLocation.lat.toString());
-      params.append('lon', userLocation.lon.toString());
-      params.append('locationName', userLocation.locationName);
-    }
-    return `/api/weather${params.toString() ? '?' + params.toString() : ''}`;
-  }, [userLocation]);
-
-  const fetchWeather = useCallback(async () => {
+  const fetchWeather = useCallback(async (overrideLoc?: UserLocation) => {
     setError('');
     const controller = new AbortController();
+
+    const location = overrideLoc || userLocation;
+    const params = new URLSearchParams();
+    if (location) {
+      params.append('lat', location.lat.toString());
+      params.append('lon', location.lon.toString());
+      params.append('locationName', location.locationName);
+    }
+    const url = `/api/weather${params.toString() ? '?' + params.toString() : ''}`;
 
     try {
       const [settingsRes, weatherRes] = await Promise.all([
         fetch('/api/settings', { signal: controller.signal }),
-        fetch(buildWeatherUrl(), { signal: controller.signal }),
+        fetch(url, { signal: controller.signal }),
       ]);
 
       if (settingsRes.ok) {
@@ -104,7 +104,7 @@ function Weather({ compact = false, minimal = false }: WeatherProps) {
     }
 
     return () => controller.abort();
-  }, [buildWeatherUrl]);
+  }, [userLocation]);
 
   useEffect(() => {
     let intervalId: ReturnType<typeof setInterval>;
@@ -151,6 +151,7 @@ function Weather({ compact = false, minimal = false }: WeatherProps) {
       locationName: result.displayName,
     };
     setUserLocation(loc);
+    setGeoError('');
     try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(loc));
     } catch {
@@ -160,11 +161,16 @@ function Weather({ compact = false, minimal = false }: WeatherProps) {
     setSearchQuery('');
     setSearchResults([]);
     setLoading(true);
+    fetchWeather(loc);
   };
 
   const handleUseCurrentLocation = () => {
-    if (!navigator.geolocation) return;
+    if (!navigator.geolocation) {
+      setGeoError('Geolocation is not supported by your browser.');
+      return;
+    }
     setGeoLoading(true);
+    setGeoError('');
     navigator.geolocation.getCurrentPosition(
       (position) => {
         const loc: UserLocation = {
@@ -183,10 +189,19 @@ function Weather({ compact = false, minimal = false }: WeatherProps) {
         setSearchQuery('');
         setSearchResults([]);
         setLoading(true);
+        fetchWeather(loc);
       },
-      () => {
+      (err) => {
         setGeoLoading(false);
-        setError('Unable to retrieve your location. Please check your browser permissions.');
+        let msg = 'Unable to retrieve your location. Please check your browser permissions.';
+        if (err.code === err.PERMISSION_DENIED) {
+          msg = 'Location permission denied. Please enable location access in your browser settings.';
+        } else if (err.code === err.POSITION_UNAVAILABLE) {
+          msg = 'Location information unavailable.';
+        } else if (err.code === err.TIMEOUT) {
+          msg = 'Location request timed out. Please try again.';
+        }
+        setGeoError(msg);
       },
       { timeout: 10000 }
     );
@@ -194,6 +209,7 @@ function Weather({ compact = false, minimal = false }: WeatherProps) {
 
   const handleResetToDefault = () => {
     setUserLocation(null);
+    setGeoError('');
     try {
       localStorage.removeItem(STORAGE_KEY);
     } catch {
@@ -203,6 +219,7 @@ function Weather({ compact = false, minimal = false }: WeatherProps) {
     setSearchQuery('');
     setSearchResults([]);
     setLoading(true);
+    fetchWeather();
   };
 
   if (!enabled) return null;
@@ -300,6 +317,7 @@ function Weather({ compact = false, minimal = false }: WeatherProps) {
             searchResults={searchResults}
             searching={searching}
             geoLoading={geoLoading}
+            geoError={geoError}
             userLocation={userLocation}
             onSearch={handleSearch}
             onSelect={handleSelectLocation}
@@ -309,6 +327,7 @@ function Weather({ compact = false, minimal = false }: WeatherProps) {
               setShowPicker(false);
               setSearchQuery('');
               setSearchResults([]);
+              setGeoError('');
             }}
           />
         )}
@@ -379,6 +398,7 @@ function Weather({ compact = false, minimal = false }: WeatherProps) {
           searchResults={searchResults}
           searching={searching}
           geoLoading={geoLoading}
+          geoError={geoError}
           userLocation={userLocation}
           onSearch={handleSearch}
           onSelect={handleSelectLocation}
@@ -388,6 +408,7 @@ function Weather({ compact = false, minimal = false }: WeatherProps) {
             setShowPicker(false);
             setSearchQuery('');
             setSearchResults([]);
+            setGeoError('');
           }}
         />
       )}
@@ -407,6 +428,7 @@ interface PickerProps {
   searchResults: GeocodeResult[];
   searching: boolean;
   geoLoading: boolean;
+  geoError: string;
   userLocation: UserLocation | null;
   onSearch: () => void;
   onSelect: (r: GeocodeResult) => void;
@@ -421,6 +443,7 @@ function WeatherLocationPicker({
   searchResults,
   searching,
   geoLoading,
+  geoError,
   userLocation,
   onSearch,
   onSelect,
@@ -521,6 +544,13 @@ function WeatherLocationPicker({
                 </div>
               </button>
             ))}
+          </div>
+        )}
+
+        {/* Geo Error */}
+        {geoError && (
+          <div className="mb-3 px-3 py-2.5 rounded-lg text-sm text-red-300" style={{ backgroundColor: 'rgba(239, 68, 68, 0.1)', border: '1px solid rgba(239, 68, 68, 0.2)' }}>
+            {geoError}
           </div>
         )}
 

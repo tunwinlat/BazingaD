@@ -5,9 +5,10 @@ import { X, ArrowUp, ArrowDown, CornerDownLeft } from 'lucide-react';
 
 interface KeyboardShortcutsModalProps {
   onClose: () => void;
+  isAdmin?: boolean;
 }
 
-export default function KeyboardShortcutsModal({ onClose }: KeyboardShortcutsModalProps) {
+export default function KeyboardShortcutsModal({ onClose, isAdmin }: KeyboardShortcutsModalProps) {
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
@@ -95,17 +96,19 @@ export default function KeyboardShortcutsModal({ onClose }: KeyboardShortcutsMod
           </div>
 
           {/* Admin Section */}
-          <div>
-            <h3 className="text-sm font-medium text-white/60 mb-3 uppercase tracking-wider">
-              Admin
-            </h3>
-            <div className="space-y-2">
-              <div className="flex items-center justify-between">
-                <span>Open admin panel</span>
-                <span className="text-sm text-white/40">Click Admin button (top right)</span>
+          {isAdmin && (
+            <div>
+              <h3 className="text-sm font-medium text-white/60 mb-3 uppercase tracking-wider">
+                Admin
+              </h3>
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <span>Open admin panel</span>
+                  <span className="text-sm text-white/40">Click Admin button (top right)</span>
+                </div>
               </div>
             </div>
-          </div>
+          )}
         </div>
 
         {/* Footer */}
