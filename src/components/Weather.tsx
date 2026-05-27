@@ -72,6 +72,7 @@ function Weather({ compact = false, minimal = false }: WeatherProps) {
   }, [userLocation]);
 
   const fetchWeather = useCallback(async () => {
+    setError('');
     const controller = new AbortController();
 
     try {
@@ -130,12 +131,14 @@ function Weather({ compact = false, minimal = false }: WeatherProps) {
     setSearchResults([]);
     try {
       const res = await fetch(`/api/geocode?q=${encodeURIComponent(searchQuery.trim())}`);
-      if (res.ok) {
-        const data = await res.json();
-        setSearchResults(data.results || []);
+      const data = await res.json();
+      if (res.ok && data.results) {
+        setSearchResults(data.results);
+      } else {
+        setSearchResults([]);
       }
     } catch {
-      // ignore
+      setSearchResults([]);
     } finally {
       setSearching(false);
     }
@@ -157,7 +160,6 @@ function Weather({ compact = false, minimal = false }: WeatherProps) {
     setSearchQuery('');
     setSearchResults([]);
     setLoading(true);
-    fetchWeather();
   };
 
   const handleUseCurrentLocation = () => {
@@ -181,7 +183,6 @@ function Weather({ compact = false, minimal = false }: WeatherProps) {
         setSearchQuery('');
         setSearchResults([]);
         setLoading(true);
-        fetchWeather();
       },
       () => {
         setGeoLoading(false);
@@ -202,7 +203,6 @@ function Weather({ compact = false, minimal = false }: WeatherProps) {
     setSearchQuery('');
     setSearchResults([]);
     setLoading(true);
-    fetchWeather();
   };
 
   if (!enabled) return null;
