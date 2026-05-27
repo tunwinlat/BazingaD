@@ -23,6 +23,7 @@ interface TrafficDisplayProps {
     homeAddress: string;
     workAddress: string;
   } | null;
+  minimal?: boolean;
 }
 
 // Format seconds to hours and minutes
@@ -54,7 +55,7 @@ function getTrafficStatus(duration: number, staticDuration: number): string {
   return 'Heavy';
 }
 
-function TrafficDisplay({ settings }: TrafficDisplayProps) {
+function TrafficDisplay({ settings, minimal = false }: TrafficDisplayProps) {
   const [trafficData, setTrafficData] = useState<TrafficData | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -115,6 +116,26 @@ function TrafficDisplay({ settings }: TrafficDisplayProps) {
 
   if (!settings?.enabled) {
     return null;
+  }
+
+  // Ultra-compact status dot for Status Pill
+  if (minimal) {
+    if (error) {
+      return <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: '#ef4444' }} title={error} />;
+    }
+    if (loading && !trafficData) {
+      return <div className="w-2.5 h-2.5 rounded-full animate-pulse bg-white/20" />;
+    }
+    if (trafficData?.homeToWork && trafficData?.workToHome) {
+      const hwColor = getTrafficColor(trafficData.homeToWork.duration, trafficData.homeToWork.staticDuration);
+      const whColor = getTrafficColor(trafficData.workToHome.duration, trafficData.workToHome.staticDuration);
+      // Show the worse of the two
+      const worstColor = [hwColor, whColor].includes('#f87171') ? '#f87171'
+        : [hwColor, whColor].includes('#fbbf24') ? '#fbbf24'
+        : '#34d399';
+      return <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: worstColor }} title="Traffic status" />;
+    }
+    return <div className="w-2.5 h-2.5 rounded-full bg-white/10" />;
   }
 
   if (error) {

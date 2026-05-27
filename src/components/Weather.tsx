@@ -32,11 +32,12 @@ interface GeocodeResult {
 
 interface WeatherProps {
   compact?: boolean;
+  minimal?: boolean;
 }
 
 const STORAGE_KEY = 'weather-user-location';
 
-function Weather({ compact = false }: WeatherProps) {
+function Weather({ compact = false, minimal = false }: WeatherProps) {
   const [weather, setWeather] = useState<WeatherData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -205,6 +206,24 @@ function Weather({ compact = false }: WeatherProps) {
   };
 
   if (!enabled) return null;
+
+  // Ultra-compact glance for Status Pill
+  if (minimal) {
+    if (loading) {
+      return <Loader2 className="w-3.5 h-3.5 animate-spin text-white/40" />;
+    }
+    if (error || !weather) {
+      return <Cloud className="w-3.5 h-3.5 text-white/30" />;
+    }
+    return (
+      <div className="flex items-center gap-1.5">
+        <span className="text-base leading-none">{weather.icon}</span>
+        <span className="text-sm font-semibold text-white/90">
+          {weather.temperature}{weather.unit}
+        </span>
+      </div>
+    );
+  }
 
   if (loading) {
     if (compact) {
