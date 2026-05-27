@@ -45,6 +45,10 @@ export default function QuickAddModal({
   const [categoryName, setCategoryName] = useState('');
   const [categoryIcon, setCategoryIcon] = useState('default');
 
+  useEffect(() => {
+    setBlockCategoryId(defaultCategoryId || '');
+  }, [defaultCategoryId]);
+
   const resetBlockForm = useCallback(() => {
     setBlockTitle('');
     setBlockUrl('');
