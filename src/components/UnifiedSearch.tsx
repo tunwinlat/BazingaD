@@ -1,7 +1,7 @@
 'use client';
 
 import { memo, useState, useEffect, useRef, useMemo } from 'react';
-import { Search, ExternalLink, Globe, X } from 'lucide-react';
+import { Search, ExternalLink, Globe, X, ArrowRight } from 'lucide-react';
 import { triggerTransition } from '@/lib/navTransition';
 import type { Category } from '@/types';
 
@@ -10,6 +10,41 @@ interface UnifiedSearchProps {
   openInNewTab?: boolean;
   navTransitionEnabled?: boolean;
   navTransitionType?: 'overlay' | 'exit';
+}
+
+/** Check if a query looks like a direct URL/FQDN instead of a search term */
+function looksLikeUrl(query: string): boolean {
+  const trimmed = query.trim();
+
+  // Must not contain spaces
+  if (/\s/.test(trimmed)) return false;
+
+  // Has a protocol -> definitely a URL
+  if (/^[a-z][a-z0-9+.-]*:\/\//i.test(trimmed)) return true;
+
+  // Contains a slash (likely a path) -> treat as URL
+  if (trimmed.includes('/')) return true;
+
+  // Has a dot with a TLD-like suffix (at least 2 alphabetic chars after last dot)
+  const lastDotIndex = trimmed.lastIndexOf('.');
+  if (lastDotIndex > 0) {
+    const afterDot = trimmed.slice(lastDotIndex + 1);
+    if (afterDot.length >= 2 && /^[a-z]+$/i.test(afterDot)) return true;
+  }
+
+  // IP address pattern
+  if (/^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}$/.test(trimmed)) return true;
+
+  return false;
+}
+
+/** Normalize a user-typed URL query into a proper URL */
+function normalizeUrl(query: string): string {
+  const trimmed = query.trim();
+  if (/^[a-z][a-z0-9+.-]*:\/\//i.test(trimmed)) {
+    return trimmed;
+  }
+  return `https://${trimmed}`;
 }
 
 function UnifiedSearch({
@@ -24,11 +59,13 @@ function UnifiedSearch({
   const inputRef = useRef<HTMLInputElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
 
+  const isUrlQuery = useMemo(() => looksLikeUrl(query), [query]);
+
   // Use refs to access latest state in global keydown listener without re-registering
-  const stateRef = useRef({ query, isFocused, selectedIndex, openInNewTab, navTransitionEnabled, navTransitionType });
+  const stateRef = useRef({ query, isFocused, selectedIndex, openInNewTab, navTransitionEnabled, navTransitionType, isUrlQuery });
   useEffect(() => {
-    stateRef.current = { query, isFocused, selectedIndex, openInNewTab, navTransitionEnabled, navTransitionType };
-  }, [query, isFocused, selectedIndex, openInNewTab, navTransitionEnabled, navTransitionType]);
+    stateRef.current = { query, isFocused, selectedIndex, openInNewTab, navTransitionEnabled, navTransitionType, isUrlQuery };
+  }, [query, isFocused, selectedIndex, openInNewTab, navTransitionEnabled, navTransitionType, isUrlQuery]);
 
   // Flatten all blocks for searching
   const allBlocks = useMemo(() => {
@@ -109,6 +146,9 @@ function UnifiedSearch({
         if (idx < currentBlocks.length) {
           const selected = currentBlocks[idx];
           navigateTo(selected.url, selected.title, selected.icon || undefined);
+        } else if (state.isUrlQuery) {
+          const url = normalizeUrl(state.query);
+          navigateTo(url, url);
         } else {
           const searchUrl = `https://www.google.com/search?q=${encodeURIComponent(state.query)}&udm=50`;
           navigateTo(searchUrl, `Search: ${state.query}`);
@@ -148,9 +188,14 @@ function UnifiedSearch({
     setIsFocused(false);
   };
 
-  const handleGoogleSearch = () => {
-    const searchUrl = `https://www.google.com/search?q=${encodeURIComponent(query)}&udm=50`;
-    navigateTo(searchUrl, `Search: ${query}`);
+  const handleFallbackAction = () => {
+    if (isUrlQuery) {
+      const url = normalizeUrl(query);
+      navigateTo(url, url);
+    } else {
+      const searchUrl = `https://www.google.com/search?q=${encodeURIComponent(query)}&udm=50`;
+      navigateTo(searchUrl, `Search: ${query}`);
+    }
     setQuery('');
     setIsFocused(false);
   };
@@ -183,6 +228,7 @@ function UnifiedSearch({
           aria-activedescendant={isFocused && query.trim() ? `search-result-${selectedIndex}` : undefined}
           aria-autocomplete="list"
           autoComplete="off"
+          autoFocus
           className="flex-1 bg-transparent border-none outline-none text-white placeholder-white/50 px-3 py-2 text-base"
           style={{
             outline: 'none',
@@ -283,14 +329,14 @@ function UnifiedSearch({
             </div>
           )}
 
-          {/* Google Search Option */}
+          {/* Fallback action: URL navigation or Google Search */}
           {query.trim() && (
             <div className="border-t border-white/10 py-2">
               <button
                 id={`search-result-${filteredBlocks.length}`}
                 role="option"
                 aria-selected={selectedIndex === filteredBlocks.length}
-                onClick={handleGoogleSearch}
+                onClick={handleFallbackAction}
                 onMouseEnter={() => setSelectedIndex(filteredBlocks.length)}
                 className="w-full flex items-center gap-3 px-4 py-2.5 text-left transition-colors"
                 style={{
@@ -302,12 +348,22 @@ function UnifiedSearch({
                   className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0"
                   style={{ backgroundColor: 'rgba(255, 255, 255, 0.05)' }}
                 >
-                  <Globe className="w-4 h-4 text-white/60" />
+                  {isUrlQuery ? (
+                    <ArrowRight className="w-4 h-4 text-emerald-400" />
+                  ) : (
+                    <Globe className="w-4 h-4 text-white/60" />
+                  )}
                 </div>
                 <div className="flex-1">
-                  <span className="text-white text-sm">
-                    Search Google for &quot;<span className="text-indigo-400">{query}</span>&quot;
-                  </span>
+                  {isUrlQuery ? (
+                    <span className="text-white text-sm">
+                      Go to <span className="text-emerald-400">{normalizeUrl(query)}</span>
+                    </span>
+                  ) : (
+                    <span className="text-white text-sm">
+                      Search Google for &quot;<span className="text-indigo-400">{query}</span>&quot;
+                    </span>
+                  )}
                 </div>
                 <ExternalLink className="w-3.5 h-3.5 text-white/30 flex-shrink-0" />
               </button>
@@ -316,7 +372,16 @@ function UnifiedSearch({
 
           {/* Empty State */}
           {filteredBlocks.length === 0 && (
-            <div className="px-4 py-3 text-sm text-white/40">No blocks found. Press Enter to search Google.</div>
+            <div className="px-4 py-3 text-sm text-white/40">
+              {isUrlQuery ? (
+                <>
+                  No blocks found. Press Enter to go to{' '}
+                  <span className="text-emerald-400">{normalizeUrl(query)}</span>.
+                </>
+              ) : (
+                <>No blocks found. Press Enter to search Google.</>
+              )}
+            </div>
           )}
         </div>
       )}
