@@ -162,7 +162,7 @@ export default function Dashboard({
       }
     };
     fetchNews();
-    const interval = setInterval(fetchNews, 60 * 60 * 1000);
+    const interval = setInterval(fetchNews, 2 * 60 * 1000);
     return () => clearInterval(interval);
   }, [newsEnabled]);
 

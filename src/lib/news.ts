@@ -1,5 +1,6 @@
 import { prisma } from './prisma';
 import Parser from 'rss-parser';
+import { newsCache } from './cache';
 
 const rssParser = new Parser({
   timeout: 15000,
@@ -52,7 +53,12 @@ export function recordFetchTime(): void {
   lastFetchTime = Date.now();
 }
 
-function normalizeUrl(url: string): string {
+function safeToLower(str: string | undefined): string {
+  return (str ?? '').toLowerCase().trim();
+}
+
+function normalizeUrl(url: string | undefined): string {
+  if (!url) return '';
   try {
     const u = new URL(url);
     // Remove common tracking params
@@ -68,24 +74,45 @@ function normalizeUrl(url: string): string {
   }
 }
 
-function normalizeTitle(title: string): string {
-  return title
+function normalizeTitle(title: string | undefined): string {
+  return (title ?? '')
     .toLowerCase()
     .replace(/[^a-z0-9\s]/g, ' ')
     .replace(/\s+/g, ' ')
     .trim();
 }
 
-function generateContentHash(url: string, title: string): string {
+function generateContentHash(url: string | undefined, title: string | undefined): string {
   const normalized = normalizeUrl(url) + '|' + normalizeTitle(title);
-  // Simple hash function
-  let hash = 0;
+  // Use a slightly more robust hash
+  let hash = 5381;
   for (let i = 0; i < normalized.length; i++) {
-    const char = normalized.charCodeAt(i);
-    hash = ((hash << 5) - hash) + char;
-    hash = hash & hash;
+    hash = ((hash << 5) + hash) + normalized.charCodeAt(i);
+    hash = hash & 0xffffffff;
   }
-  return `hash_${Math.abs(hash)}_${normalized.length}`;
+  return `hash_${hash}_${normalized.length}`;
+}
+
+function parseRssDate(dateStr: string | undefined): Date {
+  if (!dateStr) return new Date();
+  const parsed = new Date(dateStr);
+  if (isNaN(parsed.getTime())) {
+    // Try to handle some non-standard formats
+    // Some feeds use GMT instead of UTC, or have extra whitespace
+    const cleaned = dateStr
+      .replace(/^\s+|\s+$/g, '')
+      .replace(/\s{2,}/g, ' ')
+      .replace(/^(\w+,?\s+\d{1,2}\s+\w+\s+\d{4}\s+\d{1,2}:\d{2}:\d{2})\s*(GMT|UTC|EST|CST|MST|PST)$/i, '$1 $2');
+    const retry = new Date(cleaned);
+    if (!isNaN(retry.getTime())) return retry;
+    console.warn(`[news] Could not parse RSS date: "${dateStr}", using current time`);
+    return new Date();
+  }
+  return parsed;
+}
+
+function extractItemLink(item: Parser.Item): string | undefined {
+  return item.link ?? (item as Record<string, unknown>).guid as string | undefined ?? undefined;
 }
 
 async function summarizeWithAI(title: string, content: string, apiKey: string): Promise<{ aiTitle: string; summary: string }> {
@@ -158,6 +185,9 @@ export async function fetchAndProcessFeeds(): Promise<{ fetched: number; newArti
   let fetchedCount = 0;
   let newCount = 0;
   let errorCount = 0;
+  let skippedOld = 0;
+  let skippedDup = 0;
+  let skippedTopic = 0;
   const articlesToSummarize: { title: string; content: string; url: string; feedId: string; publishedAt: Date; hash: string }[] = [];
 
   for (const feed of feeds) {
@@ -166,14 +196,23 @@ export async function fetchAndProcessFeeds(): Promise<{ fetched: number; newArti
       fetchedCount++;
 
       for (const item of rss.items.slice(0, 20)) { // Max 20 per feed
-        if (!item.title || !item.link) continue;
+        const link = extractItemLink(item);
+        if (!item.title || !link) {
+          continue;
+        }
 
-        const pubDate = item.pubDate ? new Date(item.pubDate) : now;
+        const pubDate = parseRssDate(item.pubDate);
         // Skip articles older than 1 hour (we only want recent news)
-        if (pubDate < oneHourAgo) continue;
+        if (pubDate < oneHourAgo) {
+          skippedOld++;
+          continue;
+        }
 
-        const hash = generateContentHash(item.link, item.title);
-        if (existingHashes.has(hash)) continue;
+        const hash = generateContentHash(link, item.title);
+        if (existingHashes.has(hash)) {
+          skippedDup++;
+          continue;
+        }
 
         const content = item.contentSnippet || item.content || item.title;
 
@@ -181,13 +220,16 @@ export async function fetchAndProcessFeeds(): Promise<{ fetched: number; newArti
         if (topics.length > 0) {
           const textToCheck = (item.title + ' ' + content).toLowerCase();
           const matchesTopic = topics.some(t => textToCheck.includes(t.phrase.toLowerCase()));
-          if (!matchesTopic) continue;
+          if (!matchesTopic) {
+            skippedTopic++;
+            continue;
+          }
         }
 
         articlesToSummarize.push({
           title: item.title,
           content,
-          url: item.link,
+          url: link,
           feedId: feed.id,
           publishedAt: pubDate,
           hash,
@@ -195,10 +237,12 @@ export async function fetchAndProcessFeeds(): Promise<{ fetched: number; newArti
         existingHashes.add(hash); // Prevent duplicates within this batch
       }
     } catch (error) {
-      console.error(`Failed to fetch feed ${feed.name}:`, error);
+      console.error(`[news] Failed to fetch feed ${feed.name}:`, error);
       errorCount++;
     }
   }
+
+  console.log(`[news] Feed scan complete: ${fetchedCount} feeds fetched, ${articlesToSummarize.length} articles to summarize (${skippedOld} old, ${skippedDup} dup, ${skippedTopic} topic-mismatched)`);
 
   // Summarize articles with AI (rate limited)
   for (const article of articlesToSummarize) {
@@ -223,9 +267,15 @@ export async function fetchAndProcessFeeds(): Promise<{ fetched: number; newArti
       });
       newCount++;
     } catch (error) {
-      console.error('Failed to summarize article:', error);
+      console.error('[news] Failed to save article:', error);
       errorCount++;
     }
+  }
+
+  // Clear the news cache so subsequent requests pick up the new articles immediately
+  if (newCount > 0) {
+    newsCache.delete('current_articles');
+    console.log(`[news] Saved ${newCount} new articles, cleared cache`);
   }
 
   return { fetched: fetchedCount, newArticles: newCount, errors: errorCount };
@@ -236,6 +286,9 @@ export async function cleanupExpiredArticles(): Promise<number> {
   const result = await prisma.newsArticle.deleteMany({
     where: { expiresAt: { lt: now } },
   });
+  if (result.count > 0) {
+    console.log(`[news] Cleaned up ${result.count} expired articles`);
+  }
   return result.count;
 }
 

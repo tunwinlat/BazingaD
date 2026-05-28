@@ -34,7 +34,7 @@ export default function NewsTicker({ onClick, compact = false }: NewsTickerProps
 
   useEffect(() => {
     fetchArticles();
-    const interval = setInterval(fetchArticles, 60 * 60 * 1000); // Every hour
+    const interval = setInterval(fetchArticles, 2 * 60 * 1000); // Every 2 minutes
     return () => clearInterval(interval);
   }, [fetchArticles]);
 
