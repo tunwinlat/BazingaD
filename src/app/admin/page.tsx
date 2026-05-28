@@ -196,6 +196,7 @@ function AdminPage() {
     checkIntervalMinutes: 60,
     unreadRetentionHours: 24,
     readRetentionHours: 8,
+    maxArticleAgeHours: 24,
   });
   const [showNewsApiKey, setShowNewsApiKey] = useState(false);
   const [newsFeeds, setNewsFeeds] = useState<Array<{ id: string; name: string; url: string; isDefault: boolean; isEnabled: boolean }>>([]);
@@ -455,6 +456,7 @@ function AdminPage() {
           checkIntervalMinutes: data.checkIntervalMinutes ?? 60,
           unreadRetentionHours: data.unreadRetentionHours ?? 24,
           readRetentionHours: data.readRetentionHours ?? 8,
+          maxArticleAgeHours: data.maxArticleAgeHours ?? 24,
         });
       }
     } catch (error) {
@@ -880,6 +882,7 @@ function AdminPage() {
           newsCheckIntervalMinutes: newsSettings.checkIntervalMinutes,
           newsUnreadRetentionHours: newsSettings.unreadRetentionHours,
           newsReadRetentionHours: newsSettings.readRetentionHours,
+          newsMaxArticleAgeHours: newsSettings.maxArticleAgeHours,
         }),
       });
 
@@ -2529,7 +2532,7 @@ function AdminPage() {
                         <Clock className="w-4 h-4" />
                         Retention Settings
                       </h4>
-                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
                         <div>
                           <label className="block text-sm text-white/70 mb-1">Check Interval (min)</label>
                           <input
@@ -2565,6 +2568,19 @@ function AdminPage() {
                             className="w-full px-3 py-2 rounded-lg border outline-none focus:border-indigo-500 text-sm"
                             style={{ backgroundColor: 'rgba(255,255,255,0.05)', borderColor: 'rgba(255,255,255,0.1)', color: 'white' }}
                           />
+                        </div>
+                        <div>
+                          <label className="block text-sm text-white/70 mb-1">Max Article Age (h)</label>
+                          <input
+                            type="number"
+                            min={1}
+                            max={168}
+                            value={newsSettings.maxArticleAgeHours}
+                            onChange={(e) => setNewsSettings({ ...newsSettings, maxArticleAgeHours: parseInt(e.target.value) || 24 })}
+                            className="w-full px-3 py-2 rounded-lg border outline-none focus:border-indigo-500 text-sm"
+                            style={{ backgroundColor: 'rgba(255,255,255,0.05)', borderColor: 'rgba(255,255,255,0.1)', color: 'white' }}
+                          />
+                          <p className="text-[10px] text-white/40 mt-1">RSS items older than this are skipped</p>
                         </div>
                       </div>
                     </div>

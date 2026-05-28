@@ -53,6 +53,10 @@ export function recordFetchTime(): void {
   lastFetchTime = Date.now();
 }
 
+export function resetLastFetchTime(): void {
+  lastFetchTime = 0;
+}
+
 function safeToLower(str: string | undefined): string {
   return (str ?? '').toLowerCase().trim();
 }
@@ -173,7 +177,8 @@ export async function fetchAndProcessFeeds(): Promise<{ fetched: number; newArti
 
   const topics = await prisma.newsTopic.findMany();
   const now = new Date();
-  const oneHourAgo = new Date(now.getTime() - 60 * 60 * 1000);
+  const maxAgeHours = settings.newsMaxArticleAgeHours ?? 24;
+  const cutoffTime = new Date(now.getTime() - maxAgeHours * 60 * 60 * 1000);
 
   // Get existing hashes to deduplicate
   const existingArticles = await prisma.newsArticle.findMany({
@@ -202,8 +207,8 @@ export async function fetchAndProcessFeeds(): Promise<{ fetched: number; newArti
         }
 
         const pubDate = parseRssDate(item.pubDate);
-        // Skip articles older than 1 hour (we only want recent news)
-        if (pubDate < oneHourAgo) {
+        // Skip articles older than the configured max age (default 24h)
+        if (pubDate < cutoffTime) {
           skippedOld++;
           continue;
         }
@@ -349,6 +354,7 @@ export async function getNewsSettings() {
     checkIntervalMinutes: settings?.newsCheckIntervalMinutes ?? 60,
     unreadRetentionHours: settings?.newsUnreadRetentionHours ?? 24,
     readRetentionHours: settings?.newsReadRetentionHours ?? 8,
+    maxArticleAgeHours: settings?.newsMaxArticleAgeHours ?? 24,
   };
 }
 

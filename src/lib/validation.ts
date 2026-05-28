@@ -168,6 +168,7 @@ export const newsSettingsSchema = z.object({
   newsCheckIntervalMinutes: z.number().int().min(5).max(1440).optional(),
   newsUnreadRetentionHours: z.number().int().min(1).max(168).optional(),
   newsReadRetentionHours: z.number().int().min(1).max(168).optional(),
+  newsMaxArticleAgeHours: z.number().int().min(1).max(168).optional(),
 });
 
 export const newsFeedCreateSchema = z.object({

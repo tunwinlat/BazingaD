@@ -18,6 +18,7 @@ export async function GET() {
       checkIntervalMinutes: settings?.newsCheckIntervalMinutes ?? 60,
       unreadRetentionHours: settings?.newsUnreadRetentionHours ?? 24,
       readRetentionHours: settings?.newsReadRetentionHours ?? 8,
+      maxArticleAgeHours: settings?.newsMaxArticleAgeHours ?? 24,
     });
   } catch (error) {
     console.error('News settings fetch error:', error);
@@ -54,6 +55,7 @@ export async function PUT(request: Request) {
     if (validatedData.newsCheckIntervalMinutes !== undefined) updateData.newsCheckIntervalMinutes = validatedData.newsCheckIntervalMinutes;
     if (validatedData.newsUnreadRetentionHours !== undefined) updateData.newsUnreadRetentionHours = validatedData.newsUnreadRetentionHours;
     if (validatedData.newsReadRetentionHours !== undefined) updateData.newsReadRetentionHours = validatedData.newsReadRetentionHours;
+    if (validatedData.newsMaxArticleAgeHours !== undefined) updateData.newsMaxArticleAgeHours = validatedData.newsMaxArticleAgeHours;
 
     if (settings) {
       settings = await prisma.settings.update({ where: { id: settings.id }, data: updateData });
@@ -64,6 +66,7 @@ export async function PUT(request: Request) {
           newsCheckIntervalMinutes: validatedData.newsCheckIntervalMinutes ?? 60,
           newsUnreadRetentionHours: validatedData.newsUnreadRetentionHours ?? 24,
           newsReadRetentionHours: validatedData.newsReadRetentionHours ?? 8,
+          newsMaxArticleAgeHours: validatedData.newsMaxArticleAgeHours ?? 24,
           ...(validatedData.newsApiKey && { newsApiKey: validatedData.newsApiKey }),
         },
       });
@@ -77,6 +80,7 @@ export async function PUT(request: Request) {
       checkIntervalMinutes: settings.newsCheckIntervalMinutes,
       unreadRetentionHours: settings.newsUnreadRetentionHours,
       readRetentionHours: settings.newsReadRetentionHours,
+      maxArticleAgeHours: settings.newsMaxArticleAgeHours,
     });
   } catch (error) {
     if (error instanceof ZodError) {

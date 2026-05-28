@@ -86,6 +86,7 @@ model Settings {
   newsCheckIntervalMinutes Int      @default(60)
   newsUnreadRetentionHours Int      @default(24)
   newsReadRetentionHours   Int      @default(8)
+  newsMaxArticleAgeHours   Int      @default(24)
 
   createdAt             DateTime @default(now())
   updatedAt             DateTime @updatedAt
