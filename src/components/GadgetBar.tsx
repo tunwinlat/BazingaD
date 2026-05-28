@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { ChevronLeft, ChevronRight, LayoutGrid, X } from 'lucide-react';
+import { ChevronLeft, ChevronRight, X } from 'lucide-react';
 import PasswordGenerator from './gadgets/PasswordGenerator';
 
 export type GadgetType = 'password';
@@ -28,7 +28,6 @@ export default function GadgetBar({ side, enabled, config }: GadgetBarProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
 
-  // Detect mobile
   useEffect(() => {
     const check = () => setIsMobile(window.innerWidth < 768);
     check();
@@ -36,7 +35,6 @@ export default function GadgetBar({ side, enabled, config }: GadgetBarProps) {
     return () => window.removeEventListener('resize', check);
   }, []);
 
-  // Load persisted open state
   useEffect(() => {
     try {
       const saved = localStorage.getItem(`${STORAGE_KEY_PREFIX}${side}`);
@@ -44,7 +42,6 @@ export default function GadgetBar({ side, enabled, config }: GadgetBarProps) {
     } catch { /* ignore */ }
   }, [side]);
 
-  // Persist open state
   const toggle = useCallback(() => {
     setIsOpen((prev) => {
       const next = !prev;
@@ -56,8 +53,6 @@ export default function GadgetBar({ side, enabled, config }: GadgetBarProps) {
   }, [side]);
 
   if (!enabled || config.length === 0) return null;
-
-  // Mobile: render nothing for now (gadgets accessible via future mobile drawer)
   if (isMobile) return null;
 
   const isLeft = side === 'left';
@@ -71,22 +66,22 @@ export default function GadgetBar({ side, enabled, config }: GadgetBarProps) {
         className="fixed z-40 transition-all duration-300 hover:scale-110 active:scale-95"
         style={{
           top: '50%',
-          transform: `translateY(-50%) ${isOpen ? (isLeft ? `translateX(${PANEL_WIDTH}px)` : `translateX(-${PANEL_WIDTH}px)`) : 'translateX(0)'}`,
-          [isLeft ? 'left' : 'right']: '0',
-          marginLeft: isLeft ? '-1px' : undefined,
-          marginRight: !isLeft ? '-1px' : undefined,
+          transform: `translateY(-50%) ${isOpen ? (isLeft ? `translateX(${PANEL_WIDTH + 12}px)` : `translateX(-${PANEL_WIDTH + 12}px)`) : 'translateX(0)'}`,
+          [isLeft ? 'left' : 'right']: '6px',
         }}
         aria-label={`${isOpen ? 'Close' : 'Open'} ${side} gadget bar`}
         title={`${isOpen ? 'Close' : 'Open'} gadgets`}
       >
         <div
-          className="flex items-center justify-center w-6 h-14 rounded-full backdrop-blur-md transition-all duration-300"
+          className="flex items-center justify-center w-6 h-14 rounded-full transition-all duration-300"
           style={{
-            background: 'linear-gradient(180deg, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0.05) 100%)',
-            border: '1px solid rgba(255,255,255,0.12)',
+            background: 'rgba(255,255,255,0.08)',
+            border: '1px solid rgba(255,255,255,0.15)',
             borderLeftWidth: isLeft ? '0' : '1px',
             borderRightWidth: isLeft ? '1px' : '0',
-            boxShadow: '0 4px 20px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.08)',
+            boxShadow: '0 4px 20px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.12)',
+            backdropFilter: 'blur(12px)',
+            WebkitBackdropFilter: 'blur(12px)',
             borderTopLeftRadius: isLeft ? '0' : '9999px',
             borderBottomLeftRadius: isLeft ? '0' : '9999px',
             borderTopRightRadius: isLeft ? '9999px' : '0',
@@ -95,83 +90,84 @@ export default function GadgetBar({ side, enabled, config }: GadgetBarProps) {
         >
           {isLeft ? (
             isOpen ? (
-              <ChevronLeft className="w-3.5 h-3.5 text-white/60" />
+              <ChevronLeft className="w-3.5 h-3.5 text-white/70" />
             ) : (
-              <ChevronRight className="w-3.5 h-3.5 text-white/60" />
+              <ChevronRight className="w-3.5 h-3.5 text-white/70" />
             )
           ) : (
             isOpen ? (
-              <ChevronRight className="w-3.5 h-3.5 text-white/60" />
+              <ChevronRight className="w-3.5 h-3.5 text-white/70" />
             ) : (
-              <ChevronLeft className="w-3.5 h-3.5 text-white/60" />
+              <ChevronLeft className="w-3.5 h-3.5 text-white/70" />
             )
           )}
         </div>
       </button>
 
-      {/* Slide-out Panel */}
+      {/* Floating Glass Panel */}
       <div
-        className="fixed top-0 bottom-0 z-30 transition-transform duration-300 ease-out flex flex-col"
+        className="fixed z-30 transition-all duration-300 ease-out"
         style={{
           width: `${PANEL_WIDTH}px`,
-          [isLeft ? 'left' : 'right']: '0',
+          top: '50%',
+          [isLeft ? 'left' : 'right']: '12px',
           transform: isOpen
-            ? 'translateX(0)'
+            ? `translateY(-50%) translateX(0)`
             : isLeft
-              ? `translateX(-${PANEL_WIDTH}px)`
-              : `translateX(${PANEL_WIDTH}px)`,
-          background: 'linear-gradient(180deg, rgba(15,15,30,0.85) 0%, rgba(10,10,25,0.9) 100%)',
-          borderRight: isLeft ? '1px solid rgba(255,255,255,0.06)' : 'none',
-          borderLeft: !isLeft ? '1px solid rgba(255,255,255,0.06)' : 'none',
-          backdropFilter: 'blur(24px)',
-          WebkitBackdropFilter: 'blur(24px)',
-          boxShadow: isLeft
-            ? '4px 0 30px rgba(0,0,0,0.4)'
-            : '-4px 0 30px rgba(0,0,0,0.4)',
+              ? `translateY(-50%) translateX(-${PANEL_WIDTH + 40}px)`
+              : `translateY(-50%) translateX(${PANEL_WIDTH + 40}px)`,
+          opacity: isOpen ? 1 : 0,
+          pointerEvents: isOpen ? 'auto' : 'none',
         }}
       >
-        {/* Header */}
         <div
-          className="flex items-center justify-between px-4 py-3 flex-shrink-0"
-          style={{ borderBottom: '1px solid rgba(255,255,255,0.06)' }}
+          className="rounded-2xl overflow-hidden"
+          style={{
+            background: 'rgba(20, 20, 40, 0.65)',
+            backdropFilter: 'blur(20px) saturate(140%)',
+            WebkitBackdropFilter: 'blur(20px) saturate(140%)',
+            border: '1px solid rgba(255,255,255,0.12)',
+            boxShadow: `
+              0 25px 50px -12px rgba(0,0,0,0.6),
+              0 0 0 1px rgba(255,255,255,0.04),
+              inset 0 1px 0 rgba(255,255,255,0.08)
+            `,
+          }}
         >
-          <div className="flex items-center gap-2">
-            <LayoutGrid className="w-4 h-4" style={{ color: 'var(--theme-primary)' }} />
-            <span className="text-sm font-semibold" style={{ color: 'var(--theme-text)' }}>
-              Gadgets
-            </span>
+          {/* Close button only — no title */}
+          <div className="flex justify-end px-3 pt-2.5 pb-1">
+            <button
+              type="button"
+              onClick={toggle}
+              className="p-1 rounded-md hover:bg-white/10 transition-colors"
+              style={{ color: 'rgba(255,255,255,0.4)' }}
+              aria-label="Close gadget bar"
+            >
+              <X className="w-3.5 h-3.5" />
+            </button>
           </div>
-          <button
-            type="button"
-            onClick={toggle}
-            className="p-1 rounded-md hover:bg-white/10 transition-colors"
-            style={{ color: 'var(--theme-text-muted)' }}
-            aria-label="Close gadget bar"
-          >
-            <X className="w-4 h-4" />
-          </button>
-        </div>
 
-        {/* Gadgets scroll area */}
-        <div className="flex-1 overflow-y-auto px-3 py-3 space-y-3">
-          {config.map((gadget) => {
-            const registryEntry = GADGET_REGISTRY[gadget.type];
-            if (!registryEntry) return null;
-            const GadgetComponent = registryEntry.component;
-            return (
-              <GadgetCard key={gadget.id} title={registryEntry.title}>
-                <GadgetComponent />
-              </GadgetCard>
-            );
-          })}
+          {/* Gadgets */}
+          <div className="px-3 pb-3 space-y-3">
+            {config.map((gadget) => {
+              const registryEntry = GADGET_REGISTRY[gadget.type];
+              if (!registryEntry) return null;
+              const GadgetComponent = registryEntry.component;
+              return (
+                <GadgetCard key={gadget.id}>
+                  <GadgetComponent />
+                </GadgetCard>
+              );
+            })}
+          </div>
         </div>
       </div>
 
-      {/* Backdrop click to close (only when open) */}
+      {/* Backdrop */}
       {isOpen && (
         <div
           className="fixed inset-0 z-20"
-          style={{ backgroundColor: 'rgba(0,0,0,0.2)' }}
+          style={{ backgroundColor: 'rgba(0,0,0,0.15)' }}
           onClick={toggle}
         />
       )}
@@ -179,22 +175,16 @@ export default function GadgetBar({ side, enabled, config }: GadgetBarProps) {
   );
 }
 
-function GadgetCard({ title, children }: { title: string; children: React.ReactNode }) {
+function GadgetCard({ children }: { children: React.ReactNode }) {
   return (
     <div
       className="rounded-xl p-3"
       style={{
-        background: 'linear-gradient(145deg, rgba(255,255,255,0.06) 0%, rgba(255,255,255,0.02) 100%)',
+        background: 'rgba(255,255,255,0.04)',
         border: '1px solid rgba(255,255,255,0.08)',
-        boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.04)',
+        boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.06)',
       }}
     >
-      <h4
-        className="text-xs font-semibold uppercase tracking-wider mb-2.5"
-        style={{ color: 'var(--theme-text-muted)' }}
-      >
-        {title}
-      </h4>
       {children}
     </div>
   );

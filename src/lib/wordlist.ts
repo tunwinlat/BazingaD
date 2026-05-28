@@ -334,14 +334,8 @@ export function pickRandomWords(count: number): string[] {
 export function generateWordPassword(): string {
   const words = pickRandomWords(2);
   const nums = [Math.floor(Math.random() * 90) + 10, Math.floor(Math.random() * 90) + 10];
-  // Shuffle order: word, num, word, num or other combinations
-  const pieces = [...words.map(w => w.charAt(0).toUpperCase() + w.slice(1)), ...nums.map(String)];
-  // Fisher-Yates shuffle
-  for (let i = pieces.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [pieces[i], pieces[j]] = [pieces[j], pieces[i]];
-  }
-  return pieces.join('');
+  // Format: WordWord3132 — two capitalized words followed by two 2-digit numbers
+  return words.map(w => w.charAt(0).toUpperCase() + w.slice(1)).join('') + nums.join('');
 }
 
 /** Generate a random character password */
