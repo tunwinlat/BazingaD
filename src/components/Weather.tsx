@@ -267,9 +267,9 @@ function Weather({ compact = false, minimal = false }: WeatherProps) {
   if (compact) {
     return (
       <>
-        <div className="flex items-center gap-2 sm:gap-4 flex-wrap">
+        <div className="flex items-center gap-3 sm:gap-4">
           {/* Temperature & Icon */}
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-shrink-0">
             <span className="text-2xl">{weather.icon}</span>
             <div>
               <div className="text-lg font-bold text-white">
@@ -279,16 +279,16 @@ function Weather({ compact = false, minimal = false }: WeatherProps) {
             </div>
           </div>
 
-          {/* Divider - hidden on very small screens */}
-          <div className="hidden sm:block w-px h-8" style={{ backgroundColor: 'rgba(255,255,255,0.1)' }} />
+          {/* Divider */}
+          <div className="hidden sm:block w-px h-8 flex-shrink-0" style={{ backgroundColor: 'rgba(255,255,255,0.1)' }} />
 
-          {/* Wind Info - wraps on small screens */}
-          <div className="flex items-center gap-2 sm:gap-3 text-xs sm:text-sm text-white/70">
+          {/* Wind Info */}
+          <div className="hidden sm:flex items-center gap-3 text-sm text-white/70 flex-shrink-0">
             <div className="flex items-center gap-1">
               <Wind className="w-3.5 h-3.5" />
               <span>{weather.windSpeed} {weather.windSpeedUnit}</span>
             </div>
-            <div className="hidden sm:flex items-center gap-1">
+            <div className="flex items-center gap-1">
               <Compass className="w-3.5 h-3.5" />
               <span>{weather.windDirection}</span>
             </div>
@@ -297,10 +297,10 @@ function Weather({ compact = false, minimal = false }: WeatherProps) {
           {/* Location with settings button */}
           <div className="flex items-center gap-1.5 text-xs text-white/50 min-w-0">
             <Cloud className="w-3.5 h-3.5 flex-shrink-0" />
-            <span className="truncate max-w-[80px] sm:max-w-[120px] lg:max-w-[160px]">{weather.locationName}</span>
+            <span className="truncate max-w-[100px] md:max-w-[140px] lg:max-w-[180px]">{weather.locationName}</span>
             <button
               onClick={() => setShowPicker(true)}
-              className="ml-1 p-0.5 rounded hover:bg-white/10 transition-colors flex-shrink-0"
+              className="ml-0.5 p-0.5 rounded hover:bg-white/10 transition-colors flex-shrink-0"
               aria-label="Change weather location"
               title="Change weather location"
             >

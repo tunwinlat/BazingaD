@@ -193,18 +193,18 @@ function TrafficDisplay({ settings, minimal = false }: TrafficDisplayProps) {
           <span style={{ color: whColor }}>→ Home: {formatDuration(trafficData.workToHome.duration)}</span>
         </div>
 
-        {/* Cache indicator as small info icon */}
+        {/* Cache indicator — subtle centered */}
         {trafficData.cached && (
-          <div className="flex justify-end">
+          <div className="flex items-center justify-center gap-1">
+            <Info className="w-2.5 h-2.5 text-white/20" />
             <span
-              className="inline-flex items-center gap-1 text-[10px] text-white/30"
+              className="text-[10px] text-white/25"
               title={cacheTooltip}
             >
-              <Info className="w-3 h-3" />
               {trafficData.cacheAge !== undefined && trafficData.cacheAge > 30 ? (
-                <span style={{ color: '#f87171' }}>stale ({trafficData.cacheAge}m)</span>
+                <span style={{ color: 'rgba(248,113,113,0.6)' }}>stale ({trafficData.cacheAge}m)</span>
               ) : (
-                <span>cached ({trafficData.cacheAge ?? '?'}m)</span>
+                <span>cached {trafficData.cacheAge ?? '?'}m</span>
               )}
             </span>
           </div>

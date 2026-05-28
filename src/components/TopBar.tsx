@@ -12,6 +12,15 @@ import StatusDock from './StatusDock';
 import NewsTicker from './NewsTicker';
 import type { ViewMode } from '@/types';
 
+function LiveDot() {
+  return (
+    <span className="relative flex h-1.5 w-1.5">
+      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
+      <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-emerald-500" />
+    </span>
+  );
+}
+
 interface TopBarProps {
   isAdmin?: boolean;
   isProtected?: boolean;
@@ -93,139 +102,161 @@ function TopBar({ isAdmin, isProtected, viewMode = 'comfortable', onViewModeChan
     <>
       {/* ─── Desktop Layout (≥ md) ─── */}
       <div
-        className="hidden md:flex rounded-2xl p-3 md:p-4 mb-6 flex-wrap items-center gap-2 sm:gap-3 md:gap-4"
+        className="hidden md:flex flex-col gap-3 rounded-2xl p-4 mb-6"
         style={{
-          backgroundColor: 'rgba(255, 255, 255, 0.05)',
-          border: '1px solid rgba(255, 255, 255, 0.1)',
-          backdropFilter: 'blur(20px)',
+          background: 'linear-gradient(145deg, rgba(255, 255, 255, 0.06) 0%, rgba(255, 255, 255, 0.03) 100%)',
+          border: '1px solid rgba(255, 255, 255, 0.08)',
+          backdropFilter: 'blur(24px)',
+          boxShadow: '0 8px 32px rgba(0, 0, 0, 0.2), inset 0 1px 0 rgba(255,255,255,0.05)',
         }}
       >
-        {/* Time & Date */}
-        <div className="flex-shrink-0 min-w-[120px]">
-          <div className="text-2xl md:text-3xl font-bold tracking-tight leading-none" style={{ color: 'var(--theme-text)' }}>
-            {time}
+        {/* Top Row: Time | Status Island | Actions */}
+        <div className="flex items-center gap-4">
+          {/* ── Time & Date ── */}
+          <div className="flex-shrink-0 flex items-center gap-3">
+            <div className="relative">
+              <div
+                className="text-3xl font-bold tracking-tight leading-none"
+                style={{ color: 'var(--theme-text)', fontVariantNumeric: 'tabular-nums' }}
+              >
+                {time}
+              </div>
+              <div className="flex items-center gap-1.5 mt-1">
+                <LiveDot />
+                <span className="text-[11px] leading-tight" style={{ color: 'var(--theme-text-muted)' }}>
+                  {date}
+                </span>
+              </div>
+            </div>
           </div>
-          <div className="text-[11px] mt-1 leading-tight" style={{ color: 'var(--theme-text-muted)' }}>
-            {date}
-          </div>
-        </div>
 
-        {/* Divider */}
-        <div className="hidden md:block w-px h-10 self-center" style={{ backgroundColor: 'rgba(255,255,255,0.1)' }} />
-
-        {/* Weather */}
-        <div className="flex-1 min-w-0 max-w-[280px] lg:max-w-[320px]">
-          <Weather compact />
-        </div>
-
-        {/* Divider */}
-        <div className="hidden lg:block w-px h-10 self-center" style={{ backgroundColor: 'rgba(255,255,255,0.1)' }} />
-
-        {/* Traffic */}
-        <div className="flex-shrink-0">
-          <TrafficDisplay settings={trafficSettings} />
-        </div>
-
-        {/* News Ticker */}
-        {onNewsClick && (
-          <>
-            <div className="hidden md:block w-full h-px" style={{ backgroundColor: 'rgba(255,255,255,0.06)' }} />
-            <div className="hidden md:flex w-full items-center gap-2 py-1">
-              <NewsTicker onClick={onNewsClick} />
-            </div>
-          </>
-        )}
-
-        {/* Right-side actions */}
-        <div className="flex items-center gap-2 ml-auto">
-          {/* View mode selector */}
-          {onViewModeChange && (
+          {/* ── Status Island: Weather + Traffic ── */}
+          <div className="flex-1 flex justify-center min-w-0">
             <div
-              className="flex items-center gap-0.5 p-1 rounded-lg"
+              className="flex items-center gap-4 sm:gap-5 px-5 py-2.5 rounded-2xl transition-colors hover:bg-white/[0.04]"
               style={{
-                backgroundColor: 'rgba(255,255,255,0.05)',
-                border: '1px solid rgba(255,255,255,0.1)',
+                backgroundColor: 'rgba(255, 255, 255, 0.025)',
+                border: '1px solid rgba(255, 255, 255, 0.06)',
+                boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.03)',
               }}
-              role="group"
-              aria-label="View mode"
             >
-              {viewOptions.map((option) => (
-                <button
-                  key={option.value}
-                  type="button"
-                  onClick={() => onViewModeChange(option.value)}
-                  title={option.label}
-                  aria-label={option.label}
-                  aria-pressed={viewMode === option.value}
-                  className="p-1.5 rounded-md transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
-                  style={{
-                    backgroundColor: viewMode === option.value ? 'rgba(99,102,241,0.25)' : 'transparent',
-                    color: viewMode === option.value ? '#a5b4fc' : 'rgba(255,255,255,0.4)',
-                  }}
-                >
-                  {option.icon}
-                </button>
-              ))}
-            </div>
-          )}
+              <div className="min-w-0">
+                <Weather compact />
+              </div>
 
-          {/* Admin button */}
-          {isAdmin && (
-            <Link
-              href="/admin"
-              className="flex items-center gap-2 px-3 py-1.5 rounded-full text-sm transition-all hover:scale-105 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500"
-              style={{
-                backgroundColor: 'rgba(16, 185, 129, 0.15)',
-                color: '#34d399',
-                border: '1px solid rgba(16, 185, 129, 0.3)',
-              }}
-            >
-              <span className="relative flex h-2 w-2">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
-              </span>
-              <span className="hidden sm:inline">Admin</span>
-            </Link>
-          )}
-
-          {/* Protected badge */}
-          {!isAdmin && isProtected && (
-            <div
-              className="flex items-center gap-2 px-3 py-1.5 rounded-full text-sm"
-              style={{
-                backgroundColor: 'rgba(245, 158, 11, 0.1)',
-                color: '#fbbf24',
-                border: '1px solid rgba(245, 158, 11, 0.2)',
-              }}
-            >
-              <span className="relative flex h-2 w-2">
-                <span className="relative inline-flex rounded-full h-2 w-2 bg-amber-500"></span>
-              </span>
-              <span className="hidden sm:inline">Protected</span>
-            </div>
-          )}
-
-          {/* Logout */}
-          {isProtected && (
-            <button
-              type="button"
-              onClick={handleLogout}
-              disabled={isLoggingOut}
-              className="flex items-center gap-2 px-3 py-1.5 rounded-full text-sm transition-colors hover:bg-white/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed"
-              style={{
-                backgroundColor: 'rgba(255,255,255,0.05)',
-                border: '1px solid rgba(255,255,255,0.1)',
-              }}
-            >
-              {isLoggingOut ? (
-                <Loader2 className="w-3.5 h-3.5 animate-spin" />
-              ) : (
-                <LogOut className="w-3.5 h-3.5" />
+              {trafficSettings?.enabled && (
+                <>
+                  <div
+                    className="hidden sm:block w-px h-8 flex-shrink-0"
+                    style={{ backgroundColor: 'rgba(255,255,255,0.08)' }}
+                  />
+                  <div className="hidden sm:block flex-shrink-0">
+                    <TrafficDisplay settings={trafficSettings} />
+                  </div>
+                </>
               )}
-              <span className="hidden sm:inline">{isLoggingOut ? 'Logging out...' : 'Logout'}</span>
-            </button>
-          )}
+            </div>
+          </div>
+
+          {/* ── Right-side Actions ── */}
+          <div className="flex-shrink-0 flex items-center gap-2">
+            {/* View mode selector */}
+            {onViewModeChange && (
+              <div
+                className="flex items-center gap-0.5 p-1 rounded-xl"
+                style={{
+                  backgroundColor: 'rgba(255,255,255,0.04)',
+                  border: '1px solid rgba(255,255,255,0.08)',
+                }}
+                role="group"
+                aria-label="View mode"
+              >
+                {viewOptions.map((option) => (
+                  <button
+                    key={option.value}
+                    type="button"
+                    onClick={() => onViewModeChange(option.value)}
+                    title={option.label}
+                    aria-label={option.label}
+                    aria-pressed={viewMode === option.value}
+                    className="p-1.5 rounded-lg transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
+                    style={{
+                      backgroundColor: viewMode === option.value ? 'rgba(99,102,241,0.2)' : 'transparent',
+                      color: viewMode === option.value ? '#a5b4fc' : 'rgba(255,255,255,0.35)',
+                    }}
+                  >
+                    {option.icon}
+                  </button>
+                ))}
+              </div>
+            )}
+
+            {/* Admin button */}
+            {isAdmin && (
+              <Link
+                href="/admin"
+                className="flex items-center gap-2 px-3 py-1.5 rounded-full text-sm transition-all hover:scale-105 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500"
+                style={{
+                  backgroundColor: 'rgba(16, 185, 129, 0.12)',
+                  color: '#34d399',
+                  border: '1px solid rgba(16, 185, 129, 0.25)',
+                }}
+              >
+                <LiveDot />
+                <span className="hidden lg:inline">Admin</span>
+              </Link>
+            )}
+
+            {/* Protected badge */}
+            {!isAdmin && isProtected && (
+              <div
+                className="flex items-center gap-2 px-3 py-1.5 rounded-full text-sm"
+                style={{
+                  backgroundColor: 'rgba(245, 158, 11, 0.08)',
+                  color: '#fbbf24',
+                  border: '1px solid rgba(245, 158, 11, 0.18)',
+                }}
+              >
+                <span className="relative inline-flex rounded-full h-2 w-2 bg-amber-500" />
+                <span className="hidden lg:inline">Protected</span>
+              </div>
+            )}
+
+            {/* Logout */}
+            {isProtected && (
+              <button
+                type="button"
+                onClick={handleLogout}
+                disabled={isLoggingOut}
+                className="flex items-center gap-2 px-3 py-1.5 rounded-full text-sm transition-all hover:bg-white/[0.08] hover:scale-105 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                style={{
+                  backgroundColor: 'rgba(255,255,255,0.04)',
+                  border: '1px solid rgba(255,255,255,0.08)',
+                  color: 'rgba(255,255,255,0.6)',
+                }}
+              >
+                {isLoggingOut ? (
+                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                ) : (
+                  <LogOut className="w-3.5 h-3.5" />
+                )}
+                <span className="hidden lg:inline">{isLoggingOut ? '...' : 'Logout'}</span>
+              </button>
+            )}
+          </div>
         </div>
+
+        {/* ── News Ticker Strip ── */}
+        {onNewsClick && (
+          <div
+            className="flex items-center gap-2 pt-2.5"
+            style={{
+              borderTop: '1px solid rgba(255,255,255,0.04)',
+            }}
+          >
+            <NewsTicker onClick={onNewsClick} />
+          </div>
+        )}
       </div>
 
       {/* ─── Mobile Layout (< md) ─── */}
