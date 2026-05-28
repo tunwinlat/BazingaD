@@ -97,6 +97,172 @@ function generateContentHash(url: string | undefined, title: string | undefined)
   return `hash_${hash}_${normalized.length}`;
 }
 
+// ─── Semantic Deduplication ────────────────────────────────────────
+
+const STOP_WORDS = new Set([
+  'a', 'an', 'the', 'and', 'or', 'but', 'in', 'on', 'at', 'to', 'for', 'of', 'with', 'by',
+  'from', 'as', 'is', 'was', 'are', 'were', 'be', 'been', 'being', 'have', 'has', 'had',
+  'do', 'does', 'did', 'will', 'would', 'could', 'should', 'may', 'might', 'must',
+  'this', 'that', 'these', 'those', 'it', 'its', 'they', 'them', 'their', 'we', 'us', 'our',
+  'i', 'me', 'my', 'you', 'your', 'he', 'him', 'his', 'she', 'her',
+  'new', 'more', 'most', 'some', 'many', 'much', 'very', 'just', 'only', 'also', 'even',
+  'about', 'up', 'out', 'over', 'into', 'through', 'during', 'before', 'after', 'above',
+  'below', 'between', 'among', 'within', 'without', 'against', 'under', 'around', 'near',
+  'not', 'no', 'yes', 'so', 'too', 'can', 'than', 'then', 'now', 'here', 'there',
+  'when', 'where', 'why', 'how', 'all', 'any', 'both', 'each', 'few', 'other', 'such',
+  'what', 'which', 'who', 'whom', 'whose',
+  // Common news verbs (low semantic value for story identity)
+  'releases', 'release', 'released', 'launches', 'launch', 'launched',
+  'announces', 'announce', 'announced', 'unveils', 'unveil', 'unveiled',
+  'introduces', 'introduce', 'introduced', 'says', 'say', 'said',
+  'report', 'reports', 'reported', 'claims', 'claim', 'claimed',
+  'confirms', 'confirm', 'confirmed', 'reveals', 'reveal', 'revealed',
+  'updates', 'update', 'updated', 'upgrade', 'upgrades', 'upgraded',
+]);
+
+/** Simple suffix-stripping stemmer for normalizing related words */
+function simpleStem(word: string): string {
+  if (word.length <= 3) return word;
+  const suffixes = [
+    { s: 'fully', min: 7 },   // successfully → success
+    { s: 'ingly', min: 7 },
+    { s: 'edly', min: 6 },
+    { s: 'ally', min: 6 },    // usually → usual
+    { s: 'able', min: 6 },    // comfortable → comfort
+    { s: 'ible', min: 6 },
+    { s: 'ment', min: 6 },    // development → develop
+    { s: 'ness', min: 6 },
+    { s: 'tion', min: 6 },    // creation → crea
+    { s: 'sion', min: 6 },    // mission → miss
+    { s: 'ing', min: 5 },     // running → run
+    { s: 'est', min: 5 },     // fastest → fast
+    { s: 'ly', min: 4 },      // quickly → quick
+    { s: 'al', min: 6 },      // orbital → orbit (protects "final" → stays)
+    { s: 'er', min: 4 },      // bigger → big
+    { s: 'ed', min: 4 },      // walked → walk
+    { s: 'es', min: 4 },      // reaches → reach
+  ];
+  for (const { s, min } of suffixes) {
+    if (word.length >= min && word.endsWith(s)) {
+      return word.slice(0, -s.length);
+    }
+  }
+  // Strip trailing 's' for plurals, but protect words ending in 'ss', 'us', 'is'
+  if (word.length >= 4 && word.endsWith('s') && !word.endsWith('ss') && !word.endsWith('us') && !word.endsWith('is')) {
+    return word.slice(0, -1);
+  }
+  return word;
+}
+
+/** Pairs of contradictory action words — if both appear, they're different stories */
+const CONTRADICTORY_PAIRS: [string, string][] = [
+  ['raise', 'cut'], ['raises', 'cuts'], ['raised', 'cut'],
+  ['up', 'down'], ['gain', 'loss'], ['gains', 'losses'],
+  ['buy', 'sell'], ['bull', 'bear'],
+  ['approve', 'reject'], ['pass', 'fail'],
+  ['hire', 'fire'], ['hires', 'fires'],
+  ['increase', 'decrease'], ['grow', 'shrink'],
+  ['win', 'lose'], ['wins', 'loses'],
+  ['accept', 'deny'], ['allow', 'block'],
+  ['expand', 'shrink'], ['rise', 'fall'], ['rises', 'falls'],
+  ['drop', 'surge'], ['drops', 'surges'],
+  ['add', 'remove'], ['adds', 'removes'],
+  ['enable', 'disable'],
+  ['start', 'stop'], ['begin', 'end'],
+  ['join', 'leave'], ['enter', 'exit'],
+  ['open', 'close'],
+  ['success', 'failure'],
+  ['positive', 'negative'],
+  ['higher', 'lower'],
+  ['strong', 'weak'],
+];
+
+/** Check if two titles contain contradictory action words (e.g. "raises" vs "cuts") */
+function hasContradictoryWords(title1: string, title2: string): boolean {
+  const w1 = title1.toLowerCase().split(/[^a-z]+/);
+  const w2 = title2.toLowerCase().split(/[^a-z]+/);
+  for (const [a, b] of CONTRADICTORY_PAIRS) {
+    const hasA = w1.includes(a) && w2.includes(b);
+    const hasB = w1.includes(b) && w2.includes(a);
+    if (hasA || hasB) return true;
+  }
+  return false;
+}
+
+/** Extract story-identifying tokens from a title */
+export function extractStorySignature(title: string): string[] {
+  const normalized = title.toLowerCase();
+  const anchors: string[] = [];
+
+  // Numbers (versions like 4.8 and plain numbers like 5, 120, 2024)
+  const numbers = [...normalized.matchAll(/\b\d+(?:\.\d+)*\b/g)].map(m => m[0]);
+  for (const n of numbers) {
+    const key = `n:${n}`;
+    if (!anchors.includes(key)) anchors.push(key);
+  }
+
+  // Stemmed significant words 3+ chars
+  const words = normalized.replace(/[^a-z0-9\s]/g, ' ').split(/\s+/);
+  for (const word of words) {
+    if (word.length < 3 || STOP_WORDS.has(word) || /^\d+$/.test(word)) continue;
+    const stemmed = simpleStem(word);
+    const key = `w:${stemmed}`;
+    if (!anchors.includes(key)) anchors.push(key);
+  }
+
+  return anchors.sort();
+}
+
+/** Jaccard similarity between two story signatures */
+export function calculateStorySimilarity(sig1: string[], sig2: string[]): number {
+  const set1 = new Set(sig1);
+  const set2 = new Set(sig2);
+  const intersection = new Set([...set1].filter(x => set2.has(x)));
+  const union = new Set([...set1, ...set2]);
+  return union.size > 0 ? intersection.size / union.size : 0;
+}
+
+/** Count how many anchor tokens two signatures share */
+export function countSharedAnchors(sig1: string[], sig2: string[]): number {
+  const set1 = new Set(sig1);
+  const set2 = new Set(sig2);
+  return [...set1].filter(a => set2.has(a)).length;
+}
+
+/** Decide if two articles are about the same story */
+export function isSimilarStory(title1: string, sig1: string[], title2: string, sig2: string[]): boolean {
+  if (hasContradictoryWords(title1, title2)) return false;
+  const similarity = calculateStorySimilarity(sig1, sig2);
+  const shared = countSharedAnchors(sig1, sig2);
+  return (similarity >= 0.30 && shared >= 3) || shared >= 5;
+}
+
+interface RecentArticleSig {
+  originalTitle: string;
+  aiTitle: string | null;
+  signature: string[];
+}
+
+/** Fetch recent articles and pre-compute their story signatures */
+async function fetchRecentArticleSignatures(windowHours: number): Promise<RecentArticleSig[]> {
+  const now = new Date();
+  const since = new Date(now.getTime() - windowHours * 60 * 60 * 1000);
+
+  const articles = await prisma.newsArticle.findMany({
+    where: {
+      publishedAt: { gte: since },
+      expiresAt: { gt: now },
+    },
+    select: { originalTitle: true, aiTitle: true },
+  });
+
+  return articles.map(a => ({
+    originalTitle: a.originalTitle,
+    aiTitle: a.aiTitle,
+    signature: extractStorySignature(a.aiTitle || a.originalTitle),
+  }));
+}
+
 function parseRssDate(dateStr: string | undefined): Date {
   if (!dateStr) return new Date();
   const parsed = new Date(dateStr);
@@ -237,20 +403,26 @@ export async function fetchAndProcessFeeds(): Promise<{ fetched: number; newArti
   const fetchWindowMinutes = Math.min(checkIntervalMinutes + 10, maxAgeHours * 60);
   const cutoffTime = new Date(now.getTime() - fetchWindowMinutes * 60 * 1000);
 
-  // Get existing hashes to deduplicate
+  // ─── Deduplication setup ─────────────────────────────────────────
+  // 1. Exact hash dedup (fast, catches same-URL reposts)
   const existingArticles = await prisma.newsArticle.findMany({
     where: { expiresAt: { gt: now } },
     select: { contentHash: true },
   });
   const existingHashes = new Set(existingArticles.map(a => a.contentHash));
 
+  // 2. Semantic dedup: pre-compute signatures for recent articles
+  const recentSigs = await fetchRecentArticleSignatures(6); // 6-hour lookback
+
   let fetchedCount = 0;
   let newCount = 0;
   let errorCount = 0;
   let skippedOld = 0;
-  let skippedDup = 0;
+  let skippedExactDup = 0;
+  let skippedSemanticDup = 0;
   let skippedTopic = 0;
   const articlesToSummarize: { title: string; content: string; url: string; feedId: string; publishedAt: Date; hash: string }[] = [];
+  const batchSigs: { title: string; signature: string[] }[] = []; // Accepted articles in this batch
 
   for (const feed of feeds) {
     try {
@@ -270,9 +442,10 @@ export async function fetchAndProcessFeeds(): Promise<{ fetched: number; newArti
           continue;
         }
 
+        // ── Exact duplicate check ──
         const hash = generateContentHash(link, item.title);
         if (existingHashes.has(hash)) {
-          skippedDup++;
+          skippedExactDup++;
           continue;
         }
 
@@ -288,6 +461,34 @@ export async function fetchAndProcessFeeds(): Promise<{ fetched: number; newArti
           }
         }
 
+        // ── Semantic duplicate check ──
+        const newSig = extractStorySignature(item.title);
+        let isSemanticDup = false;
+
+        // Check against existing recent articles
+        for (const recent of recentSigs) {
+          if (isSimilarStory(item.title, newSig, recent.aiTitle || recent.originalTitle, recent.signature)) {
+            isSemanticDup = true;
+            break;
+          }
+        }
+        if (isSemanticDup) {
+          skippedSemanticDup++;
+          continue;
+        }
+
+        // Check against other articles in this batch
+        for (const batch of batchSigs) {
+          if (isSimilarStory(item.title, newSig, batch.title, batch.signature)) {
+            isSemanticDup = true;
+            break;
+          }
+        }
+        if (isSemanticDup) {
+          skippedSemanticDup++;
+          continue;
+        }
+
         articlesToSummarize.push({
           title: item.title,
           content,
@@ -296,7 +497,8 @@ export async function fetchAndProcessFeeds(): Promise<{ fetched: number; newArti
           publishedAt: pubDate,
           hash,
         });
-        existingHashes.add(hash); // Prevent duplicates within this batch
+        existingHashes.add(hash); // Prevent exact duplicates within this batch
+        batchSigs.push({ title: item.title, signature: newSig }); // Prevent semantic duplicates within this batch
       }
     } catch (error) {
       console.error(`[news] Failed to fetch feed ${feed.name}:`, error);
@@ -304,7 +506,7 @@ export async function fetchAndProcessFeeds(): Promise<{ fetched: number; newArti
     }
   }
 
-  console.log(`[news] Feed scan complete: ${fetchedCount} feeds fetched, ${articlesToSummarize.length} articles to summarize (${skippedOld} old, ${skippedDup} dup, ${skippedTopic} topic-mismatched)`);
+  console.log(`[news] Feed scan complete: ${fetchedCount} feeds fetched, ${articlesToSummarize.length} articles to summarize (${skippedOld} old, ${skippedExactDup} exact-dup, ${skippedSemanticDup} semantic-dup, ${skippedTopic} topic-mismatched)`);
 
   // Summarize articles with AI (rate limited)
   for (const article of articlesToSummarize) {
