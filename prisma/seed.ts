@@ -3,15 +3,7 @@ import { PrismaClient } from '@prisma/client';
 const prisma = new PrismaClient();
 
 async function main() {
-  // Check if data already exists
-  const existingCategories = await prisma.category.count();
-  
-  if (existingCategories > 0) {
-    console.log('Database already seeded, skipping...');
-    return;
-  }
-
-  // Seed default news feeds if none exist
+  // Seed default news feeds if none exist (always run, independent of categories)
   const existingFeeds = await prisma.newsFeed.count();
   if (existingFeeds === 0) {
     const defaultFeeds = [
@@ -27,6 +19,13 @@ async function main() {
     ];
     await Promise.all(defaultFeeds.map(feed => prisma.newsFeed.create({ data: feed })));
     console.log('Created default news feeds');
+  }
+
+  // Check if categories already exist
+  const existingCategories = await prisma.category.count();
+  if (existingCategories > 0) {
+    console.log('Categories already seeded, skipping...');
+    return;
   }
 
   // Create default categories only - no sample blocks for privacy
