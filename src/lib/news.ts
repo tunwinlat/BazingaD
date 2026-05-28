@@ -119,14 +119,56 @@ function extractItemLink(item: Parser.Item): string | undefined {
   return item.link ?? (item as Record<string, unknown>).guid as string | undefined ?? undefined;
 }
 
+function cleanAIResponse(raw: string): string {
+  if (!raw) return '';
+  // For reasoning models, the actual response usually comes after the last </think>
+  if (raw.includes('</think>')) {
+    const idx = raw.lastIndexOf('</think>');
+    const after = raw.slice(idx + 8).trim();
+    if (after.length > 5) return after;
+  }
+  // Remove any complete or stray think tags
+  return raw.replace(/<think>[\s\S]*?<\/think>/g, '').replace(/<think>/g, '').replace(/<\/think>/g, '').trim();
+}
+
+function isGarbageTitle(title: string): boolean {
+  const garbagePatterns = [
+    /^\d+\s*words?\s*[✓√]?$/i,
+    /max\s*\d+\s*words?/i,
+    /clear,?\s*factual/i,
+    /non-clickbait/i,
+    /sentences?\s*[-–]\s*factual/i,
+    /option\s*\d/i,
+    /format\s*must\s*be/i,
+    /title\s*options?/i,
+    /let\s*me\s*(craft|write|think)/i,
+    /^\s*[✓√]\s*$/i,
+  ];
+  return garbagePatterns.some(p => p.test(title)) || title.length < 3;
+}
+
+function isGarbageSummary(summary: string): boolean {
+  const garbagePatterns = [
+    /format\s*must\s*be\s*exact/i,
+    /title\s*options?/i,
+    /let\s*me\s*(craft|write|think)/i,
+    /summary\s*needs?\s*to\s*cover/i,
+    /i['']ll\s*go\s*with/i,
+    /^\s*-\s*the\s+/im,
+    /article\s*title:/i,
+    /content:/i,
+  ];
+  return garbagePatterns.some(p => p.test(summary));
+}
+
 async function summarizeWithAI(title: string, content: string, apiKey: string): Promise<{ aiTitle: string; summary: string }> {
   await aiRateLimiter.acquire();
 
   const prompt = `You are a helpful news assistant. Given an article title and content excerpt, create:
-1. A clear, factual, non-clickbait title (max 10 words)
+1. A clear, factual, non-clickbait title (maximum 10 words)
 2. A concise 2-3 sentence summary
 
-Respond ONLY in this exact format:
+CRITICAL: Respond ONLY in this exact format. Do not include any reasoning, explanations, thinking, or additional text:
 TITLE: <your title here>
 SUMMARY: <your summary here>
 
@@ -142,8 +184,8 @@ Content: ${content.slice(0, 3000)}`;
     body: JSON.stringify({
       model: 'MiniMax-M2.7',
       messages: [{ role: 'user', content: prompt }],
-      max_tokens: 300,
-      temperature: 0.3,
+      max_tokens: 600,
+      temperature: 0.2,
     }),
   });
 
@@ -155,11 +197,23 @@ Content: ${content.slice(0, 3000)}`;
   const data = await response.json();
   const rawContent = data.choices?.[0]?.message?.content || data.content?.[0]?.text || '';
 
-  const titleMatch = rawContent.match(/TITLE:\s*(.+?)(?:\n|$)/i);
-  const summaryMatch = rawContent.match(/SUMMARY:\s*([\s\S]+?)(?=\n[A-Z]+:|$)/i);
+  const cleaned = cleanAIResponse(rawContent);
 
-  const aiTitle = titleMatch?.[1]?.trim() || title;
-  const summary = summaryMatch?.[1]?.trim() || '';
+  const titleMatch = cleaned.match(/^TITLE:\s*(.+?)$/im);
+  const summaryMatch = cleaned.match(/^SUMMARY:\s*([\s\S]+?)(?=\n[A-Z]+:|$)/im);
+
+  let aiTitle = titleMatch?.[1]?.trim() || '';
+  let summary = summaryMatch?.[1]?.trim() || '';
+
+  // Fallback to original title if AI title is garbage or missing
+  if (!aiTitle || isGarbageTitle(aiTitle)) {
+    aiTitle = title;
+  }
+
+  // Clear summary if it's garbage
+  if (!summary || isGarbageSummary(summary)) {
+    summary = '';
+  }
 
   return { aiTitle, summary };
 }
@@ -177,8 +231,11 @@ export async function fetchAndProcessFeeds(): Promise<{ fetched: number; newArti
 
   const topics = await prisma.newsTopic.findMany();
   const now = new Date();
+  const checkIntervalMinutes = settings.newsCheckIntervalMinutes ?? 60;
   const maxAgeHours = settings.newsMaxArticleAgeHours ?? 24;
-  const cutoffTime = new Date(now.getTime() - maxAgeHours * 60 * 60 * 1000);
+  // Fetch window based on check interval + 10 min buffer, capped at max article age
+  const fetchWindowMinutes = Math.min(checkIntervalMinutes + 10, maxAgeHours * 60);
+  const cutoffTime = new Date(now.getTime() - fetchWindowMinutes * 60 * 1000);
 
   // Get existing hashes to deduplicate
   const existingArticles = await prisma.newsArticle.findMany({
@@ -295,6 +352,31 @@ export async function cleanupExpiredArticles(): Promise<number> {
     console.log(`[news] Cleaned up ${result.count} expired articles`);
   }
   return result.count;
+}
+
+export async function cleanupGarbageArticles(): Promise<number> {
+  const articles = await prisma.newsArticle.findMany({
+    where: { aiTitle: { not: null } },
+    select: { id: true, aiTitle: true, summary: true },
+  });
+
+  const idsToDelete: string[] = [];
+  for (const article of articles) {
+    const title = article.aiTitle || '';
+    const summary = article.summary || '';
+    if (isGarbageTitle(title) || summary.includes('</think>') || isGarbageSummary(summary)) {
+      idsToDelete.push(article.id);
+    }
+  }
+
+  if (idsToDelete.length > 0) {
+    await prisma.newsArticle.deleteMany({
+      where: { id: { in: idsToDelete } },
+    });
+    console.log(`[news] Cleaned up ${idsToDelete.length} garbage articles`);
+  }
+
+  return idsToDelete.length;
 }
 
 export async function markArticleAsRead(articleId: string): Promise<void> {

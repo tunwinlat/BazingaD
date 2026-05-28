@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { fetchAndProcessFeeds, cleanupExpiredArticles } from '@/lib/news';
+import { fetchAndProcessFeeds, cleanupExpiredArticles, cleanupGarbageArticles } from '@/lib/news';
 
 const CRON_SECRET = process.env.CRON_SECRET;
 
@@ -11,8 +11,9 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    // Clean up expired articles first
+    // Clean up expired and garbage articles first
     const cleanedCount = await cleanupExpiredArticles();
+    const garbageCount = await cleanupGarbageArticles();
 
     // Fetch and process feeds
     const result = await fetchAndProcessFeeds();
@@ -20,6 +21,7 @@ export async function POST(request: Request) {
     return NextResponse.json({
       success: true,
       cleaned: cleanedCount,
+      garbageCleaned: garbageCount,
       ...result,
     });
   } catch (error) {

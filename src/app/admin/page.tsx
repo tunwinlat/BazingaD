@@ -100,8 +100,8 @@ function AdminPage() {
   const [categories, setCategories] = useState<Category[]>([]);
   const [blocks, setBlocks] = useState<Block[]>([]);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<'general' | 'categories' | 'blocks' | 'security' | 'integrations' | 'news'>('blocks');
-  const [expandedIntegration, setExpandedIntegration] = useState<'weather' | 'traffic' | null>('weather');
+  const [activeTab, setActiveTab] = useState<'general' | 'categories' | 'blocks' | 'security' | 'integrations'>('blocks');
+  const [expandedIntegration, setExpandedIntegration] = useState<'weather' | 'traffic' | 'news' | null>('weather');
 
   // Security states
   const [authStatus, setAuthStatus] = useState<{ username: string; totpEnabled: boolean } | null>(null);
@@ -1306,18 +1306,6 @@ function AdminPage() {
             <Cloud className="w-4 h-4" />
             Integrations
           </button>
-          <button
-            type="button"
-            onClick={() => setActiveTab('news')}
-            className="px-4 py-2 rounded-lg transition-colors flex items-center gap-2"
-            style={{
-              backgroundColor: activeTab === 'news' ? '#6366f1' : 'rgba(255,255,255,0.05)',
-            }}
-          >
-            <Newspaper className="w-4 h-4" />
-            News
-          </button>
-
         </div>
 
         {activeTab === 'categories' && (
@@ -2026,7 +2014,7 @@ function AdminPage() {
             </div>
 
             {/* Traffic Accordion */}
-            <div className="rounded-xl overflow-hidden" style={{ backgroundColor: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)' }}>
+            <div className="rounded-xl overflow-hidden mb-4" style={{ backgroundColor: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)' }}>
               <div
                 className="p-4 cursor-pointer flex items-center gap-3"
                 onClick={() => setExpandedIntegration(expandedIntegration === 'traffic' ? null : 'traffic')}
@@ -2243,243 +2231,35 @@ function AdminPage() {
                 </div>
               )}
             </div>
-          </div>
-        )}
-        {activeTab === 'general' && (
-          <div>
-            <h2 className="text-xl font-semibold mb-6">General Settings</h2>
 
-            {/* Site Identity */}
-            <div className="rounded-xl p-6 mb-6" style={{ backgroundColor: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)' }}>
-              <div className="flex items-center gap-3 mb-4">
-                <div className="w-10 h-10 rounded-lg flex items-center justify-center" style={{ backgroundColor: 'rgba(99, 102, 241, 0.2)' }}>
-                  <Globe className="w-5 h-5 text-indigo-400" />
+            {/* News Accordion */}
+            <div className="rounded-xl overflow-hidden" style={{ backgroundColor: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)' }}>
+              <div
+                className="p-4 cursor-pointer flex items-center gap-3"
+                onClick={() => setExpandedIntegration(expandedIntegration === 'news' ? null : 'news')}
+              >
+                <div className="w-10 h-10 rounded-lg flex items-center justify-center" style={{ backgroundColor: 'rgba(245, 158, 11, 0.2)' }}>
+                  <Newspaper className="w-5 h-5 text-amber-400" />
                 </div>
-                <div>
-                  <h3 className="font-semibold">Site Identity</h3>
-                  <p className="text-sm text-white/60">Customize your start page title and icon</p>
-                </div>
-              </div>
-
-              <div className="space-y-4">
-                {/* Site Title */}
-                <div>
-                  <label className="block text-sm text-white/70 mb-1">Site Title</label>
-                  <input
-                    type="text"
-                    value={generalSettings.siteTitle}
-                    onChange={(e) => setGeneralSettings({ ...generalSettings, siteTitle: e.target.value })}
-                    className="w-full px-3 py-2 rounded-lg border outline-none focus:border-indigo-500 text-sm"
-                    style={{ backgroundColor: 'rgba(255,255,255,0.05)', borderColor: 'rgba(255,255,255,0.1)', color: 'white' }}
-                    placeholder="Start Page"
-                    maxLength={100}
-                  />
-                  <p className="text-xs text-white/40 mt-1">This appears in the browser tab</p>
-                </div>
-
-                {/* Favicon */}
-                <div>
-                  <label className="block text-sm text-white/70 mb-2">Favicon</label>
-
-                  {/* Current Favicon Preview */}
-                  <div className="flex items-center gap-4 mb-3">
-                    <div
-                      className="w-16 h-16 rounded-lg flex items-center justify-center"
-                      style={{ backgroundColor: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)' }}
-                    >
-                      {faviconPreview ? (
-                        <>
-                          {/* eslint-disable-next-line @next/next/no-img-element */}
-                          <img
-                            src={faviconPreview}
-                            alt="Favicon preview"
-                            className="w-10 h-10 object-contain"
-                          />
-                        </>
-                      ) : (
-                        <span className="text-2xl">🚀</span>
-                      )}
-                    </div>
-                    <div className="flex-1">
-                      <p className="text-sm text-white/70">
-                        {faviconPreview ? 'Custom favicon' : 'Default favicon'}
-                      </p>
-                      <p className="text-xs text-white/40">
-                        Upload an SVG file (max 50KB)
-                      </p>
-                    </div>
-                  </div>
-
-                  {/* Upload Controls */}
-                  <div className="flex gap-2">
-                    <label className="flex items-center gap-2 px-4 py-2 rounded-lg transition-colors cursor-pointer"
-                      style={{ backgroundColor: 'rgba(99, 102, 241, 0.2)', color: '#818cf8' }}
-                    >
-                      <Upload className="w-4 h-4" />
-                      <span className="text-sm">Upload SVG</span>
-                      <input
-                        type="file"
-                        accept=".svg,image/svg+xml"
-                        onChange={handleFaviconUpload}
-                        className="hidden"
-                      />
-                    </label>
-
-                    {faviconPreview && (
-                      <button
-                        type="button"
-                        onClick={handleResetFavicon}
-                        className="flex items-center gap-2 px-4 py-2 rounded-lg transition-colors"
-                        style={{ backgroundColor: 'rgba(255,255,255,0.1)', color: 'white' }}
-                      >
-                        <RotateCcw className="w-4 h-4" />
-                        <span className="text-sm">Reset to Default</span>
-                      </button>
-                    )}
-                  </div>
-                </div>
-
-                {/* Theme Selector */}
-                <div>
-                  <label className="block text-sm text-white/70 mb-2">Dashboard Theme</label>
-                  <select
-                    value={generalSettings.theme}
-                    onChange={(e) => setGeneralSettings({ ...generalSettings, theme: e.target.value })}
-                    className="w-full px-3 py-2 rounded-lg border outline-none focus:border-indigo-500 text-sm"
-                    style={{ backgroundColor: 'rgba(255,255,255,0.05)', borderColor: 'rgba(255,255,255,0.1)', color: 'white' }}
-                  >
-                    {availableThemes.map((theme) => (
-                      <option key={theme.id} value={theme.id} style={{ backgroundColor: '#1a1a2e', color: 'white' }}>
-                        {theme.name}
-                      </option>
-                    ))}
-                  </select>
-                  <p className="text-xs text-white/40 mt-1">Choose a color theme for your dashboard</p>
-                </div>
-
-                {/* Default View Selector */}
-                <div>
-                  <label className="block text-sm text-white/70 mb-2">Default Block View</label>
-                  <select
-                    value={generalSettings.defaultView}
-                    onChange={(e) => setGeneralSettings({ ...generalSettings, defaultView: e.target.value })}
-                    className="w-full px-3 py-2 rounded-lg border outline-none focus:border-indigo-500 text-sm"
-                    style={{ backgroundColor: 'rgba(255,255,255,0.05)', borderColor: 'rgba(255,255,255,0.1)', color: 'white' }}
-                  >
-                    <option value="comfortable" style={{ backgroundColor: '#1a1a2e', color: 'white' }}>Comfortable (large cards)</option>
-                    <option value="compact" style={{ backgroundColor: '#1a1a2e', color: 'white' }}>Compact (smaller cards)</option>
-                    <option value="dense" style={{ backgroundColor: '#1a1a2e', color: 'white' }}>Dense (icon-focused)</option>
-                    <option value="list" style={{ backgroundColor: '#1a1a2e', color: 'white' }}>List (horizontal rows)</option>
-                  </select>
-                  <p className="text-xs text-white/40 mt-1">Default view mode for new visitors. Users can override this on their device.</p>
-                </div>
-
-                {/* Open in New Tab Toggle */}
-                <div className="flex items-center gap-3 p-4 rounded-lg" style={{ backgroundColor: 'rgba(255,255,255,0.03)' }}>
-                  <input
-                    type="checkbox"
-                    id="openInNewTab"
-                    checked={generalSettings.openInNewTab}
-                    onChange={(e) => setGeneralSettings({ ...generalSettings, openInNewTab: e.target.checked })}
-                    className="w-5 h-5 rounded border-white/20"
-                  />
-                  <label htmlFor="openInNewTab" className="flex-1">
-                    <span className="font-medium text-sm">Open links in new tab</span>
-                    <p className="text-xs text-white/50">When enabled, blocks and search results open in a new browser tab</p>
-                  </label>
-                </div>
-
-                {/* Navigation Transition Toggle */}
-                <div className="flex items-center gap-3 p-4 rounded-lg" style={{ backgroundColor: 'rgba(255,255,255,0.03)' }}>
-                  <input
-                    type="checkbox"
-                    id="navTransitionEnabled"
-                    checked={generalSettings.navTransitionEnabled}
-                    onChange={(e) => setGeneralSettings({ ...generalSettings, navTransitionEnabled: e.target.checked })}
-                    className="w-5 h-5 rounded border-white/20"
-                  />
-                  <label htmlFor="navTransitionEnabled" className="flex-1">
-                    <span className="font-medium text-sm">Enable navigation transition</span>
-                    <p className="text-xs text-white/50">Show a visual transition when opening links in the same tab</p>
-                  </label>
-                </div>
-
-                {/* Transition Type Selector (only when enabled and same-tab) */}
-                {generalSettings.navTransitionEnabled && !generalSettings.openInNewTab && (
-                  <div className="p-4 rounded-lg -mt-2" style={{ backgroundColor: 'rgba(255,255,255,0.02)' }}>
-                    <label className="block text-sm text-white/70 mb-2">Transition Style</label>
-                    <div className="flex gap-2">
-                      <button
-                        type="button"
-                        onClick={() => setGeneralSettings({ ...generalSettings, navTransitionType: 'overlay' })}
-                        className="flex-1 px-4 py-3 rounded-lg text-sm text-left transition-all border"
-                        style={{
-                          backgroundColor: generalSettings.navTransitionType === 'overlay' ? 'rgba(99, 102, 241, 0.2)' : 'rgba(255,255,255,0.03)',
-                          borderColor: generalSettings.navTransitionType === 'overlay' ? 'rgba(99, 102, 241, 0.4)' : 'rgba(255,255,255,0.1)',
-                          color: generalSettings.navTransitionType === 'overlay' ? '#818cf8' : 'white',
-                        }}
-                      >
-                        <span className="font-medium">Launch Overlay</span>
-                        <p className="text-xs mt-1" style={{ color: generalSettings.navTransitionType === 'overlay' ? '#a5b4fc' : 'rgba(255,255,255,0.4)' }}>
-                          Full-screen glassmorphism overlay with icon and spinner
-                        </p>
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setGeneralSettings({ ...generalSettings, navTransitionType: 'exit' })}
-                        className="flex-1 px-4 py-3 rounded-lg text-sm text-left transition-all border"
-                        style={{
-                          backgroundColor: generalSettings.navTransitionType === 'exit' ? 'rgba(99, 102, 241, 0.2)' : 'rgba(255,255,255,0.03)',
-                          borderColor: generalSettings.navTransitionType === 'exit' ? 'rgba(99, 102, 241, 0.4)' : 'rgba(255,255,255,0.1)',
-                          color: generalSettings.navTransitionType === 'exit' ? '#818cf8' : 'white',
-                        }}
-                      >
-                        <span className="font-medium">Exit Fade</span>
-                        <p className="text-xs mt-1" style={{ color: generalSettings.navTransitionType === 'exit' ? '#a5b4fc' : 'rgba(255,255,255,0.4)' }}>
-                          Darken the dashboard with a brief fade-out effect
-                        </p>
-                      </button>
-                    </div>
-                  </div>
-                )}
-
-                {/* Transition hint when enabled but new-tab is on */}
-                {generalSettings.navTransitionEnabled && generalSettings.openInNewTab && (
-                  <div className="p-3 rounded-lg -mt-2 text-xs" style={{ backgroundColor: 'rgba(245, 158, 11, 0.08)', border: '1px solid rgba(245, 158, 11, 0.2)', color: '#fbbf24' }}>
-                    ⚠️ Navigation transitions only apply when &quot;Open links in new tab&quot; is disabled. Currently, links will still open in new tabs.
-                  </div>
-                )}
-
-                {/* Save Button */}
-                <button
-                  type="button"
-                  onClick={handleSaveGeneralSettings}
-                  className="w-full px-4 py-2 rounded-lg transition-colors"
-                  style={{ backgroundColor: '#6366f1' }}
-                >
-                  Save General Settings
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
-        {activeTab === 'news' && (
-          <div>
-            <h2 className="text-xl font-semibold mb-6">News & AI</h2>
-
-            {/* News Settings Card */}
-            <div className="rounded-xl p-6 mb-6" style={{ backgroundColor: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)' }}>
-              <div className="flex items-center gap-3 mb-4">
-                <div className="w-10 h-10 rounded-lg flex items-center justify-center" style={{ backgroundColor: 'rgba(99, 102, 241, 0.2)' }}>
-                  <Newspaper className="w-5 h-5 text-indigo-400" />
-                </div>
-                <div>
+                <div className="flex-1">
                   <h3 className="font-semibold">RSS News & Summarization</h3>
                   <p className="text-sm text-white/60">Fetch tech news via RSS and summarize with AI</p>
                 </div>
+                {newsSettings.enabled && (
+                  <span className="px-3 py-1 rounded-full text-xs" style={{ backgroundColor: 'rgba(16, 185, 129, 0.2)', color: '#34d399' }}>
+                    Enabled
+                  </span>
+                )}
+                {expandedIntegration === 'news' ? (
+                  <ChevronUp className="w-5 h-5 text-white/40" />
+                ) : (
+                  <ChevronDown className="w-5 h-5 text-white/40" />
+                )}
               </div>
 
-              <div className="space-y-4">
+              {expandedIntegration === 'news' && (
+                <div className="px-6 pb-6">
+                  <div className="space-y-4">
                 {/* Enable Toggle */}
                 <div className="flex items-center gap-3 p-4 rounded-lg" style={{ backgroundColor: 'rgba(255,255,255,0.03)' }}>
                   <input
@@ -2720,6 +2500,226 @@ function AdminPage() {
                     Clear Cache
                   </button>
                 </div>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+        {activeTab === 'general' && (
+          <div>
+            <h2 className="text-xl font-semibold mb-6">General Settings</h2>
+
+            {/* Site Identity */}
+            <div className="rounded-xl p-6 mb-6" style={{ backgroundColor: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)' }}>
+              <div className="flex items-center gap-3 mb-4">
+                <div className="w-10 h-10 rounded-lg flex items-center justify-center" style={{ backgroundColor: 'rgba(99, 102, 241, 0.2)' }}>
+                  <Globe className="w-5 h-5 text-indigo-400" />
+                </div>
+                <div>
+                  <h3 className="font-semibold">Site Identity</h3>
+                  <p className="text-sm text-white/60">Customize your start page title and icon</p>
+                </div>
+              </div>
+
+              <div className="space-y-4">
+                {/* Site Title */}
+                <div>
+                  <label className="block text-sm text-white/70 mb-1">Site Title</label>
+                  <input
+                    type="text"
+                    value={generalSettings.siteTitle}
+                    onChange={(e) => setGeneralSettings({ ...generalSettings, siteTitle: e.target.value })}
+                    className="w-full px-3 py-2 rounded-lg border outline-none focus:border-indigo-500 text-sm"
+                    style={{ backgroundColor: 'rgba(255,255,255,0.05)', borderColor: 'rgba(255,255,255,0.1)', color: 'white' }}
+                    placeholder="Start Page"
+                    maxLength={100}
+                  />
+                  <p className="text-xs text-white/40 mt-1">This appears in the browser tab</p>
+                </div>
+
+                {/* Favicon */}
+                <div>
+                  <label className="block text-sm text-white/70 mb-2">Favicon</label>
+
+                  {/* Current Favicon Preview */}
+                  <div className="flex items-center gap-4 mb-3">
+                    <div
+                      className="w-16 h-16 rounded-lg flex items-center justify-center"
+                      style={{ backgroundColor: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)' }}
+                    >
+                      {faviconPreview ? (
+                        <>
+                          {/* eslint-disable-next-line @next/next/no-img-element */}
+                          <img
+                            src={faviconPreview}
+                            alt="Favicon preview"
+                            className="w-10 h-10 object-contain"
+                          />
+                        </>
+                      ) : (
+                        <span className="text-2xl">🚀</span>
+                      )}
+                    </div>
+                    <div className="flex-1">
+                      <p className="text-sm text-white/70">
+                        {faviconPreview ? 'Custom favicon' : 'Default favicon'}
+                      </p>
+                      <p className="text-xs text-white/40">
+                        Upload an SVG file (max 50KB)
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Upload Controls */}
+                  <div className="flex gap-2">
+                    <label className="flex items-center gap-2 px-4 py-2 rounded-lg transition-colors cursor-pointer"
+                      style={{ backgroundColor: 'rgba(99, 102, 241, 0.2)', color: '#818cf8' }}
+                    >
+                      <Upload className="w-4 h-4" />
+                      <span className="text-sm">Upload SVG</span>
+                      <input
+                        type="file"
+                        accept=".svg,image/svg+xml"
+                        onChange={handleFaviconUpload}
+                        className="hidden"
+                      />
+                    </label>
+
+                    {faviconPreview && (
+                      <button
+                        type="button"
+                        onClick={handleResetFavicon}
+                        className="flex items-center gap-2 px-4 py-2 rounded-lg transition-colors"
+                        style={{ backgroundColor: 'rgba(255,255,255,0.1)', color: 'white' }}
+                      >
+                        <RotateCcw className="w-4 h-4" />
+                        <span className="text-sm">Reset to Default</span>
+                      </button>
+                    )}
+                  </div>
+                </div>
+
+                {/* Theme Selector */}
+                <div>
+                  <label className="block text-sm text-white/70 mb-2">Dashboard Theme</label>
+                  <select
+                    value={generalSettings.theme}
+                    onChange={(e) => setGeneralSettings({ ...generalSettings, theme: e.target.value })}
+                    className="w-full px-3 py-2 rounded-lg border outline-none focus:border-indigo-500 text-sm"
+                    style={{ backgroundColor: 'rgba(255,255,255,0.05)', borderColor: 'rgba(255,255,255,0.1)', color: 'white' }}
+                  >
+                    {availableThemes.map((theme) => (
+                      <option key={theme.id} value={theme.id} style={{ backgroundColor: '#1a1a2e', color: 'white' }}>
+                        {theme.name}
+                      </option>
+                    ))}
+                  </select>
+                  <p className="text-xs text-white/40 mt-1">Choose a color theme for your dashboard</p>
+                </div>
+
+                {/* Default View Selector */}
+                <div>
+                  <label className="block text-sm text-white/70 mb-2">Default Block View</label>
+                  <select
+                    value={generalSettings.defaultView}
+                    onChange={(e) => setGeneralSettings({ ...generalSettings, defaultView: e.target.value })}
+                    className="w-full px-3 py-2 rounded-lg border outline-none focus:border-indigo-500 text-sm"
+                    style={{ backgroundColor: 'rgba(255,255,255,0.05)', borderColor: 'rgba(255,255,255,0.1)', color: 'white' }}
+                  >
+                    <option value="comfortable" style={{ backgroundColor: '#1a1a2e', color: 'white' }}>Comfortable (large cards)</option>
+                    <option value="compact" style={{ backgroundColor: '#1a1a2e', color: 'white' }}>Compact (smaller cards)</option>
+                    <option value="dense" style={{ backgroundColor: '#1a1a2e', color: 'white' }}>Dense (icon-focused)</option>
+                    <option value="list" style={{ backgroundColor: '#1a1a2e', color: 'white' }}>List (horizontal rows)</option>
+                  </select>
+                  <p className="text-xs text-white/40 mt-1">Default view mode for new visitors. Users can override this on their device.</p>
+                </div>
+
+                {/* Open in New Tab Toggle */}
+                <div className="flex items-center gap-3 p-4 rounded-lg" style={{ backgroundColor: 'rgba(255,255,255,0.03)' }}>
+                  <input
+                    type="checkbox"
+                    id="openInNewTab"
+                    checked={generalSettings.openInNewTab}
+                    onChange={(e) => setGeneralSettings({ ...generalSettings, openInNewTab: e.target.checked })}
+                    className="w-5 h-5 rounded border-white/20"
+                  />
+                  <label htmlFor="openInNewTab" className="flex-1">
+                    <span className="font-medium text-sm">Open links in new tab</span>
+                    <p className="text-xs text-white/50">When enabled, blocks and search results open in a new browser tab</p>
+                  </label>
+                </div>
+
+                {/* Navigation Transition Toggle */}
+                <div className="flex items-center gap-3 p-4 rounded-lg" style={{ backgroundColor: 'rgba(255,255,255,0.03)' }}>
+                  <input
+                    type="checkbox"
+                    id="navTransitionEnabled"
+                    checked={generalSettings.navTransitionEnabled}
+                    onChange={(e) => setGeneralSettings({ ...generalSettings, navTransitionEnabled: e.target.checked })}
+                    className="w-5 h-5 rounded border-white/20"
+                  />
+                  <label htmlFor="navTransitionEnabled" className="flex-1">
+                    <span className="font-medium text-sm">Enable navigation transition</span>
+                    <p className="text-xs text-white/50">Show a visual transition when opening links in the same tab</p>
+                  </label>
+                </div>
+
+                {/* Transition Type Selector (only when enabled and same-tab) */}
+                {generalSettings.navTransitionEnabled && !generalSettings.openInNewTab && (
+                  <div className="p-4 rounded-lg -mt-2" style={{ backgroundColor: 'rgba(255,255,255,0.02)' }}>
+                    <label className="block text-sm text-white/70 mb-2">Transition Style</label>
+                    <div className="flex gap-2">
+                      <button
+                        type="button"
+                        onClick={() => setGeneralSettings({ ...generalSettings, navTransitionType: 'overlay' })}
+                        className="flex-1 px-4 py-3 rounded-lg text-sm text-left transition-all border"
+                        style={{
+                          backgroundColor: generalSettings.navTransitionType === 'overlay' ? 'rgba(99, 102, 241, 0.2)' : 'rgba(255,255,255,0.03)',
+                          borderColor: generalSettings.navTransitionType === 'overlay' ? 'rgba(99, 102, 241, 0.4)' : 'rgba(255,255,255,0.1)',
+                          color: generalSettings.navTransitionType === 'overlay' ? '#818cf8' : 'white',
+                        }}
+                      >
+                        <span className="font-medium">Launch Overlay</span>
+                        <p className="text-xs mt-1" style={{ color: generalSettings.navTransitionType === 'overlay' ? '#a5b4fc' : 'rgba(255,255,255,0.4)' }}>
+                          Full-screen glassmorphism overlay with icon and spinner
+                        </p>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setGeneralSettings({ ...generalSettings, navTransitionType: 'exit' })}
+                        className="flex-1 px-4 py-3 rounded-lg text-sm text-left transition-all border"
+                        style={{
+                          backgroundColor: generalSettings.navTransitionType === 'exit' ? 'rgba(99, 102, 241, 0.2)' : 'rgba(255,255,255,0.03)',
+                          borderColor: generalSettings.navTransitionType === 'exit' ? 'rgba(99, 102, 241, 0.4)' : 'rgba(255,255,255,0.1)',
+                          color: generalSettings.navTransitionType === 'exit' ? '#818cf8' : 'white',
+                        }}
+                      >
+                        <span className="font-medium">Exit Fade</span>
+                        <p className="text-xs mt-1" style={{ color: generalSettings.navTransitionType === 'exit' ? '#a5b4fc' : 'rgba(255,255,255,0.4)' }}>
+                          Darken the dashboard with a brief fade-out effect
+                        </p>
+                      </button>
+                    </div>
+                  </div>
+                )}
+
+                {/* Transition hint when enabled but new-tab is on */}
+                {generalSettings.navTransitionEnabled && generalSettings.openInNewTab && (
+                  <div className="p-3 rounded-lg -mt-2 text-xs" style={{ backgroundColor: 'rgba(245, 158, 11, 0.08)', border: '1px solid rgba(245, 158, 11, 0.2)', color: '#fbbf24' }}>
+                    ⚠️ Navigation transitions only apply when &quot;Open links in new tab&quot; is disabled. Currently, links will still open in new tabs.
+                  </div>
+                )}
+
+                {/* Save Button */}
+                <button
+                  type="button"
+                  onClick={handleSaveGeneralSettings}
+                  className="w-full px-4 py-2 rounded-lg transition-colors"
+                  style={{ backgroundColor: '#6366f1' }}
+                >
+                  Save General Settings
+                </button>
               </div>
             </div>
           </div>
