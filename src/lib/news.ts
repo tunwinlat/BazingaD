@@ -102,7 +102,7 @@ SUMMARY: <your summary here>
 Article Title: ${title}
 Content: ${content.slice(0, 3000)}`;
 
-  const response = await fetch('https://api.minimax.io/anthropic', {
+  const response = await fetch('https://api.minimax.io/v1/chat/completions', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
