@@ -54,3 +54,35 @@ export interface ServiceHealth {
   lastChecked?: Date;
   error?: string;
 }
+
+export interface NewsFeed {
+  id: string;
+  name: string;
+  url: string;
+  isDefault: boolean;
+  isEnabled: boolean;
+}
+
+export interface NewsTopic {
+  id: string;
+  phrase: string;
+}
+
+export interface NewsArticle {
+  id: string;
+  aiTitle: string | null;
+  originalTitle: string;
+  summary: string | null;
+  url: string;
+  sourceFeed: NewsFeed;
+  publishedAt: Date;
+  isRead: boolean;
+}
+
+export interface NewsSettings {
+  enabled: boolean;
+  apiKey: string | null;
+  checkIntervalMinutes: number;
+  unreadRetentionHours: number;
+  readRetentionHours: number;
+}

@@ -1,6 +1,6 @@
 {
   "name": "startpage-dashboard",
-  "version": "1.1.7",
+  "version": "2.0.7",
   "private": true,
   "scripts": {
     "dev": "next dev",
@@ -24,6 +24,7 @@
     "rate-limiter-flexible": "^11.1.0",
     "react": "^19.2.6",
     "react-dom": "^19.2.6",
+    "rss-parser": "^3.13.0",
     "sonner": "^2.0.7",
     "zod": "^4.3.6"
   },

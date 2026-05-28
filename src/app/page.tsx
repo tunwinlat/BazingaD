@@ -127,6 +127,15 @@ async function fetchNavTransitionType(): Promise<'overlay' | 'exit'> {
   }
 }
 
+async function fetchNewsEnabled(): Promise<boolean> {
+  try {
+    const settings = await prisma.settings.findFirst();
+    return settings?.newsEnabled ?? false;
+  } catch {
+    return false;
+  }
+}
+
 export default async function Home() {
   const access = await checkDashboardAccess();
 
@@ -140,6 +149,7 @@ export default async function Home() {
   const openInNewTab = await fetchOpenInNewTab();
   const navTransitionEnabled = await fetchNavTransitionEnabled();
   const navTransitionType = await fetchNavTransitionType();
+  const newsEnabled = await fetchNewsEnabled();
 
   return (
     <>
@@ -159,6 +169,7 @@ export default async function Home() {
             openInNewTab={openInNewTab}
             navTransitionEnabled={navTransitionEnabled}
             navTransitionType={navTransitionType}
+            newsEnabled={newsEnabled}
           />
           <Footer isAdmin={access.isAdmin} />
         </div>

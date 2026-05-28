@@ -1,0 +1,29 @@
+import { NextResponse } from 'next/server';
+import { fetchAndProcessFeeds, cleanupExpiredArticles } from '@/lib/news';
+
+const CRON_SECRET = process.env.CRON_SECRET;
+
+export async function POST(request: Request) {
+  try {
+    // Verify cron secret if configured
+    const authHeader = request.headers.get('x-cron-secret');
+    if (CRON_SECRET && authHeader !== CRON_SECRET) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    // Clean up expired articles first
+    const cleanedCount = await cleanupExpiredArticles();
+
+    // Fetch and process feeds
+    const result = await fetchAndProcessFeeds();
+
+    return NextResponse.json({
+      success: true,
+      cleaned: cleanedCount,
+      ...result,
+    });
+  } catch (error) {
+    console.error('News job error:', error);
+    return NextResponse.json({ error: 'Job failed' }, { status: 500 });
+  }
+}

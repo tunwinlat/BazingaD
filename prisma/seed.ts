@@ -11,6 +11,24 @@ async function main() {
     return;
   }
 
+  // Seed default news feeds if none exist
+  const existingFeeds = await prisma.newsFeed.count();
+  if (existingFeeds === 0) {
+    const defaultFeeds = [
+      { name: 'TechCrunch', url: 'https://techcrunch.com/feed/', isDefault: true },
+      { name: 'Ars Technica', url: 'https://feeds.arstechnica.com/arstechnica/index', isDefault: true },
+      { name: 'The Verge', url: 'https://www.theverge.com/rss/index.xml', isDefault: true },
+      { name: 'Wired', url: 'https://www.wired.com/feed/rss', isDefault: true },
+      { name: 'Hacker News', url: 'https://hnrss.org/frontpage?points=100', isDefault: true },
+      { name: 'TLDR AI', url: 'https://tldr.tech/api/rss/ai', isDefault: true },
+      { name: 'Krebs on Security', url: 'https://krebsonsecurity.com/feed/', isDefault: true },
+      { name: 'GitHub Blog', url: 'https://github.blog/feed/', isDefault: true },
+      { name: 'ByteByteGo', url: 'https://blog.bytebytego.com/feed', isDefault: true },
+    ];
+    await Promise.all(defaultFeeds.map(feed => prisma.newsFeed.create({ data: feed })));
+    console.log('Created default news feeds');
+  }
+
   // Create default categories only - no sample blocks for privacy
   const categories = await Promise.all([
     prisma.category.create({

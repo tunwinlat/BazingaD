@@ -4,7 +4,7 @@ import { useState, useEffect, useRef, memo } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
-import { ArrowLeft, Plus, Trash2, Edit, X, RefreshCw, LogOut, Shield, Key, QrCode, Copy, Check, AlertTriangle, Lock, Settings2, Cloud, MapPin, Thermometer, Globe, Upload, RotateCcw, Loader2, Eye, EyeOff, ChevronDown, ChevronUp, GripVertical } from 'lucide-react';
+import { ArrowLeft, Plus, Trash2, Edit, X, RefreshCw, LogOut, Shield, Key, QrCode, Copy, Check, AlertTriangle, Lock, Settings2, Cloud, MapPin, Thermometer, Globe, Upload, RotateCcw, Loader2, Eye, EyeOff, ChevronDown, ChevronUp, GripVertical, Newspaper, Radio, Tag, Clock } from 'lucide-react';
 import type { Category, Block, CategoryFormData, BlockFormData } from '@/types';
 
 // Convert hours to best unit for display
@@ -100,7 +100,7 @@ function AdminPage() {
   const [categories, setCategories] = useState<Category[]>([]);
   const [blocks, setBlocks] = useState<Block[]>([]);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<'general' | 'categories' | 'blocks' | 'security' | 'integrations'>('blocks');
+  const [activeTab, setActiveTab] = useState<'general' | 'categories' | 'blocks' | 'security' | 'integrations' | 'news'>('blocks');
   const [expandedIntegration, setExpandedIntegration] = useState<'weather' | 'traffic' | null>('weather');
 
   // Security states
@@ -189,6 +189,21 @@ function AdminPage() {
   const [showTrafficApiKey, setShowTrafficApiKey] = useState(false);
   const [showTomTomApiKey, setShowTomTomApiKey] = useState(false);
 
+  // News settings
+  const [newsSettings, setNewsSettings] = useState({
+    enabled: false,
+    apiKey: '',
+    checkIntervalMinutes: 60,
+    unreadRetentionHours: 24,
+    readRetentionHours: 8,
+  });
+  const [showNewsApiKey, setShowNewsApiKey] = useState(false);
+  const [newsFeeds, setNewsFeeds] = useState<Array<{ id: string; name: string; url: string; isDefault: boolean; isEnabled: boolean }>>([]);
+  const [newsTopics, setNewsTopics] = useState<Array<{ id: string; phrase: string }>>([]);
+  const [newFeedName, setNewFeedName] = useState('');
+  const [newFeedUrl, setNewFeedUrl] = useState('');
+  const [newTopic, setNewTopic] = useState('');
+
   // Weather settings
   const [locationLoading, setLocationLoading] = useState(false);
   const [locationError, setLocationError] = useState('');
@@ -240,7 +255,10 @@ function AdminPage() {
           fetchSessions(),
           fetchGeneralSettings(),
           fetchThemes(),
-          fetchTrafficSettings()
+          fetchTrafficSettings(),
+          fetchNewsSettings(),
+          fetchNewsFeeds(),
+          fetchNewsTopics(),
         ]);
         // Only reveal the admin UI if the user is authenticated.
         // When unauthenticated, fetchAuthStatus triggers a redirect to /login;
@@ -423,6 +441,48 @@ function AdminPage() {
       }
     } catch (error) {
       console.error('Failed to fetch traffic settings:', error);
+    }
+  };
+
+  const fetchNewsSettings = async () => {
+    try {
+      const response = await fetch('/api/news/settings');
+      if (response.ok) {
+        const data = await response.json();
+        setNewsSettings({
+          enabled: data.enabled ?? false,
+          apiKey: data.apiKey || '',
+          checkIntervalMinutes: data.checkIntervalMinutes ?? 60,
+          unreadRetentionHours: data.unreadRetentionHours ?? 24,
+          readRetentionHours: data.readRetentionHours ?? 8,
+        });
+      }
+    } catch (error) {
+      console.error('Failed to fetch news settings:', error);
+    }
+  };
+
+  const fetchNewsFeeds = async () => {
+    try {
+      const response = await fetch('/api/news/feeds');
+      if (response.ok) {
+        const data = await response.json();
+        setNewsFeeds(data);
+      }
+    } catch (error) {
+      console.error('Failed to fetch news feeds:', error);
+    }
+  };
+
+  const fetchNewsTopics = async () => {
+    try {
+      const response = await fetch('/api/news/topics');
+      if (response.ok) {
+        const data = await response.json();
+        setNewsTopics(data);
+      }
+    } catch (error) {
+      console.error('Failed to fetch news topics:', error);
     }
   };
 
@@ -809,6 +869,130 @@ function AdminPage() {
     }
   };
 
+  const handleSaveNewsSettings = async () => {
+    try {
+      const response = await fetch('/api/news/settings', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          newsEnabled: newsSettings.enabled,
+          newsApiKey: newsSettings.apiKey || null,
+          newsCheckIntervalMinutes: newsSettings.checkIntervalMinutes,
+          newsUnreadRetentionHours: newsSettings.unreadRetentionHours,
+          newsReadRetentionHours: newsSettings.readRetentionHours,
+        }),
+      });
+
+      if (response.ok) {
+        toast.success('News settings saved');
+        fetchNewsSettings();
+      } else {
+        const errorData = await response.json();
+        toast.error(errorData.error || 'Failed to save news settings');
+      }
+    } catch (error) {
+      console.error('News settings save error:', error);
+      toast.error('Network error saving news settings');
+    }
+  };
+
+  const handleToggleFeed = async (id: string, isEnabled: boolean) => {
+    try {
+      const response = await fetch(`/api/news/feeds/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ isEnabled }),
+      });
+      if (response.ok) {
+        fetchNewsFeeds();
+      } else {
+        const errorData = await response.json();
+        toast.error(errorData.error || 'Failed to toggle feed');
+      }
+    } catch (error) {
+      console.error('Toggle feed error:', error);
+    }
+  };
+
+  const handleDeleteFeed = async (id: string) => {
+    try {
+      const response = await fetch(`/api/news/feeds/${id}`, { method: 'DELETE' });
+      if (response.ok) {
+        fetchNewsFeeds();
+        toast.success('Feed deleted');
+      } else {
+        const errorData = await response.json();
+        toast.error(errorData.error || 'Failed to delete feed');
+      }
+    } catch (error) {
+      console.error('Delete feed error:', error);
+    }
+  };
+
+  const handleAddFeed = async () => {
+    if (!newFeedName.trim() || !newFeedUrl.trim()) {
+      toast.error('Feed name and URL are required');
+      return;
+    }
+    try {
+      const response = await fetch('/api/news/feeds', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: newFeedName, url: newFeedUrl }),
+      });
+      if (response.ok) {
+        setNewFeedName('');
+        setNewFeedUrl('');
+        fetchNewsFeeds();
+        toast.success('Feed added');
+      } else {
+        const errorData = await response.json();
+        toast.error(errorData.error || 'Failed to add feed');
+      }
+    } catch (error) {
+      console.error('Add feed error:', error);
+    }
+  };
+
+  const handleAddTopic = async () => {
+    if (!newTopic.trim()) {
+      toast.error('Topic phrase is required');
+      return;
+    }
+    try {
+      const response = await fetch('/api/news/topics', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ phrase: newTopic }),
+      });
+      if (response.ok) {
+        setNewTopic('');
+        fetchNewsTopics();
+        toast.success('Topic added');
+      } else {
+        const errorData = await response.json();
+        toast.error(errorData.error || 'Failed to add topic');
+      }
+    } catch (error) {
+      console.error('Add topic error:', error);
+    }
+  };
+
+  const handleDeleteTopic = async (id: string) => {
+    try {
+      const response = await fetch(`/api/news/topics/${id}`, { method: 'DELETE' });
+      if (response.ok) {
+        fetchNewsTopics();
+        toast.success('Topic deleted');
+      } else {
+        const errorData = await response.json();
+        toast.error(errorData.error || 'Failed to delete topic');
+      }
+    } catch (error) {
+      console.error('Delete topic error:', error);
+    }
+  };
+
   const handleSaveCategory = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSavingCategory(true);
@@ -1104,6 +1288,17 @@ function AdminPage() {
           >
             <Cloud className="w-4 h-4" />
             Integrations
+          </button>
+          <button
+            type="button"
+            onClick={() => setActiveTab('news')}
+            className="px-4 py-2 rounded-lg transition-colors flex items-center gap-2"
+            style={{
+              backgroundColor: activeTab === 'news' ? '#6366f1' : 'rgba(255,255,255,0.05)',
+            }}
+          >
+            <Newspaper className="w-4 h-4" />
+            News
           </button>
 
         </div>
@@ -2246,6 +2441,242 @@ function AdminPage() {
                   style={{ backgroundColor: '#6366f1' }}
                 >
                   Save General Settings
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+        {activeTab === 'news' && (
+          <div>
+            <h2 className="text-xl font-semibold mb-6">News & AI</h2>
+
+            {/* News Settings Card */}
+            <div className="rounded-xl p-6 mb-6" style={{ backgroundColor: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)' }}>
+              <div className="flex items-center gap-3 mb-4">
+                <div className="w-10 h-10 rounded-lg flex items-center justify-center" style={{ backgroundColor: 'rgba(99, 102, 241, 0.2)' }}>
+                  <Newspaper className="w-5 h-5 text-indigo-400" />
+                </div>
+                <div>
+                  <h3 className="font-semibold">RSS News & Summarization</h3>
+                  <p className="text-sm text-white/60">Fetch tech news via RSS and summarize with AI</p>
+                </div>
+              </div>
+
+              <div className="space-y-4">
+                {/* Enable Toggle */}
+                <div className="flex items-center gap-3 p-4 rounded-lg" style={{ backgroundColor: 'rgba(255,255,255,0.03)' }}>
+                  <input
+                    type="checkbox"
+                    id="newsEnabled"
+                    checked={newsSettings.enabled}
+                    onChange={(e) => setNewsSettings({ ...newsSettings, enabled: e.target.checked })}
+                    className="w-5 h-5 rounded border-white/20"
+                  />
+                  <label htmlFor="newsEnabled" className="flex-1">
+                    <span className="font-medium">Enable News Display</span>
+                    <p className="text-sm text-white/50">Show AI-summarized news on the dashboard</p>
+                  </label>
+                </div>
+
+                {newsSettings.enabled && (
+                  <>
+                    {/* API Key */}
+                    <div className="p-4 rounded-lg space-y-4" style={{ backgroundColor: 'rgba(255,255,255,0.03)' }}>
+                      <h4 className="font-medium flex items-center gap-2">
+                        <Key className="w-4 h-4" />
+                        MiniMax API Configuration
+                      </h4>
+                      <div>
+                        <label className="block text-sm text-white/70 mb-1">API Key</label>
+                        <div className="relative">
+                          <input
+                            type={showNewsApiKey ? 'text' : 'password'}
+                            value={newsSettings.apiKey}
+                            onChange={(e) => setNewsSettings({ ...newsSettings, apiKey: e.target.value })}
+                            placeholder="Enter your MiniMax API key"
+                            className="w-full pl-3 pr-10 py-2 rounded-lg border outline-none focus:border-indigo-500 text-sm"
+                            style={{ backgroundColor: 'rgba(255,255,255,0.05)', borderColor: 'rgba(255,255,255,0.1)', color: 'white' }}
+                          />
+                          <button
+                            type="button"
+                            onClick={() => setShowNewsApiKey(!showNewsApiKey)}
+                            className="absolute right-3 top-1/2 -translate-y-1/2 text-white/40 hover:text-white/80 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 rounded p-1"
+                            aria-label={showNewsApiKey ? 'Hide API key' : 'Show API key'}
+                          >
+                            {showNewsApiKey ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Retention Settings */}
+                    <div className="p-4 rounded-lg space-y-4" style={{ backgroundColor: 'rgba(255,255,255,0.03)' }}>
+                      <h4 className="font-medium flex items-center gap-2">
+                        <Clock className="w-4 h-4" />
+                        Retention Settings
+                      </h4>
+                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                        <div>
+                          <label className="block text-sm text-white/70 mb-1">Check Interval (min)</label>
+                          <input
+                            type="number"
+                            min={5}
+                            max={1440}
+                            value={newsSettings.checkIntervalMinutes}
+                            onChange={(e) => setNewsSettings({ ...newsSettings, checkIntervalMinutes: parseInt(e.target.value) || 60 })}
+                            className="w-full px-3 py-2 rounded-lg border outline-none focus:border-indigo-500 text-sm"
+                            style={{ backgroundColor: 'rgba(255,255,255,0.05)', borderColor: 'rgba(255,255,255,0.1)', color: 'white' }}
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-sm text-white/70 mb-1">Unread Retention (h)</label>
+                          <input
+                            type="number"
+                            min={1}
+                            max={168}
+                            value={newsSettings.unreadRetentionHours}
+                            onChange={(e) => setNewsSettings({ ...newsSettings, unreadRetentionHours: parseInt(e.target.value) || 24 })}
+                            className="w-full px-3 py-2 rounded-lg border outline-none focus:border-indigo-500 text-sm"
+                            style={{ backgroundColor: 'rgba(255,255,255,0.05)', borderColor: 'rgba(255,255,255,0.1)', color: 'white' }}
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-sm text-white/70 mb-1">Read Retention (h)</label>
+                          <input
+                            type="number"
+                            min={1}
+                            max={168}
+                            value={newsSettings.readRetentionHours}
+                            onChange={(e) => setNewsSettings({ ...newsSettings, readRetentionHours: parseInt(e.target.value) || 8 })}
+                            className="w-full px-3 py-2 rounded-lg border outline-none focus:border-indigo-500 text-sm"
+                            style={{ backgroundColor: 'rgba(255,255,255,0.05)', borderColor: 'rgba(255,255,255,0.1)', color: 'white' }}
+                          />
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Default Feeds */}
+                    <div className="p-4 rounded-lg space-y-3" style={{ backgroundColor: 'rgba(255,255,255,0.03)' }}>
+                      <h4 className="font-medium flex items-center gap-2">
+                        <Radio className="w-4 h-4" />
+                        RSS Feeds
+                      </h4>
+                      <div className="space-y-2">
+                        {newsFeeds.map((feed) => (
+                          <div key={feed.id} className="flex items-center gap-3 p-3 rounded-lg" style={{ backgroundColor: 'rgba(255,255,255,0.03)' }}>
+                            <input
+                              type="checkbox"
+                              checked={feed.isEnabled}
+                              onChange={(e) => handleToggleFeed(feed.id, e.target.checked)}
+                              className="w-4 h-4 rounded border-white/20"
+                            />
+                            <div className="flex-1 min-w-0">
+                              <p className="text-sm font-medium truncate">{feed.name}</p>
+                              <p className="text-xs text-white/40 truncate">{feed.url}</p>
+                            </div>
+                            {feed.isDefault && (
+                              <span className="text-[10px] px-1.5 py-0.5 rounded" style={{ backgroundColor: 'rgba(255,255,255,0.08)', color: 'var(--theme-text-muted)' }}>
+                                Default
+                              </span>
+                            )}
+                            {!feed.isDefault && (
+                              <button
+                                type="button"
+                                onClick={() => handleDeleteFeed(feed.id)}
+                                className="p-1 rounded hover:bg-white/10 text-white/40 hover:text-red-400 transition-colors"
+                              >
+                                <Trash2 className="w-3.5 h-3.5" />
+                              </button>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+
+                      {/* Add Custom Feed */}
+                      <div className="flex gap-2 pt-2">
+                        <input
+                          type="text"
+                          value={newFeedName}
+                          onChange={(e) => setNewFeedName(e.target.value)}
+                          placeholder="Feed name"
+                          className="flex-1 px-3 py-2 rounded-lg border outline-none focus:border-indigo-500 text-sm"
+                          style={{ backgroundColor: 'rgba(255,255,255,0.05)', borderColor: 'rgba(255,255,255,0.1)', color: 'white' }}
+                        />
+                        <input
+                          type="text"
+                          value={newFeedUrl}
+                          onChange={(e) => setNewFeedUrl(e.target.value)}
+                          placeholder="RSS URL"
+                          className="flex-[2] px-3 py-2 rounded-lg border outline-none focus:border-indigo-500 text-sm"
+                          style={{ backgroundColor: 'rgba(255,255,255,0.05)', borderColor: 'rgba(255,255,255,0.1)', color: 'white' }}
+                        />
+                        <button
+                          type="button"
+                          onClick={handleAddFeed}
+                          className="px-3 py-2 rounded-lg transition-colors"
+                          style={{ backgroundColor: 'rgba(99, 102, 241, 0.2)', color: '#818cf8' }}
+                        >
+                          <Plus className="w-4 h-4" />
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Topics */}
+                    <div className="p-4 rounded-lg space-y-3" style={{ backgroundColor: 'rgba(255,255,255,0.03)' }}>
+                      <h4 className="font-medium flex items-center gap-2">
+                        <Tag className="w-4 h-4" />
+                        Monitored Topics
+                      </h4>
+                      <p className="text-xs text-white/40">Only show articles matching these phrases. Leave empty to show all.</p>
+                      <div className="flex flex-wrap gap-2">
+                        {newsTopics.map((topic) => (
+                          <span
+                            key={topic.id}
+                            className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs"
+                            style={{ backgroundColor: 'rgba(99, 102, 241, 0.15)', color: '#a5b4fc', border: '1px solid rgba(99, 102, 241, 0.3)' }}
+                          >
+                            {topic.phrase}
+                            <button
+                              type="button"
+                              onClick={() => handleDeleteTopic(topic.id)}
+                              className="hover:text-white transition-colors"
+                            >
+                              <X className="w-3 h-3" />
+                            </button>
+                          </span>
+                        ))}
+                      </div>
+                      <div className="flex gap-2">
+                        <input
+                          type="text"
+                          value={newTopic}
+                          onChange={(e) => setNewTopic(e.target.value)}
+                          onKeyDown={(e) => e.key === 'Enter' && handleAddTopic()}
+                          placeholder="e.g. Microsoft Word, AI, Security"
+                          className="flex-1 px-3 py-2 rounded-lg border outline-none focus:border-indigo-500 text-sm"
+                          style={{ backgroundColor: 'rgba(255,255,255,0.05)', borderColor: 'rgba(255,255,255,0.1)', color: 'white' }}
+                        />
+                        <button
+                          type="button"
+                          onClick={handleAddTopic}
+                          className="px-3 py-2 rounded-lg transition-colors"
+                          style={{ backgroundColor: 'rgba(99, 102, 241, 0.2)', color: '#818cf8' }}
+                        >
+                          <Plus className="w-4 h-4" />
+                        </button>
+                      </div>
+                    </div>
+                  </>
+                )}
+
+                {/* Save Button */}
+                <button
+                  type="button"
+                  onClick={handleSaveNewsSettings}
+                  className="w-full px-4 py-2 rounded-lg transition-colors"
+                  style={{ backgroundColor: '#6366f1' }}
+                >
+                  Save News Settings
                 </button>
               </div>
             </div>

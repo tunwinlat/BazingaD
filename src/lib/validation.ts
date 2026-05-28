@@ -161,6 +161,24 @@ export const passwordChangeSchema = z.object({
   path: ['confirmNewPassword'],
 });
 
+// News validation schemas
+export const newsSettingsSchema = z.object({
+  newsEnabled: z.boolean().optional(),
+  newsApiKey: z.string().max(255).optional().nullable(),
+  newsCheckIntervalMinutes: z.number().int().min(5).max(1440).optional(),
+  newsUnreadRetentionHours: z.number().int().min(1).max(168).optional(),
+  newsReadRetentionHours: z.number().int().min(1).max(168).optional(),
+});
+
+export const newsFeedCreateSchema = z.object({
+  name: z.string().min(1).max(100).transform(v => v.trim()),
+  url: z.string().url().max(2048).transform(v => v.trim()),
+});
+
+export const newsTopicCreateSchema = z.object({
+  phrase: z.string().min(1).max(100).transform(v => v.trim()),
+});
+
 // Type exports
 export type BlockCreateInput = z.infer<typeof blockCreateSchema>;
 export type BlockUpdateInput = z.infer<typeof blockUpdateSchema>;
@@ -170,3 +188,6 @@ export type SettingsUpdateInput = z.infer<typeof settingsUpdateSchema>;
 export type LoginInput = z.infer<typeof loginSchema>;
 export type SetupInput = z.infer<typeof setupSchema>;
 export type PasswordChangeInput = z.infer<typeof passwordChangeSchema>;
+export type NewsSettingsInput = z.infer<typeof newsSettingsSchema>;
+export type NewsFeedCreateInput = z.infer<typeof newsFeedCreateSchema>;
+export type NewsTopicCreateInput = z.infer<typeof newsTopicCreateSchema>;

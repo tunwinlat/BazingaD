@@ -16,9 +16,11 @@ import {
   List,
   LogOut,
   Loader2,
+  Newspaper,
 } from 'lucide-react';
 import Weather from './Weather';
 import TrafficDisplay from './TrafficDisplay';
+import NewsTicker from './NewsTicker';
 import type { ViewMode } from '@/types';
 
 interface TrafficSettings {
@@ -33,6 +35,7 @@ interface StatusDockProps {
   viewMode?: ViewMode;
   onViewModeChange?: (mode: ViewMode) => void;
   trafficSettings: TrafficSettings | null;
+  onNewsClick?: () => void;
 }
 
 const PIN_STORAGE_KEY = 'startpage-status-dock-pinned';
@@ -50,6 +53,7 @@ export default function StatusDock({
   viewMode,
   onViewModeChange,
   trafficSettings,
+  onNewsClick,
 }: StatusDockProps) {
   const [isExpanded, setIsExpanded] = useState(false);
   const [isPinned, setIsPinned] = useState(() => {
@@ -164,6 +168,19 @@ export default function StatusDock({
               <TrafficDisplay settings={trafficSettings} minimal />
               <Car className="w-3.5 h-3.5 text-white/30" />
             </div>
+
+            {/* News indicator */}
+            {onNewsClick && (
+              <>
+                <div
+                  className="w-px h-4 self-center"
+                  style={{ backgroundColor: 'rgba(255,255,255,0.12)' }}
+                />
+                <div className="flex-1 min-w-0">
+                  <NewsTicker onClick={onNewsClick} compact />
+                </div>
+              </>
+            )}
           </div>
 
           {/* Expand chevron */}
@@ -253,6 +270,25 @@ export default function StatusDock({
               </div>
               <TrafficDisplay settings={trafficSettings} />
             </div>
+
+            {/* News Card */}
+            {onNewsClick && (
+              <div
+                className="rounded-xl p-4"
+                style={{
+                  backgroundColor: 'rgba(255,255,255,0.03)',
+                  border: '1px solid rgba(255,255,255,0.06)',
+                }}
+              >
+                <div className="flex items-center gap-2 mb-3">
+                  <Newspaper className="w-4 h-4" style={{ color: 'var(--theme-primary)' }} />
+                  <span className="text-xs font-medium uppercase tracking-wider text-white/40">
+                    News
+                  </span>
+                </div>
+                <NewsTicker onClick={onNewsClick} />
+              </div>
+            )}
           </div>
         </div>
       )}

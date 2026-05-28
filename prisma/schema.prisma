@@ -79,10 +79,17 @@ model Settings {
   trafficWorkAddress       String?  // Work address
   trafficTravelMode        String   @default("DRIVE") // DRIVE, BICYCLE, WALK, TWO_WHEELER, TRANSIT
   trafficUnits             String   @default("metric") // metric or imperial
-  
+
+  // News settings
+  newsEnabled              Boolean  @default(false)
+  newsApiKey               String?  // MiniMax API key
+  newsCheckIntervalMinutes Int      @default(60)
+  newsUnreadRetentionHours Int      @default(24)
+  newsReadRetentionHours   Int      @default(8)
+
   createdAt             DateTime @default(now())
   updatedAt             DateTime @updatedAt
-  
+
   @@map("settings")
 }
 
@@ -126,14 +133,55 @@ model Block {
 
 model TrafficCache {
   id                    String   @id @default(cuid())
-  
+
   // Cached route data
   homeToWorkDuration    Int      // Current duration in seconds
   homeToWorkStatic      Int      // Static duration (no traffic) in seconds
   workToHomeDuration    Int      // Current duration in seconds
   workToHomeStatic      Int      // Static duration (no traffic) in seconds
-  
+
   cachedAt              DateTime @default(now())
-  
+
   @@map("traffic_cache")
+}
+
+model NewsFeed {
+  id        String   @id @default(cuid())
+  name      String
+  url       String
+  isDefault Boolean  @default(false)
+  isEnabled Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  articles  NewsArticle[]
+
+  @@map("news_feeds")
+}
+
+model NewsTopic {
+  id        String   @id @default(cuid())
+  phrase    String   @unique
+  createdAt DateTime @default(now())
+
+  @@map("news_topics")
+}
+
+model NewsArticle {
+  id           String   @id @default(cuid())
+  originalTitle String
+  aiTitle      String?
+  summary      String?
+  url          String
+  sourceFeedId String
+  publishedAt  DateTime
+  fetchedAt    DateTime @default(now())
+  isRead       Boolean  @default(false)
+  readAt       DateTime?
+  expiresAt    DateTime
+  contentHash  String   @unique
+
+  sourceFeed NewsFeed @relation(fields: [sourceFeedId], references: [id], onDelete: Cascade)
+
+  @@map("news_articles")
 }

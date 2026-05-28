@@ -47,3 +47,8 @@ next-env.d.ts
 *.db-journal
 /prisma/*.db
 /prisma/*.db-journal
+
+# dev
+/dev.log
+/dev.pid
+/plan.md

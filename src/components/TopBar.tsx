@@ -1,6 +1,6 @@
 'use client';
 
-import { memo, useState, useEffect } from 'react';
+import { memo, useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import {
@@ -9,6 +9,7 @@ import {
 import Weather from './Weather';
 import TrafficDisplay from './TrafficDisplay';
 import StatusDock from './StatusDock';
+import NewsTicker from './NewsTicker';
 import type { ViewMode } from '@/types';
 
 interface TopBarProps {
@@ -16,6 +17,7 @@ interface TopBarProps {
   isProtected?: boolean;
   viewMode?: ViewMode;
   onViewModeChange?: (mode: ViewMode) => void;
+  onNewsClick?: () => void;
 }
 
 interface TrafficSettings {
@@ -31,7 +33,7 @@ const viewOptions: { value: ViewMode; label: string; icon: React.ReactNode }[] =
   { value: 'list', label: 'List', icon: <List className="w-4 h-4" /> },
 ];
 
-function TopBar({ isAdmin, isProtected, viewMode = 'comfortable', onViewModeChange }: TopBarProps) {
+function TopBar({ isAdmin, isProtected, viewMode = 'comfortable', onViewModeChange, onNewsClick }: TopBarProps) {
   const router = useRouter();
   const [time, setTime] = useState('--:--');
   const [date, setDate] = useState('');
@@ -123,6 +125,16 @@ function TopBar({ isAdmin, isProtected, viewMode = 'comfortable', onViewModeChan
         <div className="flex-shrink-0">
           <TrafficDisplay settings={trafficSettings} />
         </div>
+
+        {/* News Ticker */}
+        {onNewsClick && (
+          <>
+            <div className="hidden md:block w-full h-px" style={{ backgroundColor: 'rgba(255,255,255,0.06)' }} />
+            <div className="hidden md:flex w-full items-center gap-2 py-1">
+              <NewsTicker onClick={onNewsClick} />
+            </div>
+          </>
+        )}
 
         {/* Right-side actions */}
         <div className="flex items-center gap-2 ml-auto">
@@ -224,6 +236,7 @@ function TopBar({ isAdmin, isProtected, viewMode = 'comfortable', onViewModeChan
           viewMode={viewMode}
           onViewModeChange={onViewModeChange}
           trafficSettings={trafficSettings}
+          onNewsClick={onNewsClick}
         />
       </div>
     </>

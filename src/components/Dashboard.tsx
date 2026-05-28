@@ -1,12 +1,14 @@
 'use client';
 
 import { useState, useEffect, useCallback, memo, useMemo } from 'react';
+import { useRouter } from 'next/navigation';
 import { FolderPlus } from 'lucide-react';
 import CategorySection from './CategorySection';
 import QuickAddModal from './QuickAddModal';
 import TopBar from './TopBar';
 import NavTransition from './NavTransition';
-import type { Category, ViewMode } from '@/types';
+import NewsModal from './NewsModal';
+import type { Category, ViewMode, NewsArticle } from '@/types';
 
 // Memoized loading skeleton
 const CategorySkeleton = memo(function CategorySkeleton() {
@@ -97,6 +99,7 @@ interface DashboardProps {
   openInNewTab?: boolean;
   navTransitionEnabled?: boolean;
   navTransitionType?: 'overlay' | 'exit';
+  newsEnabled?: boolean;
 }
 
 const VIEW_MODE_STORAGE_KEY = 'startpage-view-mode';
@@ -109,12 +112,17 @@ export default function Dashboard({
   openInNewTab = true,
   navTransitionEnabled = false,
   navTransitionType = 'overlay',
+  newsEnabled = false,
 }: DashboardProps) {
+  const router = useRouter();
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [modalMode, setModalMode] = useState<'block' | 'category' | null>(null);
   const [defaultCategoryId, setDefaultCategoryId] = useState<string>('');
+  const [newsModalOpen, setNewsModalOpen] = useState(false);
+  const [newsArticles, setNewsArticles] = useState<NewsArticle[]>([]);
+  const [isMobile, setIsMobile] = useState(false);
 
   // View mode: localStorage override > server default
   const [viewMode, setViewMode] = useState<ViewMode>(defaultView);
@@ -130,6 +138,33 @@ export default function Dashboard({
       // localStorage not available
     }
   }, []);
+
+  // Detect mobile
+  useEffect(() => {
+    const checkMobile = () => setIsMobile(window.innerWidth < 768);
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
+
+  // Fetch news articles
+  useEffect(() => {
+    if (!newsEnabled) return;
+    const fetchNews = async () => {
+      try {
+        const response = await fetch('/api/news');
+        if (response.ok) {
+          const data = await response.json();
+          setNewsArticles(data);
+        }
+      } catch (error) {
+        console.error('Failed to fetch news:', error);
+      }
+    };
+    fetchNews();
+    const interval = setInterval(fetchNews, 60 * 60 * 1000);
+    return () => clearInterval(interval);
+  }, [newsEnabled]);
 
   // Persist view preference changes to localStorage
   const handleViewModeChange = useCallback((mode: ViewMode) => {
@@ -180,6 +215,21 @@ export default function Dashboard({
     setDefaultCategoryId('');
   }, []);
 
+  const handleNewsClick = useCallback(() => {
+    if (isMobile) {
+      router.push('/news');
+    } else {
+      // Refresh articles before opening modal
+      fetch('/api/news')
+        .then((r) => r.ok ? r.json() : [])
+        .then((data) => {
+          setNewsArticles(data);
+          setNewsModalOpen(true);
+        })
+        .catch(console.error);
+    }
+  }, [isMobile, router]);
+
   // Memoize category sections to prevent unnecessary re-renders
   const categorySections = useMemo(() => {
     return categories.map((category, index) => (
@@ -200,7 +250,7 @@ export default function Dashboard({
   if (loading) {
     return (
       <>
-        <TopBar isAdmin={isAdmin} isProtected={isProtected} viewMode={viewMode} onViewModeChange={handleViewModeChange} />
+        <TopBar isAdmin={isAdmin} isProtected={isProtected} viewMode={viewMode} onViewModeChange={handleViewModeChange} onNewsClick={newsEnabled ? handleNewsClick : undefined} />
         <main className="flex-1 flex flex-col">
           <CategorySkeleton />
           <CategorySkeleton />
@@ -213,7 +263,7 @@ export default function Dashboard({
   if (error) {
     return (
       <>
-        <TopBar isAdmin={isAdmin} isProtected={isProtected} viewMode={viewMode} onViewModeChange={handleViewModeChange} />
+        <TopBar isAdmin={isAdmin} isProtected={isProtected} viewMode={viewMode} onViewModeChange={handleViewModeChange} onNewsClick={newsEnabled ? handleNewsClick : undefined} />
         <main className="flex-1 flex flex-col">
           <ErrorState error={error} onRetry={fetchCategories} />
         </main>
@@ -225,7 +275,7 @@ export default function Dashboard({
   if (categories.length === 0) {
     return (
       <>
-        <TopBar isAdmin={isAdmin} isProtected={isProtected} viewMode={viewMode} onViewModeChange={handleViewModeChange} />
+        <TopBar isAdmin={isAdmin} isProtected={isProtected} viewMode={viewMode} onViewModeChange={handleViewModeChange} onNewsClick={newsEnabled ? handleNewsClick : undefined} />
         <main className="flex-1 flex flex-col">
           <EmptyState />
         </main>
@@ -236,7 +286,7 @@ export default function Dashboard({
 
   return (
     <>
-      <TopBar isAdmin={isAdmin} isProtected={isProtected} viewMode={viewMode} onViewModeChange={handleViewModeChange} />
+      <TopBar isAdmin={isAdmin} isProtected={isProtected} viewMode={viewMode} onViewModeChange={handleViewModeChange} onNewsClick={newsEnabled ? handleNewsClick : undefined} />
       <main className="flex-1 flex flex-col gap-8">
         {categorySections}
 
@@ -267,6 +317,15 @@ export default function Dashboard({
       />
 
       <NavTransition />
+
+      {newsEnabled && (
+        <NewsModal
+          articles={newsArticles}
+          isOpen={newsModalOpen}
+          onClose={() => setNewsModalOpen(false)}
+          navTransitionEnabled={navTransitionEnabled}
+        />
+      )}
     </>
   );
 }
