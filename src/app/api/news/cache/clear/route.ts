@@ -1,0 +1,18 @@
+import { NextResponse } from 'next/server';
+import { verifyAuth } from '@/lib/auth';
+import { newsCache } from '@/lib/cache';
+
+export async function POST() {
+  try {
+    const auth = await verifyAuth();
+    if (!auth) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    newsCache.delete('current_articles');
+    return NextResponse.json({ success: true, message: 'News cache cleared' });
+  } catch (error) {
+    console.error('News cache clear error:', error);
+    return NextResponse.json({ error: 'Failed to clear news cache' }, { status: 500 });
+  }
+}

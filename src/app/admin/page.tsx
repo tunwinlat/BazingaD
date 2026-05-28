@@ -896,6 +896,20 @@ function AdminPage() {
     }
   };
 
+  const handleClearNewsCache = async () => {
+    try {
+      const response = await fetch('/api/news/cache/clear', { method: 'POST' });
+      if (response.ok) {
+        toast.success('News cache cleared');
+      } else {
+        toast.error('Failed to clear news cache');
+      }
+    } catch (error) {
+      console.error('Clear cache error:', error);
+      toast.error('Network error clearing cache');
+    }
+  };
+
   const handleToggleFeed = async (id: string, isEnabled: boolean) => {
     try {
       const response = await fetch(`/api/news/feeds/${id}`, {
@@ -2669,15 +2683,27 @@ function AdminPage() {
                   </>
                 )}
 
-                {/* Save Button */}
-                <button
-                  type="button"
-                  onClick={handleSaveNewsSettings}
-                  className="w-full px-4 py-2 rounded-lg transition-colors"
-                  style={{ backgroundColor: '#6366f1' }}
-                >
-                  Save News Settings
-                </button>
+                {/* Action Buttons */}
+                <div className="flex gap-3">
+                  <button
+                    type="button"
+                    onClick={handleSaveNewsSettings}
+                    className="flex-1 px-4 py-2 rounded-lg transition-colors"
+                    style={{ backgroundColor: '#6366f1' }}
+                  >
+                    Save News Settings
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleClearNewsCache}
+                    className="flex items-center gap-2 px-4 py-2 rounded-lg transition-colors hover:opacity-90"
+                    style={{ backgroundColor: 'rgba(255,255,255,0.08)', color: 'var(--theme-text-muted)' }}
+                    title="Clear in-memory news cache"
+                  >
+                    <RotateCcw className="w-4 h-4" />
+                    Clear Cache
+                  </button>
+                </div>
               </div>
             </div>
           </div>
