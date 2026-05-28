@@ -88,6 +88,12 @@ model Settings {
   newsReadRetentionHours   Int      @default(8)
   newsMaxArticleAgeHours   Int      @default(24)
 
+  // Gadget bar settings
+  gadgetBarLeftEnabled     Boolean  @default(false)
+  gadgetBarRightEnabled    Boolean  @default(false)
+  gadgetBarLeftConfig      String   @default("[]") // JSON array of gadget configs
+  gadgetBarRightConfig     String   @default("[]") // JSON array of gadget configs
+
   createdAt             DateTime @default(now())
   updatedAt             DateTime @updatedAt
 

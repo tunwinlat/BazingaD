@@ -8,6 +8,7 @@ import QuickAddModal from './QuickAddModal';
 import TopBar from './TopBar';
 import NavTransition from './NavTransition';
 import NewsModal from './NewsModal';
+import GadgetBar from './GadgetBar';
 import type { Category, ViewMode, NewsArticle } from '@/types';
 
 // Memoized loading skeleton
@@ -100,6 +101,12 @@ interface DashboardProps {
   navTransitionEnabled?: boolean;
   navTransitionType?: 'overlay' | 'exit';
   newsEnabled?: boolean;
+  gadgetSettings?: {
+    leftEnabled: boolean;
+    rightEnabled: boolean;
+    leftConfig: Array<{ type: string; id: string }>;
+    rightConfig: Array<{ type: string; id: string }>;
+  };
 }
 
 const VIEW_MODE_STORAGE_KEY = 'startpage-view-mode';
@@ -113,6 +120,7 @@ export default function Dashboard({
   navTransitionEnabled = false,
   navTransitionType = 'overlay',
   newsEnabled = false,
+  gadgetSettings,
 }: DashboardProps) {
   const router = useRouter();
   const [categories, setCategories] = useState<Category[]>([]);
@@ -325,6 +333,22 @@ export default function Dashboard({
           onClose={() => setNewsModalOpen(false)}
           navTransitionEnabled={navTransitionEnabled}
         />
+      )}
+
+      {/* Gadget Bars */}
+      {gadgetSettings && (
+        <>
+          <GadgetBar
+            side="left"
+            enabled={gadgetSettings.leftEnabled}
+            config={gadgetSettings.leftConfig as Array<{ type: 'password'; id: string }>}
+          />
+          <GadgetBar
+            side="right"
+            enabled={gadgetSettings.rightEnabled}
+            config={gadgetSettings.rightConfig as Array<{ type: 'password'; id: string }>}
+          />
+        </>
       )}
     </>
   );

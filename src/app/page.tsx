@@ -136,6 +136,25 @@ async function fetchNewsEnabled(): Promise<boolean> {
   }
 }
 
+async function fetchGadgetSettings(): Promise<{
+  leftEnabled: boolean;
+  rightEnabled: boolean;
+  leftConfig: Array<{ type: string; id: string }>;
+  rightConfig: Array<{ type: string; id: string }>;
+}> {
+  try {
+    const settings = await prisma.settings.findFirst();
+    return {
+      leftEnabled: settings?.gadgetBarLeftEnabled ?? false,
+      rightEnabled: settings?.gadgetBarRightEnabled ?? false,
+      leftConfig: JSON.parse(settings?.gadgetBarLeftConfig ?? '[]'),
+      rightConfig: JSON.parse(settings?.gadgetBarRightConfig ?? '[]'),
+    };
+  } catch {
+    return { leftEnabled: false, rightEnabled: false, leftConfig: [], rightConfig: [] };
+  }
+}
+
 export default async function Home() {
   const access = await checkDashboardAccess();
 
@@ -150,6 +169,7 @@ export default async function Home() {
   const navTransitionEnabled = await fetchNavTransitionEnabled();
   const navTransitionType = await fetchNavTransitionType();
   const newsEnabled = await fetchNewsEnabled();
+  const gadgetSettings = await fetchGadgetSettings();
 
   return (
     <>
@@ -170,6 +190,7 @@ export default async function Home() {
             navTransitionEnabled={navTransitionEnabled}
             navTransitionType={navTransitionType}
             newsEnabled={newsEnabled}
+            gadgetSettings={gadgetSettings}
           />
           <Footer isAdmin={access.isAdmin} />
         </div>

@@ -4,8 +4,9 @@ import { useState, useEffect, useRef, memo } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
-import { ArrowLeft, Plus, Trash2, Edit, X, RefreshCw, LogOut, Shield, Key, QrCode, Copy, Check, AlertTriangle, Lock, Settings2, Cloud, MapPin, Thermometer, Globe, Upload, RotateCcw, Loader2, Eye, EyeOff, ChevronDown, ChevronUp, GripVertical, Newspaper, Radio, Tag, Clock } from 'lucide-react';
+import { ArrowLeft, Plus, Trash2, Edit, X, RefreshCw, LogOut, Shield, Key, QrCode, Copy, Check, AlertTriangle, Lock, Settings2, Cloud, MapPin, Thermometer, Globe, Upload, RotateCcw, Loader2, Eye, EyeOff, ChevronDown, ChevronUp, GripVertical, Newspaper, Radio, Tag, Clock, LayoutGrid } from 'lucide-react';
 import type { Category, Block, CategoryFormData, BlockFormData } from '@/types';
+import GadgetSettingsPanel from '@/components/admin/GadgetSettingsPanel';
 
 // Convert hours to best unit for display
 const hoursToDisplay = (hours: number): { value: number; unit: 'hours' | 'days' | 'months' } => {
@@ -100,7 +101,7 @@ function AdminPage() {
   const [categories, setCategories] = useState<Category[]>([]);
   const [blocks, setBlocks] = useState<Block[]>([]);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<'general' | 'categories' | 'blocks' | 'security' | 'integrations'>('blocks');
+  const [activeTab, setActiveTab] = useState<'general' | 'categories' | 'blocks' | 'security' | 'integrations' | 'gadgets'>('blocks');
   const [expandedIntegration, setExpandedIntegration] = useState<'weather' | 'traffic' | 'news' | null>('weather');
 
   // Security states
@@ -1305,6 +1306,17 @@ function AdminPage() {
           >
             <Cloud className="w-4 h-4" />
             Integrations
+          </button>
+          <button
+            type="button"
+            onClick={() => setActiveTab('gadgets')}
+            className="px-4 py-2 rounded-lg transition-colors flex items-center gap-2"
+            style={{
+              backgroundColor: activeTab === 'gadgets' ? '#6366f1' : 'rgba(255,255,255,0.05)',
+            }}
+          >
+            <LayoutGrid className="w-4 h-4" />
+            Gadgets
           </button>
         </div>
 
@@ -3178,6 +3190,11 @@ function AdminPage() {
         </div>
         </>
       )}
+
+      {activeTab === 'gadgets' && (
+        <GadgetSettingsPanel />
+      )}
+
       <ConfirmModal
         open={confirmOpen}
         title={confirmTitle}
