@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { X, ExternalLink, Newspaper, Clock, CheckCircle2, Circle } from 'lucide-react';
 import { triggerTransition } from '@/lib/navTransition';
 import type { NewsArticle } from '@/types';
@@ -15,6 +15,7 @@ interface NewsModalProps {
 export default function NewsModal({ articles, isOpen, onClose, navTransitionEnabled = false }: NewsModalProps) {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [readArticles, setReadArticles] = useState<Set<string>>(new Set());
+  const autoMarkedRef = useRef<Set<string>>(new Set());
 
   const selectedArticle = articles.find((a) => a.id === selectedId) || articles[0];
 
@@ -23,6 +24,18 @@ export default function NewsModal({ articles, isOpen, onClose, navTransitionEnab
       setSelectedId(articles[0].id);
     }
   }, [isOpen, articles, selectedId]);
+
+  // Auto-mark as read when an article is selected (user is reading the summary)
+  useEffect(() => {
+    if (!selectedId) return;
+    if (selectedArticle?.isRead) return;
+    if (autoMarkedRef.current.has(selectedId)) return;
+    if (readArticles.has(selectedId)) return;
+
+    autoMarkedRef.current.add(selectedId);
+    handleMarkRead(selectedId);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedId]);
 
   useEffect(() => {
     if (!isOpen) return;

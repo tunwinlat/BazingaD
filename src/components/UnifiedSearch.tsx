@@ -1,9 +1,61 @@
 'use client';
 
-import { memo, useState, useEffect, useRef, useMemo } from 'react';
-import { Search, ExternalLink, Globe, X, ArrowRight } from 'lucide-react';
+import { memo, useState, useEffect, useRef, useMemo, useCallback } from 'react';
+import { Search, ExternalLink, Globe, X, ArrowRight, History } from 'lucide-react';
 import { triggerTransition } from '@/lib/navTransition';
 import type { Category } from '@/types';
+
+// ─── Search History ────────────────────────────────────────────────
+
+const HISTORY_STORAGE_KEY = 'startpage-search-history';
+const MAX_HISTORY_ITEMS = 50;
+
+interface HistoryItem {
+  url: string;
+  title?: string;
+  visitedAt: string;
+}
+
+function loadHistory(): HistoryItem[] {
+  try {
+    const raw = localStorage.getItem(HISTORY_STORAGE_KEY);
+    if (!raw) return [];
+    const parsed = JSON.parse(raw);
+    if (Array.isArray(parsed)) return parsed;
+  } catch {
+    // ignore
+  }
+  return [];
+}
+
+function saveHistory(items: HistoryItem[]) {
+  try {
+    localStorage.setItem(HISTORY_STORAGE_KEY, JSON.stringify(items));
+  } catch {
+    // ignore
+  }
+}
+
+function addHistoryItem(url: string, title?: string) {
+  const history = loadHistory();
+  // Remove existing entry with same URL
+  const filtered = history.filter((h) => h.url !== url);
+  // Add new entry at the front
+  filtered.unshift({ url, title, visitedAt: new Date().toISOString() });
+  // Trim to max
+  const trimmed = filtered.slice(0, MAX_HISTORY_ITEMS);
+  saveHistory(trimmed);
+}
+
+function filterHistory(query: string): HistoryItem[] {
+  if (!query.trim()) return [];
+  const lower = query.toLowerCase().trim();
+  return loadHistory().filter(
+    (h) =>
+      h.url.toLowerCase().includes(lower) ||
+      (h.title && h.title.toLowerCase().includes(lower))
+  );
+}
 
 interface UnifiedSearchProps {
   categories: Category[];
@@ -55,7 +107,7 @@ function UnifiedSearch({
 }: UnifiedSearchProps) {
   const [query, setQuery] = useState('');
   const [isFocused, setIsFocused] = useState(false);
-  const [selectedIndex, setSelectedIndex] = useState(0);
+  const [selectedIndex, setSelectedIndex] = useState(-1); // -1 = typed text
   const inputRef = useRef<HTMLInputElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -71,12 +123,6 @@ function UnifiedSearch({
     }, 50);
     return () => clearTimeout(timeout);
   }, []);
-
-  // Use refs to access latest state in global keydown listener without re-registering
-  const stateRef = useRef({ query, isFocused, selectedIndex, openInNewTab, navTransitionEnabled, navTransitionType, isUrlQuery });
-  useEffect(() => {
-    stateRef.current = { query, isFocused, selectedIndex, openInNewTab, navTransitionEnabled, navTransitionType, isUrlQuery };
-  }, [query, isFocused, selectedIndex, openInNewTab, navTransitionEnabled, navTransitionType, isUrlQuery]);
 
   // Flatten all blocks for searching
   const allBlocks = useMemo(() => {
@@ -100,13 +146,19 @@ function UnifiedSearch({
     );
   }, [query, allBlocks]);
 
+  // Load history suggestions
+  const historyItems = useMemo(() => filterHistory(query), [query]);
+
+  // Total selectable items: blocks + history + fallback
+  const totalSuggestions = filteredBlocks.length + historyItems.length;
+  const hasFallback = query.trim().length > 0;
+
   // Reset selected index when results change
   useEffect(() => {
-    // We intentionally reset selected index when query or results change
-    setSelectedIndex(0);
-  }, [filteredBlocks.length, query]);
+    setSelectedIndex(-1); // default to typed text
+  }, [filteredBlocks.length, historyItems.length, query]);
 
-  const navigateTo = (url: string, title?: string, icon?: string) => {
+  const navigateTo = useCallback((url: string, title?: string, icon?: string) => {
     if (openInNewTab) {
       window.open(url, '_blank');
     } else if (navTransitionEnabled) {
@@ -114,7 +166,19 @@ function UnifiedSearch({
     } else {
       window.location.href = url;
     }
-  };
+  }, [openInNewTab, navTransitionEnabled, navTransitionType]);
+
+  // Use refs to access latest state in global keydown listener without re-registering
+  const stateRef = useRef({
+    query, isFocused, selectedIndex, openInNewTab, navTransitionEnabled, navTransitionType, isUrlQuery,
+    historyCount: 0, historyItems: [] as HistoryItem[],
+  });
+  useEffect(() => {
+    stateRef.current = {
+      query, isFocused, selectedIndex, openInNewTab, navTransitionEnabled, navTransitionType, isUrlQuery,
+      historyCount: historyItems.length, historyItems,
+    };
+  }, [query, isFocused, selectedIndex, openInNewTab, navTransitionEnabled, navTransitionType, isUrlQuery, historyItems]);
 
   // Keyboard shortcuts
   useEffect(() => {
@@ -136,37 +200,68 @@ function UnifiedSearch({
       if (!state.isFocused) return;
 
       const currentBlocks = filteredBlocksRef.current;
-      const currentTotal = currentBlocks.length + (state.query.trim() ? 1 : 0);
+      const currentTotal = currentBlocks.length + state.historyCount + (state.query.trim() ? 1 : 0);
       if (currentTotal === 0) return;
 
       // Arrow navigation
       if (e.key === 'ArrowDown') {
         e.preventDefault();
-        setSelectedIndex((prev) => (prev < currentTotal - 1 ? prev + 1 : prev));
+        setSelectedIndex((prev) => {
+          const next = prev + 1;
+          return next < currentTotal ? next : prev;
+        });
       }
 
       if (e.key === 'ArrowUp') {
         e.preventDefault();
-        setSelectedIndex((prev) => (prev > 0 ? prev - 1 : prev));
+        setSelectedIndex((prev) => {
+          const next = prev - 1;
+          return next >= -1 ? next : prev;
+        });
       }
 
       // Enter to open
       if (e.key === 'Enter') {
         e.preventDefault();
         const idx = stateRef.current.selectedIndex;
-        if (idx < currentBlocks.length) {
+
+        if (idx === -1) {
+          // Nothing selected — go to typed text
+          if (state.isUrlQuery) {
+            const url = normalizeUrl(state.query);
+            addHistoryItem(url, url);
+            navigateTo(url, url);
+          } else {
+            const searchUrl = `https://www.google.com/search?q=${encodeURIComponent(state.query)}&udm=50`;
+            navigateTo(searchUrl, `Search: ${state.query}`);
+          }
+        } else if (idx < currentBlocks.length) {
+          // Block selected
           const selected = currentBlocks[idx];
           navigateTo(selected.url, selected.title, selected.icon || undefined);
-        } else if (state.isUrlQuery) {
-          const url = normalizeUrl(state.query);
-          navigateTo(url, url);
+        } else if (idx < currentBlocks.length + state.historyCount) {
+          // History item selected
+          const histIdx = idx - currentBlocks.length;
+          const hist = state.historyItems[histIdx];
+          if (hist) {
+            addHistoryItem(hist.url, hist.title);
+            navigateTo(hist.url, hist.title || hist.url);
+          }
         } else {
-          const searchUrl = `https://www.google.com/search?q=${encodeURIComponent(state.query)}&udm=50`;
-          navigateTo(searchUrl, `Search: ${state.query}`);
+          // Fallback selected
+          if (state.isUrlQuery) {
+            const url = normalizeUrl(state.query);
+            addHistoryItem(url, url);
+            navigateTo(url, url);
+          } else {
+            const searchUrl = `https://www.google.com/search?q=${encodeURIComponent(state.query)}&udm=50`;
+            navigateTo(searchUrl, `Search: ${state.query}`);
+          }
         }
         setQuery('');
         inputRef.current?.blur();
         setIsFocused(false);
+        setSelectedIndex(-1);
       }
     };
 
@@ -197,11 +292,21 @@ function UnifiedSearch({
     navigateTo(block.url, block.title, block.icon || undefined);
     setQuery('');
     setIsFocused(false);
+    setSelectedIndex(-1);
+  };
+
+  const handleHistoryClick = (item: HistoryItem) => {
+    addHistoryItem(item.url, item.title);
+    navigateTo(item.url, item.title || item.url);
+    setQuery('');
+    setIsFocused(false);
+    setSelectedIndex(-1);
   };
 
   const handleFallbackAction = () => {
     if (isUrlQuery) {
       const url = normalizeUrl(query);
+      addHistoryItem(url, url);
       navigateTo(url, url);
     } else {
       const searchUrl = `https://www.google.com/search?q=${encodeURIComponent(query)}&udm=50`;
@@ -209,6 +314,7 @@ function UnifiedSearch({
     }
     setQuery('');
     setIsFocused(false);
+    setSelectedIndex(-1);
   };
 
   return (
@@ -285,74 +391,121 @@ function UnifiedSearch({
           {filteredBlocks.length > 0 && (
             <div className="py-2">
               <div className="px-4 py-1 text-xs text-white/40 uppercase tracking-wider">Your Blocks</div>
-              {filteredBlocks.map((block, index) => (
-                <button
-                  id={`search-result-${index}`}
-                  role="option"
-                  aria-selected={index === selectedIndex}
-                  key={block.id}
-                  onClick={() => handleBlockClick(block)}
-                  onMouseEnter={() => setSelectedIndex(index)}
-                  className="w-full flex items-center gap-3 px-4 py-2.5 text-left transition-colors"
-                  style={{
-                    backgroundColor: index === selectedIndex ? 'rgba(99, 102, 241, 0.2)' : 'transparent',
-                  }}
-                >
-                  {/* Icon */}
-                  <div
-                    className="w-8 h-8 rounded-lg flex items-center justify-center text-sm flex-shrink-0"
-                    style={{ backgroundColor: 'rgba(255, 255, 255, 0.05)' }}
+              {filteredBlocks.map((block, index) => {
+                const isSel = selectedIndex === index;
+                return (
+                  <button
+                    id={`search-result-${index}`}
+                    role="option"
+                    aria-selected={isSel}
+                    key={block.id}
+                    onClick={() => handleBlockClick(block)}
+                    onMouseEnter={() => setSelectedIndex(index)}
+                    className="w-full flex items-center gap-3 px-4 py-2.5 text-left transition-colors"
+                    style={{
+                      backgroundColor: isSel ? 'rgba(99, 102, 241, 0.2)' : 'transparent',
+                    }}
                   >
-                    {block.icon ? (
-                      <>
-                        {/* eslint-disable-next-line @next/next/no-img-element */}
-                        <img
-                          src={block.icon}
-                          alt=""
-                          className="w-5 h-5 object-contain"
-                          onError={(e) => {
-                            (e.target as HTMLImageElement).style.display = 'none';
-                          }}
-                        />
-                      </>
-                    ) : (
-                      <span>🔗</span>
-                    )}
-                  </div>
-
-                  {/* Content */}
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2">
-                      <span className="font-medium text-white text-sm truncate">{block.title}</span>
-                      <span
-                        className="text-xs px-1.5 py-0.5 rounded-full flex-shrink-0"
-                        style={{ backgroundColor: 'rgba(255, 255, 255, 0.1)', fontSize: '10px' }}
-                      >
-                        {block.categoryName}
-                      </span>
+                    {/* Icon */}
+                    <div
+                      className="w-8 h-8 rounded-lg flex items-center justify-center text-sm flex-shrink-0"
+                      style={{ backgroundColor: 'rgba(255, 255, 255, 0.05)' }}
+                    >
+                      {block.icon ? (
+                        <>
+                          {/* eslint-disable-next-line @next/next/no-img-element */}
+                          <img
+                            src={block.icon}
+                            alt=""
+                            className="w-5 h-5 object-contain"
+                            onError={(e) => {
+                              (e.target as HTMLImageElement).style.display = 'none';
+                            }}
+                          />
+                        </>
+                      ) : (
+                        <span>🔗</span>
+                      )}
                     </div>
-                    {block.description && <p className="text-xs text-white/50 truncate">{block.description}</p>}
-                  </div>
 
-                  <ExternalLink className="w-3.5 h-3.5 text-white/30 flex-shrink-0" />
-                </button>
-              ))}
+                    {/* Content */}
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2">
+                        <span className="font-medium text-white text-sm truncate">{block.title}</span>
+                        <span
+                          className="text-xs px-1.5 py-0.5 rounded-full flex-shrink-0"
+                          style={{ backgroundColor: 'rgba(255, 255, 255, 0.1)', fontSize: '10px' }}
+                        >
+                          {block.categoryName}
+                        </span>
+                      </div>
+                      {block.description && <p className="text-xs text-white/50 truncate">{block.description}</p>}
+                    </div>
+
+                    <ExternalLink className="w-3.5 h-3.5 text-white/30 flex-shrink-0" />
+                  </button>
+                );
+              })}
+            </div>
+          )}
+
+          {/* History Results */}
+          {historyItems.length > 0 && (
+            <div className={filteredBlocks.length > 0 ? 'border-t border-white/10 py-2' : 'py-2'}>
+              <div className="px-4 py-1 text-xs text-white/40 uppercase tracking-wider flex items-center gap-1.5">
+                <History className="w-3 h-3" />
+                Recent
+              </div>
+              {historyItems.map((item, idx) => {
+                const globalIdx = filteredBlocks.length + idx;
+                const isSel = selectedIndex === globalIdx;
+                return (
+                  <button
+                    id={`search-result-${globalIdx}`}
+                    role="option"
+                    aria-selected={isSel}
+                    key={item.url}
+                    onClick={() => handleHistoryClick(item)}
+                    onMouseEnter={() => setSelectedIndex(globalIdx)}
+                    className="w-full flex items-center gap-3 px-4 py-2.5 text-left transition-colors"
+                    style={{
+                      backgroundColor: isSel ? 'rgba(99, 102, 241, 0.2)' : 'transparent',
+                    }}
+                  >
+                    <div
+                      className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0"
+                      style={{ backgroundColor: 'rgba(255, 255, 255, 0.05)' }}
+                    >
+                      <Globe className="w-4 h-4 text-white/40" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm text-white truncate">
+                        {item.title || item.url}
+                      </p>
+                      {item.title && (
+                        <p className="text-xs text-white/40 truncate">{item.url}</p>
+                      )}
+                    </div>
+                    <ExternalLink className="w-3.5 h-3.5 text-white/30 flex-shrink-0" />
+                  </button>
+                );
+              })}
             </div>
           )}
 
           {/* Fallback action: URL navigation or Google Search */}
-          {query.trim() && (
+          {hasFallback && (
             <div className="border-t border-white/10 py-2">
               <button
-                id={`search-result-${filteredBlocks.length}`}
+                id={`search-result-${totalSuggestions}`}
                 role="option"
-                aria-selected={selectedIndex === filteredBlocks.length}
+                aria-selected={selectedIndex === totalSuggestions}
                 onClick={handleFallbackAction}
-                onMouseEnter={() => setSelectedIndex(filteredBlocks.length)}
+                onMouseEnter={() => setSelectedIndex(totalSuggestions)}
                 className="w-full flex items-center gap-3 px-4 py-2.5 text-left transition-colors"
                 style={{
                   backgroundColor:
-                    selectedIndex === filteredBlocks.length ? 'rgba(99, 102, 241, 0.2)' : 'transparent',
+                    selectedIndex === totalSuggestions ? 'rgba(99, 102, 241, 0.2)' : 'transparent',
                 }}
               >
                 <div
@@ -376,21 +529,25 @@ function UnifiedSearch({
                     </span>
                   )}
                 </div>
-                <ExternalLink className="w-3.5 h-3.5 text-white/30 flex-shrink-0" />
+                <kbd className="hidden sm:block px-1.5 py-0.5 rounded text-[10px] text-white/30" style={{ backgroundColor: 'rgba(255,255,255,0.08)' }}>
+                  Enter
+                </kbd>
               </button>
             </div>
           )}
 
           {/* Empty State */}
-          {filteredBlocks.length === 0 && (
+          {filteredBlocks.length === 0 && historyItems.length === 0 && (
             <div className="px-4 py-3 text-sm text-white/40">
               {isUrlQuery ? (
                 <>
-                  No blocks found. Press Enter to go to{' '}
+                  No results. Press <kbd className="px-1 rounded text-[10px]" style={{ backgroundColor: 'rgba(255,255,255,0.1)' }}>Enter</kbd> to go to{' '}
                   <span className="text-emerald-400">{normalizeUrl(query)}</span>.
                 </>
               ) : (
-                <>No blocks found. Press Enter to search Google.</>
+                <>
+                  No results. Press <kbd className="px-1 rounded text-[10px]" style={{ backgroundColor: 'rgba(255,255,255,0.1)' }}>Enter</kbd> to search Google.
+                </>
               )}
             </div>
           )}
