@@ -3,6 +3,39 @@ import { PrismaClient } from '@prisma/client';
 const prisma = new PrismaClient();
 
 async function main() {
+  // Ensure a settings record always exists
+  const existingSettings = await prisma.settings.count();
+  if (existingSettings === 0) {
+    await prisma.settings.create({
+      data: {
+        siteTitle: 'Start Page',
+        theme: 'default',
+        defaultView: 'comfortable',
+        openInNewTab: true,
+        navTransitionEnabled: false,
+        navTransitionType: 'overlay',
+        dashboardProtected: false,
+        sessionDurationHours: 24,
+        weatherEnabled: false,
+        weatherUnits: 'metric',
+        trafficEnabled: false,
+        trafficPrimaryProvider: 'google',
+        trafficTravelMode: 'DRIVE',
+        trafficUnits: 'metric',
+        newsEnabled: false,
+        newsCheckIntervalMinutes: 60,
+        newsUnreadRetentionHours: 24,
+        newsReadRetentionHours: 8,
+        newsMaxArticleAgeHours: 24,
+        gadgetBarLeftEnabled: false,
+        gadgetBarRightEnabled: false,
+        gadgetBarLeftConfig: '[]',
+        gadgetBarRightConfig: '[]',
+      },
+    });
+    console.log('Created default settings record');
+  }
+
   // Seed default news feeds if none exist (always run, independent of categories)
   const existingFeeds = await prisma.newsFeed.count();
   if (existingFeeds === 0) {
