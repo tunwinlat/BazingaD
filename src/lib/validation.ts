@@ -173,7 +173,10 @@ export const newsSettingsSchema = z.object({
 
 export const newsFeedCreateSchema = z.object({
   name: z.string().min(1).max(100).transform(v => v.trim()),
-  url: z.string().url().max(2048).transform(v => v.trim()),
+  url: z.string().url().max(2048).transform(v => v.trim())
+    .refine(val => isSafeUrl(val), {
+      message: 'URL is not allowed for security reasons'
+    }),
 });
 
 export const newsTopicCreateSchema = z.object({
