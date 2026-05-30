@@ -232,6 +232,10 @@ function AdminPage() {
   const [isSavingBlock, setIsSavingBlock] = useState(false);
   const [isDeletingCategory, setIsDeletingCategory] = useState<string | null>(null);
   const [isDeletingBlock, setIsDeletingBlock] = useState<string | null>(null);
+  const [isChangingPassword, setIsChangingPassword] = useState(false);
+  const [isUpdatingSettings, setIsUpdatingSettings] = useState(false);
+  const [isVerifyingTOTP, setIsVerifyingTOTP] = useState(false);
+  const [isDisablingTOTP, setIsDisablingTOTP] = useState(false);
 
   // Drag and drop state
   const [draggedId, setDraggedId] = useState<string | null>(null);
@@ -507,6 +511,7 @@ function AdminPage() {
 
   const handleVerifyTOTP = async (e: React.FormEvent) => {
     e.preventDefault();
+    setIsVerifyingTOTP(true);
     try {
       const response = await fetch('/api/auth/totp/verify', {
         method: 'POST',
@@ -526,11 +531,14 @@ function AdminPage() {
       }
     } catch (error) {
       console.error('TOTP verify error:', error);
+    } finally {
+      setIsVerifyingTOTP(false);
     }
   };
 
   const handleDisableTOTP = async (e: React.FormEvent) => {
     e.preventDefault();
+    setIsDisablingTOTP(true);
     try {
       const response = await fetch('/api/auth/totp/disable', {
         method: 'POST',
@@ -549,6 +557,8 @@ function AdminPage() {
       }
     } catch (error) {
       console.error('Disable TOTP error:', error);
+    } finally {
+      setIsDisablingTOTP(false);
     }
   };
 
@@ -558,6 +568,7 @@ function AdminPage() {
       toast.error('New passwords do not match');
       return;
     }
+    setIsChangingPassword(true);
     try {
       const response = await fetch('/api/auth/password', {
         method: 'PUT',
@@ -578,6 +589,8 @@ function AdminPage() {
       }
     } catch (error) {
       console.error('Password change error:', error);
+    } finally {
+      setIsChangingPassword(false);
     }
   };
 
@@ -596,6 +609,7 @@ function AdminPage() {
 
   const handleUpdateSettings = async (e: React.FormEvent) => {
     e.preventDefault();
+    setIsUpdatingSettings(true);
     try {
       const hours = displayToHours(durationValue, durationUnit);
       const response = await fetch('/api/settings', {
@@ -873,6 +887,7 @@ function AdminPage() {
   };
 
   const handleSaveNewsSettings = async () => {
+    setIsUpdatingSettings(true);
     try {
       const response = await fetch('/api/news/settings', {
         method: 'PUT',
@@ -897,6 +912,8 @@ function AdminPage() {
     } catch (error) {
       console.error('News settings save error:', error);
       toast.error('Network error saving news settings');
+    } finally {
+      setIsUpdatingSettings(false);
     }
   };
 
@@ -1606,10 +1623,12 @@ function AdminPage() {
                     </button>
                     <button
                       type="submit"
-                      className="flex-1 px-4 py-2 rounded-lg transition-colors"
+                      disabled={isChangingPassword}
+                      className="flex-1 px-4 py-2 rounded-lg transition-colors flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
                       style={{ backgroundColor: '#6366f1' }}
                     >
-                      Update Password
+                      {isChangingPassword && <Loader2 className="w-4 h-4 animate-spin" />}
+                      {isChangingPassword ? 'Updating...' : 'Update Password'}
                     </button>
                   </div>
                 </form>
@@ -1770,10 +1789,12 @@ function AdminPage() {
                     </button>
                     <button
                       type="submit"
-                      className="flex-1 px-4 py-2 rounded-lg transition-colors"
+                      disabled={isUpdatingSettings}
+                      className="flex-1 px-4 py-2 rounded-lg transition-colors flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
                       style={{ backgroundColor: '#6366f1' }}
                     >
-                      Save Settings
+                      {isUpdatingSettings && <Loader2 className="w-4 h-4 animate-spin" />}
+                      {isUpdatingSettings ? 'Saving...' : 'Save Settings'}
                     </button>
                   </div>
                 </form>
@@ -2496,10 +2517,12 @@ function AdminPage() {
                   <button
                     type="button"
                     onClick={handleSaveNewsSettings}
-                    className="flex-1 px-4 py-2 rounded-lg transition-colors"
+                    disabled={isUpdatingSettings}
+                    className="flex-1 px-4 py-2 rounded-lg transition-colors flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
                     style={{ backgroundColor: '#6366f1' }}
                   >
-                    Save News Settings
+                    {isUpdatingSettings && <Loader2 className="w-4 h-4 animate-spin" />}
+                    {isUpdatingSettings ? 'Saving...' : 'Save News Settings'}
                   </button>
                   <button
                     type="button"
@@ -3100,11 +3123,12 @@ function AdminPage() {
                   </button>
                   <button
                     type="submit"
-                    className="flex-1 px-4 py-2 rounded-lg transition-colors"
+                    className="flex-1 px-4 py-2 rounded-lg transition-colors flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
                     style={{ backgroundColor: '#6366f1' }}
-                    disabled={totpVerificationCode.length !== 6}
+                    disabled={totpVerificationCode.length !== 6 || isVerifyingTOTP}
                   >
-                    Verify & Enable
+                    {isVerifyingTOTP && <Loader2 className="w-4 h-4 animate-spin" />}
+                    {isVerifyingTOTP ? 'Verifying...' : 'Verify & Enable'}
                   </button>
                 </div>
               </form>
@@ -3179,10 +3203,12 @@ function AdminPage() {
                 </button>
                 <button
                   type="submit"
-                  className="flex-1 px-4 py-2 rounded-lg transition-colors"
+                  disabled={isDisablingTOTP}
+                  className="flex-1 px-4 py-2 rounded-lg transition-colors flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
                   style={{ backgroundColor: 'rgba(239, 68, 68, 0.8)' }}
                 >
-                  Disable TOTP
+                  {isDisablingTOTP && <Loader2 className="w-4 h-4 animate-spin" />}
+                  {isDisablingTOTP ? 'Disabling...' : 'Disable TOTP'}
                 </button>
               </div>
             </form>

@@ -35,3 +35,6 @@
 ## 2026-05-20 - API Key Visibility Toggle Consistency
 **Learning:** Using standard `Eye`/`EyeOff` icons for API key visibility toggles (rather than text like "Show"/"Hide") maintains consistency with password inputs, saves horizontal space on mobile, and creates a more cohesive UI language. It requires converting to a relative wrapper and setting correct right-padding to prevent overlap.
 **Action:** Replace generic "Show/Hide" text buttons with accessible `Eye`/`EyeOff` icon buttons using absolute positioning and `aria-label` attributes on inputs containing sensitive tokens or keys.
+## 2026-06-25 - Async Loading Indicators for Secondary Admin Actions
+**Learning:** We previously identified the need for loading feedback on primary async forms and destructive operations. Secondary admin actions like updating settings, changing passwords, or configuring 2FA lack this feedback, causing inconsistent UX where users wait without knowing if an API call is running.
+**Action:** Extend the pattern of adding `Loader2` spinners and disabled state handling (`disabled:opacity-50`, `focus-visible` styling) to all asynchronous admin action buttons for a unified, confident user experience.
