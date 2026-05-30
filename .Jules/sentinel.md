@@ -55,3 +55,7 @@
 **Vulnerability:** IP Spoofing / Global DoS. The application was directly accessing the raw `x-forwarded-for` header and using it as a rate limiting identifier without parsing it. A malicious user could inject arbitrary strings into this header, spoofing their IP to bypass rate limits or DoS the entire application by exhausting rate limit buckets.
 **Learning:** Directly trusting `x-forwarded-for` without parsing or relying solely on `request.ip` in self-hosted environments (where it's often `undefined`) can lead to IP spoofing or global Denial of Service.
 **Prevention:** Always use a utility function like `getClientIP` to prioritize `request.ip` and fallback to parsing the *first entry* of the `x-forwarded-for` header to get the actual client IP securely.
+## 2026-04-18 - Prevent SSRF in News Feeds
+**Vulnerability:** The `newsFeedCreateSchema` lacked SSRF protection, allowing users to submit internal or private IP addresses for the backend to fetch via `rss-parser`.
+**Learning:** Validation schemas that accept URLs intended for server-side fetching must explicitly prevent SSRF by checking against local/private network ranges.
+**Prevention:** Apply `.refine(val => isSafeUrl(val))` to all URL inputs that the server will process.
