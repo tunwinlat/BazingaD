@@ -55,3 +55,8 @@
 **Vulnerability:** IP Spoofing / Global DoS. The application was directly accessing the raw `x-forwarded-for` header and using it as a rate limiting identifier without parsing it. A malicious user could inject arbitrary strings into this header, spoofing their IP to bypass rate limits or DoS the entire application by exhausting rate limit buckets.
 **Learning:** Directly trusting `x-forwarded-for` without parsing or relying solely on `request.ip` in self-hosted environments (where it's often `undefined`) can lead to IP spoofing or global Denial of Service.
 **Prevention:** Always use a utility function like `getClientIP` to prioritize `request.ip` and fallback to parsing the *first entry* of the `x-forwarded-for` header to get the actual client IP securely.
+
+## 2026-05-31 - Fix SSRF via RSS Feed URL Validation
+**Vulnerability:** The `newsFeedCreateSchema` used for creating RSS feeds did not validate URLs using `isSafeUrl`. An attacker could exploit this by providing a URL pointing to an internal IP (e.g., `http://127.0.0.1/admin`) to access internal resources via the server (SSRF).
+**Learning:** All user-provided URLs that the server will eventually fetch must be strictly validated against an allowlist of safe domains/IPs or using a dedicated security function like `isSafeUrl` to prevent SSRF attacks.
+**Prevention:** Always append `.refine(val => isSafeUrl(val), { message: 'URL is not allowed for security reasons' })` to Zod schemas that validate user-provided URLs for server-side fetching.
