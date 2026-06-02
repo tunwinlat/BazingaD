@@ -35,3 +35,6 @@
 ## 2026-05-20 - API Key Visibility Toggle Consistency
 **Learning:** Using standard `Eye`/`EyeOff` icons for API key visibility toggles (rather than text like "Show"/"Hide") maintains consistency with password inputs, saves horizontal space on mobile, and creates a more cohesive UI language. It requires converting to a relative wrapper and setting correct right-padding to prevent overlap.
 **Action:** Replace generic "Show/Hide" text buttons with accessible `Eye`/`EyeOff` icon buttons using absolute positioning and `aria-label` attributes on inputs containing sensitive tokens or keys.
+## 2026-05-20 - Icon-only Buttons Missing ARIA Labels
+**Learning:** Icon-only buttons (like "Back" or "Close" buttons) in news components lacked `aria-label` attributes, making them inaccessible to screen reader users who wouldn't know their function.
+**Action:** Always add descriptive `aria-label` attributes to icon-only buttons to ensure they are accessible to assistive technologies.
