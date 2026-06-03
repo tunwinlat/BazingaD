@@ -137,7 +137,7 @@ export default function GadgetSettingsPanel() {
           type="button"
           onClick={handleSave}
           disabled={saving}
-          className="flex items-center gap-2 px-4 py-2 rounded-lg transition-all hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed"
+          className="flex items-center gap-2 px-4 py-2 rounded-lg transition-all hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
           style={{ backgroundColor: '#6366f1' }}
         >
           {saving ? (
@@ -208,7 +208,7 @@ function BarConfig({
         <button
           type="button"
           onClick={onToggle}
-          className="flex items-center gap-2 px-3 py-1.5 rounded-full text-sm transition-all hover:scale-105"
+          className="flex items-center gap-2 px-3 py-1.5 rounded-full text-sm transition-all hover:scale-105 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
           style={{
             backgroundColor: enabled ? 'rgba(16,185,129,0.15)' : 'rgba(255,255,255,0.06)',
             color: enabled ? '#34d399' : 'rgba(255,255,255,0.4)',
@@ -241,7 +241,8 @@ function BarConfig({
                     type="button"
                     onClick={() => onMove(index, 'up')}
                     disabled={index === 0}
-                    className="p-0.5 rounded hover:bg-white/10 disabled:opacity-20"
+                    aria-label="Move gadget up"
+                    className="p-0.5 rounded hover:bg-white/10 disabled:opacity-20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
                   >
                     <ArrowRight className="w-3 h-3 -rotate-90" />
                   </button>
@@ -249,7 +250,8 @@ function BarConfig({
                     type="button"
                     onClick={() => onMove(index, 'down')}
                     disabled={index === gadgets.length - 1}
-                    className="p-0.5 rounded hover:bg-white/10 disabled:opacity-20"
+                    aria-label="Move gadget down"
+                    className="p-0.5 rounded hover:bg-white/10 disabled:opacity-20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
                   >
                     <ArrowRight className="w-3 h-3 rotate-90" />
                   </button>
@@ -261,7 +263,8 @@ function BarConfig({
                 <button
                   type="button"
                   onClick={() => onRemove(gadget.id)}
-                  className="p-1.5 rounded-md hover:bg-red-500/20 transition-colors"
+                  aria-label="Remove gadget"
+                  className="p-1.5 rounded-md hover:bg-red-500/20 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500"
                   style={{ color: '#f87171' }}
                 >
                   <Trash2 className="w-3.5 h-3.5" />
@@ -275,7 +278,7 @@ function BarConfig({
             <button
               type="button"
               onClick={() => setShowAddMenu(!showAddMenu)}
-              className="flex items-center gap-2 w-full px-3 py-2 rounded-lg text-sm transition-colors hover:bg-white/5"
+              className="flex items-center gap-2 w-full px-3 py-2 rounded-lg text-sm transition-colors hover:bg-white/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
               style={{ border: '1px dashed rgba(255,255,255,0.15)', color: 'rgba(255,255,255,0.5)' }}
             >
               <Plus className="w-4 h-4" />
@@ -299,7 +302,7 @@ function BarConfig({
                       onAdd(gt.type);
                       setShowAddMenu(false);
                     }}
-                    className="flex items-center gap-2 w-full px-3 py-2.5 text-sm text-left hover:bg-white/5 transition-colors"
+                    className="flex items-center gap-2 w-full px-3 py-2.5 text-sm text-left hover:bg-white/5 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
                   >
                     {gt.icon}
                     {gt.label}
