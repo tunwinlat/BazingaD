@@ -38,3 +38,6 @@
 ## 2026-06-25 - Admin Dashboard Logout Button UX Improvement
 **Learning:** Destructive and async actions like logging out from the admin dashboard should always provide immediate visual feedback. Without it, users may click multiple times or think the application is frozen. Additionally, lack of focus states makes it difficult for keyboard users to navigate.
 **Action:** When implementing async buttons like Logout, always include a loading state using a spinner (e.g., `Loader2` from `lucide-react`), update the button text, and ensure proper accessibility classes (`focus-visible:ring-2`, `focus-visible:ring-red-500`, and `disabled:opacity-50`) are added.
+## 2026-06-01 - Screen Reader Support for Custom Modals
+**Learning:** Custom modal components built with absolute/fixed positioning lack inherent semantic meaning to screen readers unless specifically marked. Without ARIA roles and labels, users relying on assistive technologies may not realize a dialog has opened or what its context is.
+**Action:** When creating custom modal or dialog overlays, always ensure the container element includes `role="dialog"`, `aria-modal="true"`, and an `aria-labelledby` attribute pointing to the ID of the modal's heading.

@@ -2752,12 +2752,13 @@ function AdminPage() {
             <div className="w-full max-w-md rounded-2xl p-6"
               role="dialog"
               aria-modal="true"
+              aria-labelledby="category-modal-title"
               style={{
                 backgroundColor: '#1a1a2e',
                 border: '1px solid rgba(255,255,255,0.1)',
               }}>
             <div className="flex justify-between items-center mb-6">
-              <h3 className="text-xl font-semibold">
+              <h3 id="category-modal-title" className="text-xl font-semibold">
                 {editingCategory ? 'Edit Category' : 'Add Category'}
               </h3>
               <button type="button" onClick={closeCategoryForm} className="p-1 hover:bg-white/10 rounded-lg" aria-label="Close modal">
@@ -2857,12 +2858,13 @@ function AdminPage() {
             <div className="w-full max-w-md rounded-2xl p-6 max-h-[90vh] overflow-y-auto"
               role="dialog"
               aria-modal="true"
+              aria-labelledby="block-modal-title"
               style={{
                 backgroundColor: '#1a1a2e',
                 border: '1px solid rgba(255,255,255,0.1)',
               }}>
             <div className="flex justify-between items-center mb-6">
-              <h3 className="text-xl font-semibold">
+              <h3 id="block-modal-title" className="text-xl font-semibold">
                 {editingBlock ? 'Edit Block' : 'Add Block'}
               </h3>
               <button type="button" onClick={closeBlockForm} className="p-1 hover:bg-white/10 rounded-lg" aria-label="Close modal">
@@ -3021,9 +3023,9 @@ function AdminPage() {
         <>
           <EscapeHandler onEscape={() => { setShowTOTPSetup(false); setTotpSetupData(null); }} />
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ backgroundColor: 'rgba(0,0,0,0.7)' }}>
-            <div className="w-full max-w-md rounded-2xl p-6 max-h-[90vh] overflow-y-auto" role="dialog" aria-modal="true" style={{ backgroundColor: '#1a1a2e', border: '1px solid rgba(255,255,255,0.1)' }}>
+            <div className="w-full max-w-md rounded-2xl p-6 max-h-[90vh] overflow-y-auto" role="dialog" aria-modal="true" aria-labelledby="totp-setup-title" style={{ backgroundColor: '#1a1a2e', border: '1px solid rgba(255,255,255,0.1)' }}>
             <div className="flex justify-between items-center mb-6">
-              <h3 className="text-xl font-semibold">Setup Two-Factor Authentication</h3>
+              <h3 id="totp-setup-title" className="text-xl font-semibold">Setup Two-Factor Authentication</h3>
               <button type="button" onClick={() => { setShowTOTPSetup(false); setTotpSetupData(null); }} className="p-1 hover:bg-white/10 rounded-lg" aria-label="Close modal">
                 <X className="w-5 h-5" />
               </button>
@@ -3124,9 +3126,9 @@ function AdminPage() {
         <>
           <EscapeHandler onEscape={() => { setShowDisableTOTP(false); setDisableTOTPForm({ password: '', code: '' }); }} />
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ backgroundColor: 'rgba(0,0,0,0.7)' }}>
-            <div className="w-full max-w-md rounded-2xl p-6" role="dialog" aria-modal="true" style={{ backgroundColor: '#1a1a2e', border: '1px solid rgba(255,255,255,0.1)' }}>
+            <div className="w-full max-w-md rounded-2xl p-6" role="dialog" aria-modal="true" aria-labelledby="disable-totp-title" style={{ backgroundColor: '#1a1a2e', border: '1px solid rgba(255,255,255,0.1)' }}>
             <div className="flex justify-between items-center mb-6">
-              <h3 className="text-xl font-semibold text-red-400">Disable Two-Factor Authentication</h3>
+              <h3 id="disable-totp-title" className="text-xl font-semibold text-red-400">Disable Two-Factor Authentication</h3>
               <button type="button" onClick={() => { setShowDisableTOTP(false); setDisableTOTPForm({ password: '', code: '' }); }} className="p-1 hover:bg-white/10 rounded-lg" aria-label="Close modal">
                 <X className="w-5 h-5" />
               </button>
