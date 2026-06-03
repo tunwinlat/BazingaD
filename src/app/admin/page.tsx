@@ -74,12 +74,16 @@ function EscapeHandler({ onEscape }: { onEscape: () => void }) {
 // LogoutButton component
 function LogoutButton() {
   const router = useRouter();
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
+
   const handleLogout = async () => {
+    setIsLoggingOut(true);
     try {
       await fetch('/api/auth/logout', { method: 'POST' });
       router.push('/login?logout=success');
     } catch (error) {
       console.error('Logout failed:', error);
+      setIsLoggingOut(false);
     }
   };
 
@@ -87,11 +91,12 @@ function LogoutButton() {
     <button
       type="button"
       onClick={handleLogout}
-      className="flex items-center gap-2 px-4 py-2 rounded-lg transition-colors hover:bg-red-500/20"
+      disabled={isLoggingOut}
+      className="flex items-center gap-2 px-4 py-2 rounded-lg transition-colors hover:bg-red-500/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500 disabled:opacity-50 disabled:cursor-not-allowed"
       style={{ backgroundColor: 'rgba(239, 68, 68, 0.1)', color: '#f87171', border: '1px solid rgba(239, 68, 68, 0.2)' }}
     >
-      <LogOut className="w-4 h-4" />
-      Logout
+      {isLoggingOut ? <Loader2 className="w-4 h-4 animate-spin" /> : <LogOut className="w-4 h-4" />}
+      {isLoggingOut ? 'Logging out...' : 'Logout'}
     </button>
   );
 }
