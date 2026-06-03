@@ -41,3 +41,6 @@
 ## 2026-06-01 - Screen Reader Support for Custom Modals
 **Learning:** Custom modal components built with absolute/fixed positioning lack inherent semantic meaning to screen readers unless specifically marked. Without ARIA roles and labels, users relying on assistive technologies may not realize a dialog has opened or what its context is.
 **Action:** When creating custom modal or dialog overlays, always ensure the container element includes `role="dialog"`, `aria-modal="true"`, and an `aria-labelledby` attribute pointing to the ID of the modal's heading.
+## 2026-06-25 - Async Loading Indicators for Secondary Admin Actions
+**Learning:** We previously identified the need for loading feedback on primary async forms and destructive operations. Secondary admin actions like updating settings, changing passwords, or configuring 2FA lack this feedback, causing inconsistent UX where users wait without knowing if an API call is running.
+**Action:** Extend the pattern of adding `Loader2` spinners and disabled state handling (`disabled:opacity-50`, `focus-visible` styling) to all asynchronous admin action buttons for a unified, confident user experience.
