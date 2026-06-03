@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { getClientIP } from '../lib/ip-utils';
+import { getClientIP } from '../lib/ip-utils.ts';
 
 describe('getClientIP', () => {
   it('returns request.ip if present', () => {
