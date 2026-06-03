@@ -74,6 +74,7 @@ export default function NewsPage() {
           onClick={() => router.push('/')}
           className="p-2 -ml-2 rounded-lg transition-colors hover:bg-white/10"
           style={{ color: 'var(--theme-text)' }}
+          aria-label="Back to dashboard"
         >
           <ArrowLeft className="w-5 h-5" />
         </button>

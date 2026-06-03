@@ -126,6 +126,7 @@ export default function NewsModal({ articles, isOpen, onClose, navTransitionEnab
               onClick={onClose}
               className="p-1.5 rounded-lg transition-colors hover:bg-white/10"
               style={{ color: 'var(--theme-text-muted)' }}
+              aria-label="Close news modal"
             >
               <X className="w-5 h-5" />
             </button>
