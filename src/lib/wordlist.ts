@@ -333,9 +333,9 @@ export function pickRandomWords(count: number): string[] {
 /** Generate a password using words + numbers */
 export function generateWordPassword(): string {
   const words = pickRandomWords(2);
-  const nums = [Math.floor(Math.random() * 90) + 10, Math.floor(Math.random() * 90) + 10];
-  // Format: WordWord3132 — two capitalized words followed by two 2-digit numbers
-  return words.map(w => w.charAt(0).toUpperCase() + w.slice(1)).join('') + nums.join('');
+  const num = Math.floor(Math.random() * 90) + 10;
+  // Format: WordWord43 — two capitalized words followed by a 2-digit number
+  return words.map(w => w.charAt(0).toUpperCase() + w.slice(1)).join('') + num;
 }
 
 /** Generate a random character password */
