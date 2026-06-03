@@ -35,3 +35,6 @@
 ## 2026-05-20 - API Key Visibility Toggle Consistency
 **Learning:** Using standard `Eye`/`EyeOff` icons for API key visibility toggles (rather than text like "Show"/"Hide") maintains consistency with password inputs, saves horizontal space on mobile, and creates a more cohesive UI language. It requires converting to a relative wrapper and setting correct right-padding to prevent overlap.
 **Action:** Replace generic "Show/Hide" text buttons with accessible `Eye`/`EyeOff` icon buttons using absolute positioning and `aria-label` attributes on inputs containing sensitive tokens or keys.
+## 2026-06-25 - Admin Dashboard Logout Button UX Improvement
+**Learning:** Destructive and async actions like logging out from the admin dashboard should always provide immediate visual feedback. Without it, users may click multiple times or think the application is frozen. Additionally, lack of focus states makes it difficult for keyboard users to navigate.
+**Action:** When implementing async buttons like Logout, always include a loading state using a spinner (e.g., `Loader2` from `lucide-react`), update the button text, and ensure proper accessibility classes (`focus-visible:ring-2`, `focus-visible:ring-red-500`, and `disabled:opacity-50`) are added.
