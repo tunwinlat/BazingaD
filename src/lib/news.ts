@@ -348,7 +348,7 @@ Content: ${content.slice(0, 3000)}`;
       'Authorization': `Bearer ${apiKey}`,
     },
     body: JSON.stringify({
-      model: 'MiniMax-M2.7',
+      model: 'MiniMax-M3',
       messages: [{ role: 'user', content: prompt }],
       max_tokens: 600,
       temperature: 0.2,
