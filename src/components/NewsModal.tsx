@@ -89,6 +89,9 @@ export default function NewsModal({ articles, isOpen, onClose, navTransitionEnab
       }}
     >
       <div
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="news-modal-title"
         className="w-full max-w-4xl max-h-[85vh] rounded-2xl overflow-hidden flex flex-col md:flex-row"
         style={{
           backgroundColor: 'rgba(20, 20, 30, 0.95)',
@@ -108,7 +111,7 @@ export default function NewsModal({ articles, isOpen, onClose, navTransitionEnab
           >
             <div className="flex items-center gap-2">
               <Newspaper className="w-5 h-5" style={{ color: 'var(--theme-primary)' }} />
-              <h2 className="text-lg font-semibold" style={{ color: 'var(--theme-text)' }}>
+              <h2 id="news-modal-title" className="text-lg font-semibold" style={{ color: 'var(--theme-text)' }}>
                 News
               </h2>
               <span

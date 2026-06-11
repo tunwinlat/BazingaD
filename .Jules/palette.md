@@ -47,3 +47,6 @@
 ## 2026-06-25 - Async Loading Indicators for Secondary Admin Actions
 **Learning:** We previously identified the need for loading feedback on primary async forms and destructive operations. Secondary admin actions like updating settings, changing passwords, or configuring 2FA lack this feedback, causing inconsistent UX where users wait without knowing if an API call is running.
 **Action:** Extend the pattern of adding `Loader2` spinners and disabled state handling (`disabled:opacity-50`, `focus-visible` styling) to all asynchronous admin action buttons for a unified, confident user experience.
+## 2026-06-25 - Custom Modal Accessibility Enhancement
+**Learning:** Adding standard accessibility roles (`role="dialog"`, `aria-modal="true"`, and `aria-labelledby`) to custom built modals drastically improves their comprehensibility for screen reader users by properly defining the context shift.
+**Action:** Consistently verify and implement appropriate ARIA roles on all custom fixed/absolute positioned modals (like `NewsModal`).
