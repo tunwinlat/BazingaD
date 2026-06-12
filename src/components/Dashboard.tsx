@@ -81,6 +81,7 @@ const ErrorState = memo(function ErrorState({ error, onRetry }: ErrorStateProps)
       <p className="text-white/60 max-w-md mb-2">{error}</p>
       <button
         onClick={onRetry}
+        aria-label="Try loading dashboard again"
         className="px-6 py-3 rounded-xl font-medium transition-all hover:scale-105 mt-4 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
         style={{
           backgroundColor: 'rgba(255, 255, 255, 0.1)',

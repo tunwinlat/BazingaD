@@ -56,6 +56,7 @@ export default function NewsTicker({ onClick, compact = false }: NewsTickerProps
       <button
         type="button"
         onClick={onClick}
+        aria-label={`Read news article: ${displayTitle}`}
         className="flex items-center gap-1.5 w-full text-left group"
       >
         <Newspaper className="w-3.5 h-3.5 flex-shrink-0" style={{ color: 'var(--theme-primary)' }} />
@@ -74,6 +75,7 @@ export default function NewsTicker({ onClick, compact = false }: NewsTickerProps
     <button
       type="button"
       onClick={onClick}
+      aria-label={`Read news article: ${displayTitle}`}
       className="flex items-center gap-2 text-left group/ticker min-w-0 flex-1"
     >
       <Newspaper className="w-4 h-4 flex-shrink-0" style={{ color: 'var(--theme-primary)' }} />
