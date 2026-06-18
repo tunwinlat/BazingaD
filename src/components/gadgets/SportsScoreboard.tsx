@@ -7,6 +7,9 @@ import {
   Settings2,
   X,
   Loader2,
+  ChevronDown,
+  ChevronUp,
+  Clock,
 } from 'lucide-react';
 import { useSportsScoreboard } from '@/components/SportsContext';
 import {
@@ -15,6 +18,8 @@ import {
   formatEventStatus,
   type SportEvent,
 } from '@/lib/sports';
+
+const DEFAULT_VISIBLE_PER_LEAGUE = 3;
 
 export default function SportsScoreboard() {
   const {
@@ -27,32 +32,53 @@ export default function SportsScoreboard() {
     unpinMatch,
   } = useSportsScoreboard();
   const [showSettings, setShowSettings] = useState(false);
+  const [showFinished, setShowFinished] = useState(false);
+  const [expandedLeagues, setExpandedLeagues] = useState<Set<string>>(new Set());
 
   const pinnedIds = new Set(pinned.map((p) => p.id));
 
-  const grouped = useMemo(() => {
-    const filtered = events.filter((e) => enabledLeagues.includes(e.leagueSlug));
+  const { grouped, finishedCount } = useMemo(() => {
     const order = { in: 0, pre: 1, post: 2 };
-
-    const sorted = [...filtered].sort((a, b) => {
-      if (order[a.status.state] !== order[b.status.state]) {
-        return order[a.status.state] - order[b.status.state];
-      }
-      return new Date(a.date).getTime() - new Date(b.date).getTime();
-    });
+    const filtered = events
+      .filter((e) => enabledLeagues.includes(e.leagueSlug))
+      .filter((e) => showFinished || e.status.state !== 'post')
+      .sort((a, b) => {
+        if (order[a.status.state] !== order[b.status.state]) {
+          return order[a.status.state] - order[b.status.state];
+        }
+        return new Date(a.date).getTime() - new Date(b.date).getTime();
+      });
 
     const map = new Map<string, SportEvent[]>();
-    for (const event of sorted) {
+    for (const event of filtered) {
       const list = map.get(event.leagueSlug) || [];
       list.push(event);
       map.set(event.leagueSlug, list);
     }
-    return map;
-  }, [events, enabledLeagues]);
+
+    const finished = events.filter(
+      (e) => enabledLeagues.includes(e.leagueSlug) && e.status.state === 'post'
+    ).length;
+
+    return { grouped: map, finishedCount: finished };
+  }, [events, enabledLeagues, showFinished]);
+
+  const toggleLeagueExpanded = (slug: string) => {
+    setExpandedLeagues((prev) => {
+      const next = new Set(prev);
+      if (next.has(slug)) next.delete(slug);
+      else next.add(slug);
+      return next;
+    });
+  };
 
   return (
     <div className="flex flex-col gap-2">
-      <div className="flex items-center justify-between">
+      {/* Sticky header so the settings icon is always reachable */}
+      <div
+        className="sticky top-0 z-10 flex items-center justify-between -mx-2 -mt-2 px-2 py-2 rounded-t-lg"
+        style={{ backgroundColor: 'rgba(0,0,0,0.22)' }}
+      >
         <div className="flex items-center gap-1.5">
           <Trophy className="w-3.5 h-3.5 text-amber-400" />
           <span className="text-xs font-semibold text-white/90">Live Scores</span>
@@ -75,25 +101,34 @@ export default function SportsScoreboard() {
         </div>
       ) : grouped.size === 0 ? (
         <div className="text-center py-5 text-xs text-white/40">
-          No matches for selected leagues
+          {showFinished
+            ? 'No matches for selected leagues'
+            : 'No live or upcoming matches'}
         </div>
       ) : (
         <div className="space-y-3">
           {Array.from(grouped.entries()).map(([slug, leagueEvents]) => {
             const league = getSportsLeague(slug);
+            const isExpanded = expandedLeagues.has(slug);
+            const hasMore = leagueEvents.length > DEFAULT_VISIBLE_PER_LEAGUE;
+            const visible = isExpanded
+              ? leagueEvents
+              : leagueEvents.slice(0, DEFAULT_VISIBLE_PER_LEAGUE);
+            const hiddenCount = leagueEvents.length - visible.length;
+
             return (
               <div key={slug}>
-                <div
-                  className="flex items-center gap-1.5 mb-1.5"
-                  title={league?.name}
-                >
+                <div className="flex items-center gap-1.5 mb-1.5" title={league?.name}>
                   <span className="text-base leading-none">{league?.icon}</span>
                   <span className="text-[10px] font-semibold uppercase tracking-wider text-white/50">
                     {league?.abbreviation}
                   </span>
+                  <span className="text-[10px] text-white/30">
+                    ({leagueEvents.length})
+                  </span>
                 </div>
                 <div className="space-y-2">
-                  {leagueEvents.map((event) => (
+                  {visible.map((event) => (
                     <MatchCard
                       key={event.id}
                       event={event}
@@ -103,9 +138,39 @@ export default function SportsScoreboard() {
                     />
                   ))}
                 </div>
+                {hasMore && (
+                  <button
+                    type="button"
+                    onClick={() => toggleLeagueExpanded(slug)}
+                    className="flex items-center gap-1 mt-1.5 text-[10px] text-white/40 hover:text-white/70 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 rounded px-1 py-0.5"
+                  >
+                    {isExpanded ? (
+                      <>
+                        <ChevronUp className="w-3 h-3" /> Show less
+                      </>
+                    ) : (
+                      <>
+                        <ChevronDown className="w-3 h-3" /> Show {hiddenCount} more
+                      </>
+                    )}
+                  </button>
+                )}
               </div>
             );
           })}
+
+          {finishedCount > 0 && (
+            <button
+              type="button"
+              onClick={() => setShowFinished((s) => !s)}
+              className="flex items-center justify-center gap-1.5 w-full py-2 rounded-lg text-[11px] text-white/50 hover:text-white/80 hover:bg-white/5 transition-colors border border-dashed border-white/10"
+            >
+              <Clock className="w-3 h-3" />
+              {showFinished
+                ? 'Hide finished games'
+                : `Show ${finishedCount} finished game${finishedCount === 1 ? '' : 's'}`}
+            </button>
+          )}
         </div>
       )}
 

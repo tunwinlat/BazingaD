@@ -96,9 +96,7 @@ export function formatEventStatus(event: SportEvent): string {
   }
 
   if (state === 'in') {
-    return displayClock
-      ? `${shortDetail || ''} ${displayClock}`.trim()
-      : shortDetail || detail || 'Live';
+    return shortDetail || detail || displayClock || 'Live';
   }
 
   const date = new Date(event.date);

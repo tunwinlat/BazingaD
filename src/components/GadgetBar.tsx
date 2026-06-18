@@ -150,7 +150,15 @@ export default function GadgetBar({ side, enabled, config }: GadgetBarProps) {
           </div>
 
           {/* Gadgets */}
-          <div className="px-3 pb-3 space-y-3">
+          <div
+            className="px-3 pb-3 space-y-3"
+            style={{
+              maxHeight: 'calc(100vh - 140px)',
+              overflowY: 'auto',
+              overflowX: 'hidden',
+              scrollbarWidth: 'thin',
+            }}
+          >
             {config.map((gadget) => {
               const registryEntry = GADGET_REGISTRY[gadget.type];
               if (!registryEntry) return null;
