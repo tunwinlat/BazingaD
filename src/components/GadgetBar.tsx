@@ -3,8 +3,9 @@
 import { useState, useEffect, useCallback } from 'react';
 import { ChevronLeft, ChevronRight, X } from 'lucide-react';
 import PasswordGenerator from './gadgets/PasswordGenerator';
+import SportsScoreboard from './gadgets/SportsScoreboard';
 
-export type GadgetType = 'password';
+export type GadgetType = 'password' | 'sports';
 
 interface GadgetConfig {
   type: GadgetType;
@@ -19,6 +20,7 @@ interface GadgetBarProps {
 
 const GADGET_REGISTRY: Record<GadgetType, { title: string; component: React.ComponentType }> = {
   password: { title: 'Password', component: PasswordGenerator },
+  sports: { title: 'Sports', component: SportsScoreboard },
 };
 
 const PANEL_WIDTH = 280;

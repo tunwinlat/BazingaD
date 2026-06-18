@@ -1,8 +1,8 @@
-# 🚀 Start Page Dashboard
+# 🚀 BazingaD
 
 A modern, customizable browser start page with category-based organization, service monitoring, weather, traffic information, and an admin interface.
 
-![Dashboard Preview](https://via.placeholder.com/800x400/0f0f1a/6366f1?text=Start+Page+Dashboard)
+![Dashboard Preview](https://via.placeholder.com/800x400/0f0f1a/6366f1?text=BazingaD)
 
 ## ✨ Features
 
@@ -24,7 +24,7 @@ A modern, customizable browser start page with category-based organization, serv
 
 ### Using Docker Compose (Recommended)
 
-The easiest way to run Start Page Dashboard is using the pre-built Docker image from Docker Hub.
+The easiest way to run BazingaD is using the pre-built Docker image from Docker Hub.
 
 1. Create a `docker-compose.yml` file:
 ```yaml
@@ -32,14 +32,14 @@ version: '3.8'
 
 services:
   startpage:
-    image: twlatx/startpage-dashboard:latest
-    container_name: startpage-dashboard
+    image: twlatx/bazingad:latest
+    container_name: bazingad
     ports:
       - "3000:3000"
     environment:
       - NODE_ENV=production
       - DATABASE_URL=file:/app/data/prod.db
-      - NEXT_PUBLIC_APP_NAME=Start Page Dashboard
+      - NEXT_PUBLIC_APP_NAME=BazingaD
     volumes:
       - ./data:/app/data
     restart: unless-stopped
@@ -66,8 +66,8 @@ If you prefer to build the Docker image yourself:
 
 1. Clone the repository:
 ```bash
-git clone <repository-url>
-cd startpage-dashboard
+git clone https://github.com/tunwinlat/BazingaD.git
+cd BazingaD
 ```
 
 2. Build and start the application:
@@ -98,7 +98,7 @@ npm run dev
 ## 📁 Project Structure
 
 ```
-startpage-dashboard/
+BazingaD/
 ├── src/
 │   ├── app/              # Next.js app router
 │   │   ├── api/          # API routes
@@ -200,13 +200,13 @@ DATABASE_URL=file:./data/dev.db npm run admin:reset-password
 **Docker:**
 
 ```bash
-docker exec -it startpage-dashboard node scripts/reset-admin-password.js
+docker exec -it bazingad node scripts/reset-admin-password.js
 ```
 
 The script will list available users, prompt for a new password (with hidden input), and invalidate all existing sessions. You can also pass `--clear-totp` to disable 2FA if you've lost access to your authenticator app:
 
 ```bash
-docker exec -it startpage-dashboard node scripts/reset-admin-password.js --clear-totp
+docker exec -it bazingad node scripts/reset-admin-password.js --clear-totp
 ```
 
 ## 🔌 API Endpoints
@@ -243,17 +243,17 @@ Pull and run the official image from Docker Hub:
 
 ```bash
 # Pull the latest image
-docker pull twlatx/startpage-dashboard:latest
+docker pull twlatx/bazingad:latest
 
 # Run with docker run
 docker run -d \
-  --name startpage-dashboard \
+  --name bazingad \
   -p 3000:3000 \
   -v ./data:/app/data \
   -e NODE_ENV=production \
-  -e NEXT_PUBLIC_APP_NAME="Start Page Dashboard" \
+  -e NEXT_PUBLIC_APP_NAME="BazingaD" \
   --restart unless-stopped \
-  twlatx/startpage-dashboard:latest
+  twlatx/bazingad:latest
 ```
 
 ### Building from Source
