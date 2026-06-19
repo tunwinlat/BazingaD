@@ -1,5 +1,25 @@
 export type SportState = 'pre' | 'in' | 'post';
 
+export interface TeamStat {
+  name: string;
+  abbreviation: string;
+  displayValue: string;
+}
+
+export interface TeamLeader {
+  category: string;
+  athleteName: string;
+  displayValue: string;
+}
+
+export interface MatchDetail {
+  type: 'goal' | 'yellowCard' | 'redCard' | 'other';
+  clock: string;
+  teamId: string;
+  athleteName?: string;
+  displayValue?: string;
+}
+
 export interface SportTeam {
   id: string;
   name: string;
@@ -9,6 +29,8 @@ export interface SportTeam {
   homeAway: 'home' | 'away';
   score: string;
   winner?: boolean;
+  stats: TeamStat[];
+  leaders: TeamLeader[];
 }
 
 export interface SportEvent {
@@ -30,6 +52,7 @@ export interface SportEvent {
   venue?: string;
   broadcast?: string;
   gamecastUrl?: string;
+  details: MatchDetail[];
 }
 
 export interface SportsLeague {
@@ -71,6 +94,43 @@ export function getResizedLogoUrl(logoUrl: string, size: number): string {
   return logoUrl;
 }
 
+function normalizeStats(
+  competitor: Record<string, unknown>
+): TeamStat[] {
+  const stats = (competitor.statistics as Record<string, unknown>[]) || [];
+  return stats
+    .map((s) => ({
+      name: String(s.name || ''),
+      abbreviation: String(s.abbreviation || s.name || ''),
+      displayValue: String(
+        s.displayValue !== undefined ? s.displayValue : s.value ?? ''
+      ),
+    }))
+    .filter((s) => s.name && s.displayValue);
+}
+
+function normalizeLeaders(
+  competitor: Record<string, unknown>
+): TeamLeader[] {
+  const leaders = (competitor.leaders as Record<string, unknown>[]) || [];
+  const result: TeamLeader[] = [];
+  for (const category of leaders) {
+    const categoryName = String(
+      category.shortDisplayName || category.displayName || category.name || ''
+    );
+    const categoryLeaders = (category.leaders as Record<string, unknown>[]) || [];
+    const top = categoryLeaders[0];
+    if (!top || !categoryName) continue;
+    const athlete = (top.athlete as Record<string, unknown>) || {};
+    result.push({
+      category: categoryName,
+      athleteName: String(athlete.shortName || athlete.displayName || ''),
+      displayValue: String(top.displayValue || ''),
+    });
+  }
+  return result;
+}
+
 function normalizeTeam(
   competitor: Record<string, unknown>,
   homeAway: 'home' | 'away'
@@ -85,6 +145,8 @@ function normalizeTeam(
     homeAway,
     score: String(competitor.score || '0'),
     winner: competitor.winner === true,
+    stats: normalizeStats(competitor),
+    leaders: normalizeLeaders(competitor),
   };
 }
 
@@ -117,6 +179,15 @@ export function formatEventStatus(event: SportEvent): string {
   return `${weekday} · ${time}`;
 }
 
+export function isPinEligible(event: SportEvent): boolean {
+  if (event.status.state === 'in') return true;
+  if (event.status.state === 'pre') {
+    const start = new Date(event.date).getTime();
+    return start - Date.now() < 24 * 60 * 60 * 1000;
+  }
+  return false;
+}
+
 export function normalizeEspnEvent(
   raw: unknown,
   league: SportsLeague
@@ -143,6 +214,8 @@ export function normalizeEspnEvent(
   const links = (event.links as Record<string, unknown>[]) || [];
   const gamecast = links.find((link) => (link.rel as string[])?.includes('summary'));
 
+  const details = normalizeDetails(competition.details as Record<string, unknown>[] | undefined);
+
   return {
     id: String(event.id || ''),
     leagueSlug: league.slug,
@@ -162,5 +235,41 @@ export function normalizeEspnEvent(
     venue: String(venueObj.fullName || venueObj.displayName || '') || undefined,
     broadcast: broadcastNames.join(', ') || undefined,
     gamecastUrl: gamecast ? String(gamecast.href || '') : undefined,
+    details,
   };
+}
+
+function normalizeDetails(
+  rawDetails?: Record<string, unknown>[]
+): MatchDetail[] {
+  if (!rawDetails) return [];
+  const result: MatchDetail[] = [];
+
+  for (const d of rawDetails) {
+    const typeObj = (d.type as Record<string, unknown>) || {};
+    const typeText = String(typeObj.text || '').toLowerCase();
+    const clockObj = (d.clock as Record<string, unknown>) || {};
+    const teamObj = (d.team as Record<string, unknown>) || {};
+    const athletes = (d.athletesInvolved as Record<string, unknown>[]) || [];
+    const athlete = athletes[0] || {};
+
+    let type: MatchDetail['type'] = 'other';
+    if (d.scoringPlay === true || typeText.includes('goal')) {
+      type = 'goal';
+    } else if (d.redCard === true || typeText.includes('red card')) {
+      type = 'redCard';
+    } else if (d.yellowCard === true || typeText.includes('yellow card')) {
+      type = 'yellowCard';
+    }
+
+    result.push({
+      type,
+      clock: String(clockObj.displayValue || ''),
+      teamId: String(teamObj.id || ''),
+      athleteName: String(athlete.shortName || athlete.displayName || ''),
+      displayValue: String(d.displayValue || ''),
+    });
+  }
+
+  return result;
 }

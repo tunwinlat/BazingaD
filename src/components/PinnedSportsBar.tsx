@@ -2,6 +2,7 @@
 
 import { PinOff, Radio } from 'lucide-react';
 import { useSports } from '@/components/SportsContext';
+import MatchFacts from '@/components/MatchFacts';
 import { formatEventStatus, type SportEvent } from '@/lib/sports';
 
 export default function PinnedSportsBar() {
@@ -138,6 +139,8 @@ function PinnedMatchCard({
             )}
           </div>
         )}
+
+        <MatchFacts match={match} />
       </div>
     </div>
   );

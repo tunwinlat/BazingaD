@@ -204,7 +204,8 @@ a {
   display: none;
 }
 
-.match-card .match-extra {
+.match-card .match-extra,
+.match-card .match-facts {
   display: none;
 }
 
@@ -246,6 +247,12 @@ a {
   .match-card .match-logo {
     width: 3.5rem;
     height: 3.5rem;
+  }
+}
+
+@container (min-width: 620px) {
+  .match-card .match-facts {
+    display: block;
   }
 }
 

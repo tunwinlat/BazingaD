@@ -16,6 +16,7 @@ import {
   SPORTS_LEAGUES,
   getSportsLeague,
   formatEventStatus,
+  isPinEligible,
   type SportEvent,
 } from '@/lib/sports';
 
@@ -197,6 +198,7 @@ function MatchCard({
   onUnpin: () => void;
 }) {
   const isLive = event.status.state === 'in';
+  const canPin = isPinEligible(event) || isPinned;
   const statusText = formatEventStatus(event);
 
   return (
@@ -221,11 +223,11 @@ function MatchCard({
         <button
           type="button"
           onClick={isPinned ? onUnpin : onPin}
-          disabled={!isLive && !isPinned}
+          disabled={!canPin}
           className="p-1 rounded-md transition-colors hover:bg-white/10 disabled:opacity-30 disabled:cursor-not-allowed focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
           style={{ color: isPinned ? '#a5b4fc' : 'rgba(255,255,255,0.35)' }}
           aria-label={isPinned ? 'Unpin match' : 'Pin match'}
-          title={isPinned ? 'Unpin match' : 'Pin match'}
+          title={isPinned ? 'Unpin match' : canPin ? 'Pin match' : 'Pin available on game day'}
         >
           <Pin className="w-3 h-3" fill={isPinned ? 'currentColor' : 'none'} />
         </button>
