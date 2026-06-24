@@ -47,3 +47,6 @@
 ## 2026-06-25 - Async Loading Indicators for Secondary Admin Actions
 **Learning:** We previously identified the need for loading feedback on primary async forms and destructive operations. Secondary admin actions like updating settings, changing passwords, or configuring 2FA lack this feedback, causing inconsistent UX where users wait without knowing if an API call is running.
 **Action:** Extend the pattern of adding `Loader2` spinners and disabled state handling (`disabled:opacity-50`, `focus-visible` styling) to all asynchronous admin action buttons for a unified, confident user experience.
+## 2026-06-25 - Icon-only Buttons Missing ARIA Labels (NewsTicker)
+**Learning:** Icon-only buttons or buttons with dynamically truncated text strings (like those in the NewsTicker) often fail to provide sufficient context for screen reader users, causing a major accessibility regression. Static ARIA labels override the inner dynamic text, hiding essential context.
+**Action:** When adding `aria-label` to interactive elements wrapping dynamic text, ensure the label dynamically includes the inner text (e.g., `aria-label={\`Read article: \${displayTitle}\`}`).
