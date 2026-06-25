@@ -7,6 +7,7 @@ import bcrypt from 'bcryptjs';
 import * as OTPAuth from 'otpauth';
 import { ZodError } from 'zod';
 import { RateLimiterMemory } from 'rate-limiter-flexible';
+import { getClientIP } from '@/lib/ip-utils';
 
 const MAX_BODY_SIZE = 1024 * 1024;
 
@@ -67,7 +68,7 @@ interface TOTPUser {
   totpSecret: string | null;
 }
 
-async function verifyTOTP(user: TOTPUser, totpToken: string | undefined): Promise<NextResponse | null> {
+async function verifyTOTP(user: TOTPUser, totpToken: string | undefined, identifier: string): Promise<NextResponse | null> {
   if (!user.totpEnabled || !user.totpVerified || !user.totpSecret) {
     return null;
   }
@@ -92,7 +93,7 @@ async function verifyTOTP(user: TOTPUser, totpToken: string | undefined): Promis
 
   const isTOTPValid = totp.validate({ token: totpToken, window: 1 }) !== null;
   if (!isTOTPValid) {
-    await recordFailedAttempt(user.username.toLowerCase());
+    await recordFailedAttempt(identifier);
     return NextResponse.json(
       { error: 'Invalid authentication code' },
       { status: 401 }
@@ -104,6 +105,9 @@ async function verifyTOTP(user: TOTPUser, totpToken: string | undefined): Promis
 
 export async function POST(request: Request) {
   try {
+    const ip = getClientIP(request as any);
+    const identifier = `login_${ip}`;
+
     // Check content length
     const contentLength = request.headers.get('content-length');
     if (contentLength && Number(contentLength) > MAX_BODY_SIZE) {
@@ -129,8 +133,8 @@ export async function POST(request: Request) {
     const { username, password, totpToken } = validatedData;
     const normalizedUsername = username.toLowerCase();
 
-    // Check for lockout (using username as identifier)
-    if (await isLockedOut(normalizedUsername)) {
+    // Check for lockout (using IP as identifier)
+    if (await isLockedOut(identifier)) {
       return NextResponse.json(
         { error: 'Account temporarily locked due to too many failed attempts. Please try again later.' },
         { status: 429 }
@@ -155,7 +159,7 @@ export async function POST(request: Request) {
       // compared to a static dummy hash which may leak timing differences.
       await bcrypt.hash(password, 12);
 
-      await recordFailedAttempt(normalizedUsername);
+      await recordFailedAttempt(identifier);
       return NextResponse.json(
         { error: 'Invalid credentials' },
         { status: 401 }
@@ -166,7 +170,7 @@ export async function POST(request: Request) {
     const isValid = await bcrypt.compare(password, user.password);
 
     if (!isValid) {
-      await recordFailedAttempt(normalizedUsername);
+      await recordFailedAttempt(identifier);
       return NextResponse.json(
         { error: 'Invalid credentials' },
         { status: 401 }
@@ -174,13 +178,13 @@ export async function POST(request: Request) {
     }
 
     // Verify TOTP code if enabled
-    const totpResponse = await verifyTOTP(user, totpToken);
+    const totpResponse = await verifyTOTP(user, totpToken, identifier);
     if (totpResponse) {
       return totpResponse;
     }
 
     // Clear failed attempts on successful login
-    await recordSuccessfulAttempt(normalizedUsername);
+    await recordSuccessfulAttempt(identifier);
 
     // Get session duration from settings
     const sessionHours = await getSessionDurationHours();

@@ -6,6 +6,13 @@ import { settingsCache } from '@/lib/cache';
 import bcrypt from 'bcryptjs';
 import * as OTPAuth from 'otpauth';
 
+vi.mock('@/lib/ip-utils', () => ({
+  getClientIP: vi.fn((req: any) => {
+    const xForwardedFor = req.headers.get('x-forwarded-for');
+    return xForwardedFor ? xForwardedFor : '127.0.0.1';
+  })
+}));
+
 // Mock dependencies
 vi.mock('@/lib/prisma', () => ({
   prisma: {
@@ -232,12 +239,12 @@ describe('Login API', () => {
 
       // Simulate 5 failed logins
       for (let i = 0; i < 5; i++) {
-        const request = createRequest({ username: 'lockoutuser', password: 'wrongpassword' });
+        const request = createRequest({ username: 'lockoutuser', password: 'wrongpassword' }, { 'x-forwarded-for': '10.0.0.1' });
         await POST(request);
       }
 
       // 6th attempt should return 429
-      const lockedRequest = createRequest({ username: 'lockoutuser', password: 'wrongpassword' });
+      const lockedRequest = createRequest({ username: 'lockoutuser', password: 'wrongpassword' }, { 'x-forwarded-for': '10.0.0.1' });
       const lockedResponse = await POST(lockedRequest);
       const lockedData = await lockedResponse.json();
 
@@ -249,7 +256,7 @@ describe('Login API', () => {
       // Testing reset upon lockout duration expiration is tricky without mocking Date.now
       // but testing successful login resets it:
 
-      // Create a different user to verify we can still log in successfully
+      // Create a different IP to verify we can still log in successfully
       // Then verify that successful login resets it by doing a failed login later.
       vi.mocked(prisma.user.findUnique).mockResolvedValue({
         id: '2',
@@ -263,21 +270,21 @@ describe('Login API', () => {
 
       // First give it 1 fail to create the record
       vi.mocked(prisma.user.findUnique).mockResolvedValueOnce(null);
-      await POST(createRequest({ username: 'lockoutuser2', password: 'wrong' }));
+      await POST(createRequest({ username: 'lockoutuser2', password: 'wrong' }, { 'x-forwarded-for': '10.0.0.2' }));
 
       // Now succeed
-      const successResponse = await POST(createRequest({ username: 'lockoutuser2', password: 'password123' }));
+      const successResponse = await POST(createRequest({ username: 'lockoutuser2', password: 'password123' }, { 'x-forwarded-for': '10.0.0.2' }));
       expect(successResponse.status).toBe(200);
 
       // Now fail again 4 times
       vi.mocked(prisma.user.findUnique).mockResolvedValue(null);
       for (let i = 0; i < 4; i++) {
-        await POST(createRequest({ username: 'lockoutuser2', password: 'wrong' }));
+        await POST(createRequest({ username: 'lockoutuser2', password: 'wrong' }, { 'x-forwarded-for': '10.0.0.2' }));
       }
 
       // If it reset on success, 4 fails is not enough to lock it out (max is 5)
       // The 5th fail attempt (total fails = 1+4 = 5 but 1 was reset) should return 401, not 429
-      const notLockedResponse = await POST(createRequest({ username: 'lockoutuser2', password: 'wrong' }));
+      const notLockedResponse = await POST(createRequest({ username: 'lockoutuser2', password: 'wrong' }, { 'x-forwarded-for': '10.0.0.2' }));
       expect(notLockedResponse.status).toBe(401); // 401 because it's the 5th attempt after reset, so it fails auth but doesn't block before trying
     });
   });

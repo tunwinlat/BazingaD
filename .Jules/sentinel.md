@@ -59,3 +59,7 @@
 **Vulnerability:** The news feed creation schema (`newsFeedCreateSchema`) did not validate the safety of the `url` using `isSafeUrl`. An attacker could add an internal URL as a news feed, causing the server to fetch and parse data from internal networks (SSRF) when processing RSS feeds.
 **Learning:** URL validation must be consistently applied across all schemas where the server performs outbound requests. Missing the check in auxiliary features (like news feeds) leaves a gap.
 **Prevention:** Enforce `isSafeUrl` on any user-provided URL that the application will fetch, to prevent the server from accessing sensitive internal resources.
+## 2026-05-24 - Rate Limiting Bypass via Username Identifier
+**Vulnerability:** The rate limiting mechanism in `src/app/api/auth/login/route.ts` used the `username` as the identifier for tracking failed attempts. An attacker could bypass the rate limit by attempting to brute-force a password using many different usernames, or distribute brute-force attempts across many usernames without ever triggering a lockout.
+**Learning:** Rate limiting on authentication endpoints must track attempts by client IP address to prevent distributed attacks or brute-forcing across multiple accounts. Tracking solely by username leaves the endpoint vulnerable to volumetric attacks.
+**Prevention:** Always use the client's IP address (e.g., via `getClientIP`) as the primary identifier for rate limiting authentication endpoints, optionally combining it with the username for defense in depth.
