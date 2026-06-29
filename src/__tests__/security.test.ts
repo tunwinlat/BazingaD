@@ -32,6 +32,11 @@ describe('isSafeUrl', () => {
       expect(isSafeUrl('http://0x7f000001')).toBe(false);
       expect(isSafeUrl('http://017700000001')).toBe(false);
     });
+
+    it('returns false for octal IP representations (SSRF bypass)', () => {
+      expect(isSafeUrl('http://0177.0.0.1')).toBe(false);
+      expect(isSafeUrl('http://012.0.0.1')).toBe(false);
+    });
   });
 
   describe('Hostname Validation', () => {

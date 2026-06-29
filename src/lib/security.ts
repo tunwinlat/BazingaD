@@ -62,7 +62,12 @@ export function isSafeUrl(url: string | null | undefined): boolean {
 }
 
 function isPrivateIPv4(ip: string): boolean {
-  const parts = ip.split('.').map(Number);
+  const stringParts = ip.split('.');
+
+  // Prevent SSRF bypasses via octal IP representations (e.g., 0177.0.0.1 for 127.0.0.1)
+  if (stringParts.some(part => /^0\d+/.test(part))) return true;
+
+  const parts = stringParts.map(Number);
   if (parts.some(isNaN) || parts.length !== 4) return true;
 
   // 127.0.0.0/8 (Loopback)
