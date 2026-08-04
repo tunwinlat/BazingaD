@@ -7,6 +7,7 @@
 Built with Next.js, TypeScript, Prisma, and SQLite.
 
 [![Version](https://img.shields.io/badge/version-2.3.7-6366f1)](package.json)
+[![License: MPL-2.0](https://img.shields.io/badge/license-MPL--2.0-blue.svg)](LICENSE)
 [![Next.js 16](https://img.shields.io/badge/Next.js-16-000000?logo=nextdotjs)](https://nextjs.org/)
 [![React 19](https://img.shields.io/badge/React-19-149ECA?logo=react&logoColor=white)](https://react.dev/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5-3178C6?logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
@@ -211,4 +212,4 @@ docker compose down        # stop
 
 ## License
 
-MIT License.
+BazingaD is licensed under the [Mozilla Public License 2.0](LICENSE). Modifications to MPL-covered files must remain available under the MPL when distributed.
