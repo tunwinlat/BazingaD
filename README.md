@@ -23,7 +23,7 @@ BazingaD replaces your browser's new-tab page with a personal dashboard. Organiz
 
 | Area | What is included |
 | --- | --- |
-| Link dashboard | Categorized blocks with custom icons or auto-fetched favicons, alphabetical sorting, category reordering and disabling, comfortable/compact views, and optional open-in-new-tab behavior. |
+| Link dashboard | Categorized blocks with custom icons or auto-fetched favicons, alphabetical sorting, category reordering and disabling, four layout views (comfortable, compact, dense, list), and optional open-in-new-tab behavior. |
 | Unified search | Search across all blocks with full keyboard navigation (`/` to focus, arrow keys, Enter, Esc) and an accessible combobox pattern. |
 | Service monitoring | Per-block health checks with online/offline status indicators and a status dock for monitored services. |
 | Sports | Live scores from 12 leagues (NFL, NBA, MLB, NHL, Premier League, La Liga, Bundesliga, Serie A, Ligue 1, MLS, Champions League, FIFA World Cup) via the public ESPN API—no API key required. Pin matches (persisted in the browser), view match facts with team stats, leaders, and event timelines, per-league collapsing, and auto-refresh when the tab becomes visible. |
