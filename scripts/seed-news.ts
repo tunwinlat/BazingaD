@@ -12,6 +12,7 @@ async function main() {
       { name: 'Wired', url: 'https://www.wired.com/feed/rss', isDefault: true },
       { name: 'Hacker News', url: 'https://hnrss.org/frontpage?points=100', isDefault: true },
       { name: 'TLDR AI', url: 'https://tldr.tech/api/rss/ai', isDefault: true },
+      { name: 'AI Weekly', url: 'https://aiweekly.co/feed', isDefault: true },
       { name: 'Krebs on Security', url: 'https://krebsonsecurity.com/feed/', isDefault: true },
       { name: 'GitHub Blog', url: 'https://github.blog/feed/', isDefault: true },
       { name: 'ByteByteGo', url: 'https://blog.bytebytego.com/feed', isDefault: true },
