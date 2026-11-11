@@ -1,6 +1,11 @@
 name: Extension browser smoke tests
 
 on:
+  push:
+    branches: [extension/foundation]
+    paths:
+      - 'extension/**'
+      - '.github/workflows/extension-smoke.yml'
   pull_request:
     paths:
       - 'extension/**'
