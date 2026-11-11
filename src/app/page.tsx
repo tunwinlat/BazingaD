@@ -9,6 +9,8 @@ import Background from '@/components/Background';
 import Header from '@/components/Header';
 import Dashboard from '@/components/Dashboard';
 import Footer from '@/components/Footer';
+import { SportsProvider } from '@/components/SportsContext';
+import type { GadgetType } from '@/components/GadgetBar';
 import type { ViewMode } from '@/types';
 
 async function checkDashboardAccess() {
@@ -139,16 +141,16 @@ async function fetchNewsEnabled(): Promise<boolean> {
 async function fetchGadgetSettings(): Promise<{
   leftEnabled: boolean;
   rightEnabled: boolean;
-  leftConfig: Array<{ type: string; id: string }>;
-  rightConfig: Array<{ type: string; id: string }>;
+  leftConfig: Array<{ type: GadgetType; id: string }>;
+  rightConfig: Array<{ type: GadgetType; id: string }>;
 }> {
   try {
     const settings = await prisma.settings.findFirst();
     return {
       leftEnabled: settings?.gadgetBarLeftEnabled ?? false,
       rightEnabled: settings?.gadgetBarRightEnabled ?? false,
-      leftConfig: JSON.parse(settings?.gadgetBarLeftConfig ?? '[]'),
-      rightConfig: JSON.parse(settings?.gadgetBarRightConfig ?? '[]'),
+      leftConfig: JSON.parse(settings?.gadgetBarLeftConfig ?? '[]') as Array<{ type: GadgetType; id: string }>,
+      rightConfig: JSON.parse(settings?.gadgetBarRightConfig ?? '[]') as Array<{ type: GadgetType; id: string }>,
     };
   } catch {
     return { leftEnabled: false, rightEnabled: false, leftConfig: [], rightConfig: [] };
@@ -182,16 +184,18 @@ export default async function Home() {
             navTransitionEnabled={navTransitionEnabled}
             navTransitionType={navTransitionType}
           />
-          <Dashboard
-            isAdmin={access.isAdmin}
-            isProtected={access.protected}
-            defaultView={defaultView}
-            openInNewTab={openInNewTab}
-            navTransitionEnabled={navTransitionEnabled}
-            navTransitionType={navTransitionType}
-            newsEnabled={newsEnabled}
-            gadgetSettings={gadgetSettings}
-          />
+          <SportsProvider>
+            <Dashboard
+              isAdmin={access.isAdmin}
+              isProtected={access.protected}
+              defaultView={defaultView}
+              openInNewTab={openInNewTab}
+              navTransitionEnabled={navTransitionEnabled}
+              navTransitionType={navTransitionType}
+              newsEnabled={newsEnabled}
+              gadgetSettings={gadgetSettings}
+            />
+          </SportsProvider>
           <Footer isAdmin={access.isAdmin} />
         </div>
       </div>
