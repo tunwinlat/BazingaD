@@ -2,7 +2,7 @@ version: '3.8'
 
 services:
   startpage:
-    image: twlatx/bazingad:latest
+    image: ${BAZINGAD_IMAGE:-twlatx/bazingad:latest}
     container_name: bazingad
     ports:
       - "3000:3000"

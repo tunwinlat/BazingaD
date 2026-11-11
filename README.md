@@ -60,7 +60,13 @@ BazingaD replaces your browser's new-tab page with a personal dashboard. Organiz
 
 ### Using Docker Compose (recommended)
 
-The easiest way to run BazingaD is the pre-built image from Docker Hub:
+The included Compose file uses the Docker Hub image by default. Set `BAZINGAD_IMAGE` to use a published GitHub Container Registry image instead:
+
+```bash
+BAZINGAD_IMAGE=ghcr.io/tunwinlat/bazingad:latest docker compose up -d
+```
+
+To write your own Compose file, use this example:
 
 ```yaml
 services:
@@ -75,6 +81,9 @@ services:
     volumes:
       - bazingad-data:/app/data
     restart: unless-stopped
+
+volumes:
+  bazingad-data:
 ```
 
 ```bash
@@ -209,6 +218,16 @@ Useful commands:
 docker compose logs -f     # follow logs
 docker compose down        # stop
 ```
+
+### Publishing a Docker release
+
+1. Run `npm version <version> --no-git-tag-version`, commit the version bump in `package.json` and `package-lock.json`, and merge it into `master`.
+2. Publish a [GitHub release](https://github.com/tunwinlat/BazingaD/releases/new) with a new tag `v<version>` targeting that commit.
+3. Check the **Docker release** workflow in GitHub Actions. It builds the Linux x86-64 image, starts it against a fresh SQLite database, and publishes `ghcr.io/tunwinlat/bazingad:<version>` after the health check passes.
+
+The stable release marked **Latest** on GitHub also publishes the `latest` image tag. Prereleases publish only their version tag. To validate the container without publishing, run **Docker release** manually from the Actions tab.
+
+GitHub makes a new GHCR package private on first publish. For anonymous pulls, set the package visibility to **Public** in its package settings.
 
 ## License
 
