@@ -239,6 +239,9 @@ function AdminPage() {
   const [isDeletingBlock, setIsDeletingBlock] = useState<string | null>(null);
   const [isChangingPassword, setIsChangingPassword] = useState(false);
   const [isUpdatingSettings, setIsUpdatingSettings] = useState(false);
+  const [isSavingWeatherSettings, setIsSavingWeatherSettings] = useState(false);
+  const [isSavingTrafficSettings, setIsSavingTrafficSettings] = useState(false);
+  const [isSavingGeneralSettings, setIsSavingGeneralSettings] = useState(false);
   const [isVerifyingTOTP, setIsVerifyingTOTP] = useState(false);
   const [isDisablingTOTP, setIsDisablingTOTP] = useState(false);
 
@@ -767,6 +770,7 @@ function AdminPage() {
   };
 
   const handleSaveWeatherSettings = async () => {
+    setIsSavingWeatherSettings(true);
     try {
       const response = await fetch('/api/settings', {
         method: 'PUT',
@@ -788,6 +792,8 @@ function AdminPage() {
       }
     } catch (error) {
       console.error('Weather settings save error:', error);
+    } finally {
+      setIsSavingWeatherSettings(false);
     }
   };
 
@@ -819,6 +825,7 @@ function AdminPage() {
   };
 
   const handleSaveGeneralSettings = async () => {
+    setIsSavingGeneralSettings(true);
     try {
       const response = await fetch('/api/settings/general', {
         method: 'PUT',
@@ -860,10 +867,13 @@ function AdminPage() {
     } catch (error) {
       console.error('General settings save error:', error);
       toast.error('Network error. Please check your connection.');
+    } finally {
+      setIsSavingGeneralSettings(false);
     }
   };
 
   const handleSaveTrafficSettings = async () => {
+    setIsSavingTrafficSettings(true);
     try {
       const response = await fetch('/api/settings/traffic', {
         method: 'PUT',
@@ -890,6 +900,8 @@ function AdminPage() {
       }
     } catch (error) {
       console.error('Traffic settings save error:', error);
+    } finally {
+      setIsSavingTrafficSettings(false);
     }
   };
 
@@ -2041,10 +2053,12 @@ function AdminPage() {
                     <button
                       type="button"
                       onClick={handleSaveWeatherSettings}
-                      className="w-full px-4 py-2 rounded-lg transition-colors"
+                      disabled={isSavingWeatherSettings}
+                      className="w-full px-4 py-2 rounded-lg transition-colors flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
                       style={{ backgroundColor: '#6366f1' }}
                     >
-                      Save Weather Settings
+                      {isSavingWeatherSettings && <Loader2 className="w-4 h-4 animate-spin" />}
+                      {isSavingWeatherSettings ? 'Saving...' : 'Save Weather Settings'}
                     </button>
                   </>
                 )}
@@ -2260,10 +2274,12 @@ function AdminPage() {
                     <button
                       type="button"
                       onClick={handleSaveTrafficSettings}
-                      className="w-full px-4 py-2 rounded-lg transition-colors"
+                      disabled={isSavingTrafficSettings}
+                      className="w-full px-4 py-2 rounded-lg transition-colors flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
                       style={{ backgroundColor: '#6366f1' }}
                     >
-                      Save Traffic Settings
+                      {isSavingTrafficSettings && <Loader2 className="w-4 h-4 animate-spin" />}
+                      {isSavingTrafficSettings ? 'Saving...' : 'Save Traffic Settings'}
                     </button>
                   </>
                 )}
@@ -2757,10 +2773,12 @@ function AdminPage() {
                 <button
                   type="button"
                   onClick={handleSaveGeneralSettings}
-                  className="w-full px-4 py-2 rounded-lg transition-colors"
+                  disabled={isSavingGeneralSettings}
+                  className="w-full px-4 py-2 rounded-lg transition-colors flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
                   style={{ backgroundColor: '#6366f1' }}
                 >
-                  Save General Settings
+                  {isSavingGeneralSettings && <Loader2 className="w-4 h-4 animate-spin" />}
+                  {isSavingGeneralSettings ? 'Saving...' : 'Save General Settings'}
                 </button>
               </div>
             </div>
