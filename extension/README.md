@@ -18,4 +18,14 @@ node extension/build.mjs
 
 Open a new tab, change the title in **Settings**, then open another new tab to check that the title persisted. Firefox's temporary installation lasts until the browser restarts.
 
+## Use BazingaD as your homepage
+
+| Browser | Homepage setup |
+| --- | --- |
+| Firefox | Accept Firefox's homepage change prompt. To undo it, go to **Settings → Home** and restore your homepage. |
+| Chrome | Go to **Settings → Appearance**, enable **Show Home button**, and select **New Tab page**. |
+| Edge | Go to **Settings → Start, home, and new tab page**, enable **Show home button**, and select **New tab page**. |
+
+With the New Tab override enabled, the Home button opens the same local dashboard and uses the same saved settings. Chrome and Edge let you change the Home button destination in the browser settings at any time.
+
 The extension uses Manifest V3 and requests only the `storage` permission. The next step is to port the category and link dashboard using this storage layer. The self-hosted app's admin authentication remains in place.

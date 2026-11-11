@@ -2,6 +2,7 @@ import { cp, mkdir, rm, writeFile } from 'node:fs/promises';
 
 const source = new URL('./src/', import.meta.url);
 const output = new URL('./dist/', import.meta.url);
+const dashboardPage = 'new-tab.html';
 
 const manifest = {
   manifest_version: 3,
@@ -9,7 +10,7 @@ const manifest = {
   version: '0.1.0',
   description: 'A local new tab dashboard.',
   permissions: ['storage'],
-  chrome_url_overrides: { newtab: 'new-tab.html' },
+  chrome_url_overrides: { newtab: dashboardPage },
   options_ui: { page: 'settings.html', open_in_tab: true },
 };
 
@@ -22,6 +23,7 @@ for (const browser of ['chrome', 'edge', 'firefox']) {
 
   const browserManifest = structuredClone(manifest);
   if (browser === 'firefox') {
+    browserManifest.chrome_settings_overrides = { homepage: dashboardPage };
     browserManifest.browser_specific_settings = {
       gecko: {
         id: 'bazingad@tunwinlat.github.io',
