@@ -16,8 +16,18 @@ export default function NewsModal({ articles, isOpen, onClose, navTransitionEnab
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [readArticles, setReadArticles] = useState<Set<string>>(new Set());
   const autoMarkedRef = useRef<Set<string>>(new Set());
+  const dialogRef = useRef<HTMLDialogElement>(null);
 
   const selectedArticle = articles.find((a) => a.id === selectedId) || articles[0];
+
+  const handleMarkRead = useCallback(async (articleId: string) => {
+    try {
+      await fetch(`/api/news/${articleId}/read`, { method: 'POST' });
+      setReadArticles((prev) => new Set(prev).add(articleId));
+    } catch (error) {
+      console.error('Failed to mark as read:', error);
+    }
+  }, []);
 
   useEffect(() => {
     if (isOpen && articles.length > 0 && !selectedId) {
@@ -27,23 +37,25 @@ export default function NewsModal({ articles, isOpen, onClose, navTransitionEnab
 
   // Auto-mark as read when an article is selected (user is reading the summary)
   useEffect(() => {
-    if (!selectedId) return;
+    if (!isOpen || !selectedId) return;
     if (selectedArticle?.isRead) return;
     if (autoMarkedRef.current.has(selectedId)) return;
     if (readArticles.has(selectedId)) return;
 
     autoMarkedRef.current.add(selectedId);
     handleMarkRead(selectedId);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedId]);
+  }, [isOpen, selectedId, selectedArticle?.isRead, readArticles, handleMarkRead]);
+
+  useEffect(() => {
+    const dialog = dialogRef.current;
+    if (!isOpen || !dialog) return;
+    dialog.showModal();
+    return () => dialog.close();
+  }, [isOpen]);
 
   useEffect(() => {
     if (!isOpen) return;
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') {
-        onClose();
-        return;
-      }
       if (articles.length === 0) return;
       const currentIndex = articles.findIndex((a) => a.id === selectedId);
       if (e.key === 'ArrowDown') {
@@ -58,40 +70,33 @@ export default function NewsModal({ articles, isOpen, onClose, navTransitionEnab
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [isOpen, articles, selectedId, onClose]);
-
-  const handleMarkRead = useCallback(async (articleId: string) => {
-    try {
-      await fetch(`/api/news/${articleId}/read`, { method: 'POST' });
-      setReadArticles((prev) => new Set(prev).add(articleId));
-    } catch (error) {
-      console.error('Failed to mark as read:', error);
-    }
-  }, []);
+  }, [isOpen, articles, selectedId]);
 
   const handleOpenArticle = useCallback((article: NewsArticle) => {
     handleMarkRead(article.id);
     if (navTransitionEnabled) {
+      onClose();
       triggerTransition(article.url, article.aiTitle || article.originalTitle, undefined, 'overlay');
     } else {
       window.open(article.url, '_blank');
     }
-  }, [navTransitionEnabled, handleMarkRead]);
-
-  if (!isOpen) return null;
+  }, [navTransitionEnabled, handleMarkRead, onClose]);
 
   return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center p-4 md:p-8"
+    <dialog
+      ref={dialogRef}
+      aria-labelledby="news-modal-title"
+      className="fixed inset-0 m-0 h-full max-h-none w-full max-w-none items-center justify-center p-4 text-inherit open:flex backdrop:bg-transparent md:p-8"
       style={{ backgroundColor: 'rgba(0, 0, 0, 0.6)', backdropFilter: 'blur(8px)' }}
+      onCancel={(e) => {
+        e.preventDefault();
+        onClose();
+      }}
       onClick={(e) => {
         if (e.target === e.currentTarget) onClose();
       }}
     >
       <div
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="news-modal-title"
         className="w-full max-w-4xl max-h-[85vh] rounded-2xl overflow-hidden flex flex-col md:flex-row"
         style={{
           backgroundColor: 'rgba(20, 20, 30, 0.95)',
@@ -266,7 +271,7 @@ export default function NewsModal({ articles, isOpen, onClose, navTransitionEnab
           )}
         </div>
       </div>
-    </div>
+    </dialog>
   );
 }
 

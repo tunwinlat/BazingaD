@@ -58,3 +58,4 @@ export const weatherCache = new MemoryCache(600); // 10 minutes for weather
 export const trafficCache = new MemoryCache(1800); // 30 minutes for traffic
 export const categoriesCache = new MemoryCache(300); // 5 minutes for categories
 export const newsCache = new MemoryCache(60); // 1 minute for news articles
+export const sportsCache = new MemoryCache(30); // 30 seconds for live scores

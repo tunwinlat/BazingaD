@@ -4,7 +4,7 @@ import { verifyAuth } from '@/lib/auth';
 import { z } from 'zod';
 
 const gadgetConfigSchema = z.object({
-  type: z.enum(['password']),
+  type: z.enum(['password', 'sports']),
   id: z.string(),
 });
 

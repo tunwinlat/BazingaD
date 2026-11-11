@@ -190,3 +190,83 @@ a {
     -webkit-backdrop-filter: blur(20px);
   }
 }
+
+/* Pinned match cards: adapt layout and typography to card width */
+.match-card {
+  container-type: inline-size;
+}
+
+.match-card .layout-compact {
+  display: block;
+}
+
+.match-card .layout-wide {
+  display: none;
+}
+
+.match-card .match-extra,
+.match-card .match-facts {
+  display: none;
+}
+
+.match-card .match-score {
+  font-size: 1.5rem;
+  line-height: 1;
+}
+
+.match-card .match-team-name {
+  font-size: 0.875rem;
+}
+
+.match-card .match-logo {
+  width: 2rem;
+  height: 2rem;
+}
+
+@container (min-width: 480px) {
+  .match-card .layout-compact {
+    display: none;
+  }
+
+  .match-card .layout-wide {
+    display: block;
+  }
+
+  .match-card .match-extra {
+    display: flex;
+  }
+
+  .match-card .match-score {
+    font-size: 2.25rem;
+  }
+
+  .match-card .match-team-name {
+    font-size: 1.125rem;
+  }
+
+  .match-card .match-logo {
+    width: 3.5rem;
+    height: 3.5rem;
+  }
+}
+
+@container (min-width: 620px) {
+  .match-card .match-facts {
+    display: block;
+  }
+}
+
+@container (min-width: 700px) {
+  .match-card .match-score {
+    font-size: 3rem;
+  }
+
+  .match-card .match-team-name {
+    font-size: 1.25rem;
+  }
+
+  .match-card .match-logo {
+    width: 4.5rem;
+    height: 4.5rem;
+  }
+}

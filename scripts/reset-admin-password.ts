@@ -11,7 +11,7 @@
  *   Local dev:
  *     DATABASE_URL=file:./data/dev.db npx tsx scripts/reset-admin-password.ts
  *   Docker:
- *     docker exec -it startpage-dashboard node scripts/reset-admin-password.js
+ *     docker exec -it bazingad node scripts/reset-admin-password.js
  *
  * Options:
  *   --clear-totp   Also disable TOTP/2FA for the selected user
@@ -164,7 +164,7 @@ async function main() {
     console.log('Examples:');
     console.log('  DATABASE_URL=file:./data/dev.db npx tsx scripts/reset-admin-password.ts');
     console.log('  DATABASE_URL=file:./data/dev.db npx tsx scripts/reset-admin-password.ts --clear-totp');
-    console.log('  docker exec -it startpage-dashboard node scripts/reset-admin-password.js');
+    console.log('  docker exec -it bazingad node scripts/reset-admin-password.js');
     process.exit(0);
   }
 
@@ -175,7 +175,7 @@ async function main() {
     console.error('  DATABASE_URL=file:./data/dev.db npm run admin:reset-password');
     console.error('');
     console.error('For Docker:');
-    console.error('  docker exec -it startpage-dashboard node scripts/reset-admin-password.js');
+    console.error('  docker exec -it bazingad node scripts/reset-admin-password.js');
     process.exit(1);
   }
 

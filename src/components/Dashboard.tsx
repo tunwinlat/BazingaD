@@ -8,7 +8,8 @@ import QuickAddModal from './QuickAddModal';
 import TopBar from './TopBar';
 import NavTransition from './NavTransition';
 import NewsModal from './NewsModal';
-import GadgetBar from './GadgetBar';
+import GadgetBar, { type GadgetType } from './GadgetBar';
+import PinnedSportsBar from './PinnedSportsBar';
 import type { Category, ViewMode, NewsArticle } from '@/types';
 
 // Memoized loading skeleton
@@ -104,8 +105,8 @@ interface DashboardProps {
   gadgetSettings?: {
     leftEnabled: boolean;
     rightEnabled: boolean;
-    leftConfig: Array<{ type: string; id: string }>;
-    rightConfig: Array<{ type: string; id: string }>;
+    leftConfig: Array<{ type: GadgetType; id: string }>;
+    rightConfig: Array<{ type: GadgetType; id: string }>;
   };
 }
 
@@ -295,6 +296,7 @@ export default function Dashboard({
   return (
     <>
       <TopBar isAdmin={isAdmin} isProtected={isProtected} viewMode={viewMode} onViewModeChange={handleViewModeChange} onNewsClick={newsEnabled ? handleNewsClick : undefined} />
+      <PinnedSportsBar />
       <main className="flex-1 flex flex-col gap-8">
         {categorySections}
 
@@ -341,12 +343,12 @@ export default function Dashboard({
           <GadgetBar
             side="left"
             enabled={gadgetSettings.leftEnabled}
-            config={gadgetSettings.leftConfig as Array<{ type: 'password'; id: string }>}
+            config={gadgetSettings.leftConfig as Array<{ type: GadgetType; id: string }>}
           />
           <GadgetBar
             side="right"
             enabled={gadgetSettings.rightEnabled}
-            config={gadgetSettings.rightConfig as Array<{ type: 'password'; id: string }>}
+            config={gadgetSettings.rightConfig as Array<{ type: GadgetType; id: string }>}
           />
         </>
       )}
