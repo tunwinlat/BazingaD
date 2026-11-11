@@ -65,7 +65,7 @@ export default function GadgetBar({ side, enabled, config }: GadgetBarProps) {
       <button
         type="button"
         onClick={toggle}
-        className="fixed z-40 transition-all duration-300 hover:scale-110 active:scale-95"
+        className="fixed z-40 transition-all duration-300 hover:scale-110 active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 rounded-full"
         style={{
           top: '50%',
           transform: `translateY(-50%) ${isOpen ? (isLeft ? `translateX(${PANEL_WIDTH + 12}px)` : `translateX(-${PANEL_WIDTH + 12}px)`) : 'translateX(0)'}`,
@@ -141,7 +141,7 @@ export default function GadgetBar({ side, enabled, config }: GadgetBarProps) {
             <button
               type="button"
               onClick={toggle}
-              className="p-1 rounded-md hover:bg-white/10 transition-colors"
+              className="p-1 rounded-md hover:bg-white/10 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
               style={{ color: 'rgba(255,255,255,0.4)' }}
               aria-label="Close gadget bar"
             >

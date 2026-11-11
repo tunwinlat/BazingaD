@@ -40,7 +40,7 @@ export default function PasswordGenerator() {
         <button
           type="button"
           onClick={() => { setMode('words'); setPassword(''); }}
-          className="flex-1 flex items-center justify-center gap-1.5 px-2 py-1.5 rounded-md text-xs font-medium transition-all"
+          className="flex-1 flex items-center justify-center gap-1.5 px-2 py-1.5 rounded-md text-xs font-medium transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
           style={{
             backgroundColor: mode === 'words' ? 'rgba(255,255,255,0.1)' : 'transparent',
             color: mode === 'words' ? '#fff' : 'rgba(255,255,255,0.45)',
@@ -53,7 +53,7 @@ export default function PasswordGenerator() {
         <button
           type="button"
           onClick={() => { setMode('random'); setPassword(''); }}
-          className="flex-1 flex items-center justify-center gap-1.5 px-2 py-1.5 rounded-md text-xs font-medium transition-all"
+          className="flex-1 flex items-center justify-center gap-1.5 px-2 py-1.5 rounded-md text-xs font-medium transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
           style={{
             backgroundColor: mode === 'random' ? 'rgba(255,255,255,0.1)' : 'transparent',
             color: mode === 'random' ? '#fff' : 'rgba(255,255,255,0.45)',
@@ -103,7 +103,7 @@ export default function PasswordGenerator() {
         <button
           type="button"
           onClick={generate}
-          className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium transition-all hover:scale-[1.02] active:scale-[0.98]"
+          className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium transition-all hover:scale-[1.02] active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
           style={{
             background: 'rgba(255,255,255,0.1)',
             color: '#fff',
@@ -119,7 +119,7 @@ export default function PasswordGenerator() {
           type="button"
           onClick={handleCopy}
           disabled={!password}
-          className="flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium transition-all hover:scale-[1.02] active:scale-[0.98] disabled:opacity-30 disabled:cursor-not-allowed"
+          className="flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium transition-all hover:scale-[1.02] active:scale-[0.98] disabled:opacity-30 disabled:cursor-not-allowed focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
           style={{
             background: copied ? 'rgba(16,185,129,0.2)' : 'rgba(255,255,255,0.06)',
             color: copied ? '#6ee7b7' : 'rgba(255,255,255,0.7)',
