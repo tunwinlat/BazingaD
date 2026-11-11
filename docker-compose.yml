@@ -2,16 +2,16 @@ version: '3.8'
 
 services:
   startpage:
-    image: twlatx/startpage-dashboard:latest
-    container_name: startpage-dashboard
+    image: twlatx/bazingad:latest
+    container_name: bazingad
     ports:
       - "3000:3000"
     environment:
       - NODE_ENV=production
       - DATABASE_URL=file:/app/data/prod.db
-      - NEXT_PUBLIC_APP_NAME=${NEXT_PUBLIC_APP_NAME:-Start Page Dashboard}
+      - NEXT_PUBLIC_APP_NAME=${NEXT_PUBLIC_APP_NAME:-BazingaD}
     volumes:
-      - startpage-data:/app/data
+      - bazingad-data:/app/data
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3000/api/health"]
@@ -21,4 +21,4 @@ services:
       start_period: 40s
 
 volumes:
-  startpage-data:
+  bazingad-data:

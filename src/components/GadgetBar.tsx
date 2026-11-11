@@ -3,8 +3,9 @@
 import { useState, useEffect, useCallback } from 'react';
 import { ChevronLeft, ChevronRight, X } from 'lucide-react';
 import PasswordGenerator from './gadgets/PasswordGenerator';
+import SportsScoreboard from './gadgets/SportsScoreboard';
 
-export type GadgetType = 'password';
+export type GadgetType = 'password' | 'sports';
 
 interface GadgetConfig {
   type: GadgetType;
@@ -19,6 +20,7 @@ interface GadgetBarProps {
 
 const GADGET_REGISTRY: Record<GadgetType, { title: string; component: React.ComponentType }> = {
   password: { title: 'Password', component: PasswordGenerator },
+  sports: { title: 'Sports', component: SportsScoreboard },
 };
 
 const PANEL_WIDTH = 280;
@@ -148,7 +150,15 @@ export default function GadgetBar({ side, enabled, config }: GadgetBarProps) {
           </div>
 
           {/* Gadgets */}
-          <div className="px-3 pb-3 space-y-3">
+          <div
+            className="px-3 pb-3 space-y-3"
+            style={{
+              maxHeight: 'calc(100vh - 140px)',
+              overflowY: 'auto',
+              overflowX: 'hidden',
+              scrollbarWidth: 'thin',
+            }}
+          >
             {config.map((gadget) => {
               const registryEntry = GADGET_REGISTRY[gadget.type];
               if (!registryEntry) return null;

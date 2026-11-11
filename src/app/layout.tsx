@@ -11,7 +11,7 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: "Start Page Dashboard",
+  title: "BazingaD",
   description: "A modern, customizable start page",
 };
 

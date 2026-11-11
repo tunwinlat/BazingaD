@@ -2,9 +2,9 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { toast } from 'sonner';
-import { LayoutGrid, Plus, Trash2, Save, ToggleLeft, ToggleRight, Key, ArrowRight, ArrowLeft } from 'lucide-react';
+import { LayoutGrid, Plus, Trash2, Save, ToggleLeft, ToggleRight, Key, ArrowRight, Trophy } from 'lucide-react';
 
-export type GadgetType = 'password';
+export type GadgetType = 'password' | 'sports';
 
 interface GadgetConfig {
   type: GadgetType;
@@ -21,6 +21,7 @@ interface GadgetSettings {
 
 const GADGET_TYPES: { type: GadgetType; label: string; icon: React.ReactNode }[] = [
   { type: 'password', label: 'Password Generator', icon: <Key className="w-4 h-4" /> },
+  { type: 'sports', label: 'Live Sports', icon: <Trophy className="w-4 h-4" /> },
 ];
 
 export default function GadgetSettingsPanel() {

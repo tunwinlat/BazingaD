@@ -1,291 +1,215 @@
-# 🚀 Start Page Dashboard
+<div align="center">
 
-A modern, customizable browser start page with category-based organization, service monitoring, weather, traffic information, and an admin interface.
+# BazingaD
 
-![Dashboard Preview](https://via.placeholder.com/800x400/0f0f1a/6366f1?text=Start+Page+Dashboard)
+**A self-hosted browser start page with categorized links, service monitoring, live sports, news, weather, and commute traffic.**
 
-## ✨ Features
+Built with Next.js, TypeScript, Prisma, and SQLite.
 
-- 🎨 **20 Beautiful Themes** - Choose from Midnight Dark, Ocean Blue, Forest Green, Cyberpunk, Dracula, Nord, and more
-- 📂 **Categorized Blocks** - Organize your links by category
-- 🔤 **Alphabetical Sorting** - Blocks automatically sorted within each category
-- 🖼️ **Custom Icons** - Support for custom images or auto-fetched favicons
-- 📊 **Service Monitoring** - Monitor the health of your self-hosted services
-- 🌤️ **Weather Display** - Show current weather with location search
-- 🚗 **Traffic Information** - Real-time commute times with color-coded status
-- ⚙️ **General Settings** - Customize site title, favicon, and theme
-- 🔐 **Security** - 2FA/TOTP support, session management, rate limiting
-- ⚡ **Admin Interface** - Web UI to manage all settings
-- 🐳 **Docker Ready** - Easy deployment with Docker Compose
-- ⌨️ **Keyboard Shortcuts** - Ctrl+K to focus search
-- 📱 **Responsive** - Works on all devices
+[![Version](https://img.shields.io/badge/version-2.3.7-6366f1)](package.json)
+[![License: MPL-2.0](https://img.shields.io/badge/license-MPL--2.0-blue.svg)](LICENSE)
+[![Next.js 16](https://img.shields.io/badge/Next.js-16-000000?logo=nextdotjs)](https://nextjs.org/)
+[![React 19](https://img.shields.io/badge/React-19-149ECA?logo=react&logoColor=white)](https://react.dev/)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5-3178C6?logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
+[![Prisma 6](https://img.shields.io/badge/Prisma-6-2D3748?logo=prisma&logoColor=white)](https://www.prisma.io/)
+[![Self-hosted](https://img.shields.io/badge/deployment-self--hosted-6f42c1)](#docker-deployment)
 
-## 🚀 Quick Start
+[Features](#features) · [Quick start](#quick-start) · [Configuration](#configuration) · [Architecture](#architecture) · [Development](#development)
 
-### Using Docker Compose (Recommended)
+</div>
 
-The easiest way to run Start Page Dashboard is using the pre-built Docker image from Docker Hub.
+BazingaD replaces your browser's new-tab page with a personal dashboard. Organize links into categorized blocks, watch the health of your self-hosted services, follow live scores from a dozen sports leagues, skim AI-summarized news from your own RSS feeds, and check the weather and your commute—all from a single page, with your data staying on your own server.
 
-1. Create a `docker-compose.yml` file:
+## Features
+
+| Area | What is included |
+| --- | --- |
+| Link dashboard | Categorized blocks with custom icons or auto-fetched favicons, alphabetical sorting, category reordering and disabling, four layout views (comfortable, compact, dense, list), and optional open-in-new-tab behavior. |
+| Unified search | Search across all blocks with full keyboard navigation (`/` to focus, arrow keys, Enter, Esc) and an accessible combobox pattern. |
+| Service monitoring | Per-block health checks with online/offline status indicators and a status dock for monitored services. |
+| Sports | Live scores from 12 leagues (NFL, NBA, MLB, NHL, Premier League, La Liga, Bundesliga, Serie A, Ligue 1, MLS, Champions League, FIFA World Cup) via the public ESPN API—no API key required. Pin matches (persisted in the browser), view match facts with team stats, leaders, and event timelines, per-league collapsing, and auto-refresh when the tab becomes visible. |
+| News | RSS feed aggregation with AI-generated titles and summaries (MiniMax), topic filtering, read/unread state with configurable retention, a news ticker, a dedicated `/news` page, and a cron-protected refresh job. |
+| Weather | Current conditions via Open-Meteo (free, no API key) with location search and metric/imperial units. |
+| Traffic | Commute times between home and work via Google Routes or TomTom (bring your own API key), with travel-mode selection, color-coded status, 30-minute caching, and fetch-only-while-visible to conserve quota. |
+| Gadget bar | Configurable left/right gadget bars, including a password generator and a sports scoreboard. |
+| Customization | 20 built-in themes, custom site title, favicon upload, and a first-run setup wizard. |
+| Security | Admin authentication with bcrypt hashing, TOTP two-factor authentication with recovery code, session management with revocation, optional dashboard password protection, rate limiting, and security headers. |
+| Administration | Web UI at `/admin` for blocks, categories, general settings, security, integrations, and gadgets. CLI password reset for lockouts. |
+| Deployment | Multi-stage Dockerfile (non-root user, health check) and Docker Compose, or any Node.js host with persistent storage. |
+
+## Technology stack
+
+| Layer | Technology |
+| --- | --- |
+| Application | Next.js 16 App Router (Turbopack), React 19, TypeScript 5 |
+| Styling | Tailwind CSS 4, 20 theme definitions |
+| Data | Prisma 6, SQLite |
+| Authentication | bcryptjs password hashing, TOTP 2FA with `otpauth` and QR-code enrollment |
+| Validation | Zod |
+| Integrations | ESPN (sports), Open-Meteo (weather/geocoding), Google Routes or TomTom (traffic), MiniMax (news AI), RSS via `rss-parser` |
+| UI | Lucide icons, `sonner` toasts, `rate-limiter-flexible` |
+| Testing | Node.js test runner (`node --test`) |
+| Deployment | Docker (multi-stage, non-root), Docker Compose |
+
+## Quick start
+
+### Prerequisites
+
+- Docker (recommended), or
+- Node.js 20.9 or newer (the Docker image uses Node.js 22) and npm
+
+### Using Docker Compose (recommended)
+
+The easiest way to run BazingaD is the pre-built image from Docker Hub:
+
 ```yaml
-version: '3.8'
-
 services:
   startpage:
-    image: twlatx/startpage-dashboard:latest
-    container_name: startpage-dashboard
+    image: twlatx/bazingad:latest
+    container_name: bazingad
     ports:
       - "3000:3000"
     environment:
       - NODE_ENV=production
       - DATABASE_URL=file:/app/data/prod.db
-      - NEXT_PUBLIC_APP_NAME=Start Page Dashboard
     volumes:
-      - ./data:/app/data
+      - bazingad-data:/app/data
     restart: unless-stopped
-    healthcheck:
-      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3000/api/health"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 40s
 ```
 
-2. Start the application:
 ```bash
-docker-compose up -d
+docker compose up -d
 ```
 
-3. Open http://localhost:3000 in your browser
+Open [http://localhost:3000](http://localhost:3000). The entrypoint runs database migrations and seeds starter content on first launch. Visit `/setup` to create the admin account, then manage everything from `/admin`.
 
-4. Access the admin panel at http://localhost:3000/admin
+### Building from source
 
-### Building from Source
-
-If you prefer to build the Docker image yourself:
-
-1. Clone the repository:
 ```bash
-git clone <repository-url>
-cd startpage-dashboard
-```
-
-2. Build and start the application:
-```bash
-docker-compose up -d --build
-```
-
-### Development
-
-1. Install dependencies:
-```bash
-npm install
-```
-
-2. Set up the database:
-```bash
+git clone https://github.com/tunwinlat/BazingaD.git
+cd BazingaD
+npm ci
+cp .env.example .env   # then edit DATABASE_URL if needed
 npx prisma migrate dev
-npx prisma db seed
-```
-
-3. Run the development server:
-```bash
+npm run db:seed
 npm run dev
 ```
 
-4. Open http://localhost:3000
+Open [http://localhost:3000](http://localhost:3000) and complete the setup wizard.
 
-## 📁 Project Structure
+## Configuration
 
-```
-startpage-dashboard/
-├── src/
-│   ├── app/              # Next.js app router
-│   │   ├── api/          # API routes
-│   │   ├── admin/        # Admin interface
-│   │   ├── globals.css   # Global styles
-│   │   ├── layout.tsx    # Root layout
-│   │   └── page.tsx      # Main dashboard
-│   ├── components/       # React components
-│   ├── lib/              # Utility functions
-│   └── types/            # TypeScript types
-├── prisma/
-│   ├── schema.prisma     # Database schema
-│   └── seed.ts           # Seed data
-├── docker-compose.yml    # Docker Compose config
-├── Dockerfile            # Docker image
-└── README.md             # This file
-```
+### Environment variables
 
-## 🔧 Configuration
+| Variable | Requirement | Purpose |
+| --- | --- | --- |
+| `DATABASE_URL` | Required | SQLite connection URL, e.g. `file:./data/dev.db` locally or `file:/app/data/prod.db` in Docker. |
+| `CRON_SECRET` | Optional | Shared secret protecting the `POST /api/jobs/news` refresh endpoint. When set, callers must send it in the `x-cron-secret` header. |
 
-### Adding Blocks
+All other credentials—Google Routes / TomTom traffic keys and the MiniMax news key—are entered in the admin UI and stored in the database, not in environment variables. They are never exposed back to the client in full.
 
-Visit `/admin` to manage blocks and categories through the web interface.
+### Admin settings
 
-### Service Monitoring
+Visit `/admin` to manage:
 
-When adding a block, you can enable monitoring by:
-1. Checking "Is Monitored"
-2. Providing a health check URL
-3. The dashboard will show a status indicator
+- **Blocks & Categories** — links, icons, monitoring, ordering
+- **General** — site title, favicon, theme, default view, link behavior, navigation transitions
+- **Security** — password change, TOTP 2FA enrollment, active sessions, dashboard protection
+- **Integrations** — weather location/units, traffic provider and addresses, news feeds and AI key
+- **Gadgets** — left/right gadget bar composition
 
-### Weather Integration
+### Resetting a forgotten admin password
 
-1. Go to Admin → Integrations tab
-2. Enable Weather Display
-3. Search for your location or enter coordinates manually
-4. Choose metric or imperial units
-
-### Traffic Information
-
-1. Go to Admin → Traffic tab
-2. Enable Traffic Display
-3. Enter your [Google Routes API key](https://developers.google.com/maps/documentation/routes/get-api-key)
-4. Set your Home and Work addresses
-5. Select your preferred travel mode (Drive, Transit, Bicycle, Walk, Two Wheeler)
-6. Choose metric or imperial units
-
-**Note:** Google Routes API includes a free tier of 10,000 requests per month. The app caches results for 30 minutes and only fetches when the tab is active to minimize API usage.
-
-### Custom Icons
-
-You can provide custom icon URLs when creating blocks. If no icon is provided, the dashboard will automatically fetch the website's favicon.
-
-### General Settings
-
-Customize your dashboard appearance:
-- **Site Title** - Change the browser tab title
-- **Favicon** - Upload a custom favicon (SVG format supported)
-- **Theme** - Choose from 20 beautiful color themes:
-  - Midnight Dark (default)
-  - Ocean Blue
-  - Forest Green
-  - Sunset Orange
-  - Sakura Pink
-  - Cyberpunk
-  - Monokai
-  - Dracula
-  - Nord
-  - Solarized Dark
-  - Gruvbox Dark
-  - Tokyo Night
-  - One Dark
-  - Catppuccin Mocha
-  - Rosé Pine
-  - Material Dark
-  - High Contrast
-  - Coffee
-  - Lavender
-  - Crimson
-
-## 🔐 Security Features
-
-- **Two-Factor Authentication (2FA)** - TOTP-based 2FA support
-- **Session Management** - View and revoke active sessions
-- **Rate Limiting** - Protection against brute force attacks
-- **Security Headers** - X-Frame-Options, CSP, HSTS, and more
-- **Dashboard Protection** - Optional password protection for the dashboard
-
-### Resetting a Forgotten Admin Password
-
-If you forget your admin password, you can reset it via the command line. This requires direct access to the server running the application.
-
-**Local Development:**
+Requires shell access to the server:
 
 ```bash
+# Local development
 DATABASE_URL=file:./data/dev.db npm run admin:reset-password
+
+# Docker
+docker exec -it bazingad node scripts/reset-admin-password.js
 ```
 
-**Docker:**
+The script lists users, prompts for a new password with hidden input, and invalidates all sessions. Add `--clear-totp` to also disable 2FA if the authenticator is lost.
 
-```bash
-docker exec -it startpage-dashboard node scripts/reset-admin-password.js
+## Architecture
+
+```mermaid
+flowchart LR
+    Browser[Browser] --> Pages[App Router pages: dashboard, /news, /admin, /setup]
+    Browser --> API[Route handlers under /api]
+    Cron[Cron scheduler] --> Jobs[/api/jobs/news]
+
+    Pages --> API
+    API --> Services[Auth, cache, rate limiting, validation]
+    Services --> Prisma[Prisma 6]
+    Prisma --> DB[(SQLite)]
+
+    Services --> ESPN[ESPN scoreboard API]
+    Services --> OpenMeteo[Open-Meteo weather & geocoding]
+    Services --> Traffic[Google Routes / TomTom]
+    Services --> MiniMax[MiniMax AI]
+    Services --> Feeds[RSS feeds]
 ```
 
-The script will list available users, prompt for a new password (with hidden input), and invalidate all existing sessions. You can also pass `--clear-totp` to disable 2FA if you've lost access to your authenticator app:
+External responses are cached in memory (sports scores, weather, traffic) to respect provider quotas, and mutations to settings or content invalidate their caches. Third-party API keys are stored server-side only.
 
-```bash
-docker exec -it startpage-dashboard node scripts/reset-admin-password.js --clear-totp
+### Repository layout
+
+```text
+BazingaD/
+├── prisma/                 # Schema, migrations, and seed data
+├── public/                 # Static assets
+├── scripts/                # CLI utilities (password reset, news seeding)
+├── src/
+│   ├── app/                # Dashboard, /news, /admin, /setup, and /api routes
+│   ├── components/         # Dashboard, sports, news, gadget, and admin UI
+│   ├── lib/                # Auth, cache, rate limiting, sports, news, themes, validation
+│   └── types/              # Shared TypeScript types
+├── Dockerfile              # Multi-stage production image
+├── docker-compose.yml      # Compose deployment
+└── package.json            # Scripts and dependency manifest
 ```
 
-## 🔌 API Endpoints
+## Development
 
-### Categories & Blocks
-- `GET /api/categories` - List all categories with blocks
-- `POST /api/categories` - Create a new category
-- `PUT /api/categories/:id` - Update a category
-- `DELETE /api/categories/:id` - Delete a category
+| Command | Purpose |
+| --- | --- |
+| `npm run dev` | Start the development server. |
+| `npm run build` | Create a production build. |
+| `npm run start` | Start the production server. |
+| `npm run lint` | Run ESLint. |
+| `npm run test` | Run the test suite (`node --test`). |
+| `npm run db:migrate` | Run Prisma migrations in development. |
+| `npm run db:seed` | Seed starter categories, blocks, and news feeds. |
+| `npm run db:generate` | Regenerate Prisma Client. |
+| `npm run admin:reset-password` | Interactively reset an admin password. |
 
-- `GET /api/blocks` - List all blocks
-- `POST /api/blocks` - Create a new block
-- `PUT /api/blocks/:id` - Update a block
-- `DELETE /api/blocks/:id` - Delete a block
+## Docker deployment
 
-### Settings
-- `GET /api/settings` - Get general settings
-- `PUT /api/settings` - Update settings
-- `GET /api/settings/general` - Get site title and favicon
-- `PUT /api/settings/general` - Update site title and favicon
-- `GET /api/settings/traffic` - Get traffic settings
-- `PUT /api/settings/traffic` - Update traffic settings
-
-### Data
-- `GET /api/weather` - Get current weather
-- `GET /api/traffic` - Get traffic information (with caching)
-- `GET /api/health/:id` - Check service health
-
-## 🐳 Docker Deployment
-
-### Using Pre-built Image (Recommended)
-
-Pull and run the official image from Docker Hub:
+Pull and run the published image:
 
 ```bash
-# Pull the latest image
-docker pull twlatx/startpage-dashboard:latest
-
-# Run with docker run
+docker pull twlatx/bazingad:latest
 docker run -d \
-  --name startpage-dashboard \
+  --name bazingad \
   -p 3000:3000 \
-  -v ./data:/app/data \
+  -v bazingad-data:/app/data \
   -e NODE_ENV=production \
-  -e NEXT_PUBLIC_APP_NAME="Start Page Dashboard" \
+  -e DATABASE_URL=file:/app/data/prod.db \
   --restart unless-stopped \
-  twlatx/startpage-dashboard:latest
+  twlatx/bazingad:latest
 ```
 
-### Building from Source
+The SQLite database lives in the mounted volume at `/app/data/prod.db`. Migrations and first-run seeding happen automatically via the entrypoint. A built-in health check polls `/api/health`.
+
+Useful commands:
 
 ```bash
-docker-compose up -d --build
+docker compose logs -f     # follow logs
+docker compose down        # stop
 ```
 
-### View logs:
-```bash
-docker-compose logs -f
-```
+## License
 
-### Stop:
-```bash
-docker-compose down
-```
-
-### Data persistence:
-The SQLite database is stored in `./data/prod.db` and persisted through Docker volumes.
-
-## 🛠️ Tech Stack
-
-- [Next.js 15](https://nextjs.org/) - React framework
-- [TypeScript](https://www.typescriptlang.org/) - Type safety
-- [Tailwind CSS](https://tailwindcss.com/) - Styling
-- [Prisma](https://prisma.io/) - Database ORM
-- [SQLite](https://sqlite.org/) - Database
-- [Lucide React](https://lucide.dev/) - Icons
-- [bcrypt](https://www.npmjs.com/package/bcrypt) - Password hashing
-- [rate-limiter-flexible](https://www.npmjs.com/package/rate-limiter-flexible) - Rate limiting
-
-## 📝 License
-
-MIT License - feel free to use this project for personal or commercial purposes.
+BazingaD is licensed under the [Mozilla Public License 2.0](LICENSE). Modifications to MPL-covered files must remain available under the MPL when distributed.
