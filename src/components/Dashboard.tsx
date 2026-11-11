@@ -303,8 +303,9 @@ export default function Dashboard({
         {/* Admin quick-add category button */}
         {isAdmin && (
           <button
+            type="button"
             onClick={handleAddCategory}
-            className="flex items-center justify-center gap-2 px-6 py-4 rounded-xl transition-all hover:scale-[1.01] border border-dashed"
+            className="flex items-center justify-center gap-2 px-6 py-4 rounded-xl transition-all hover:scale-[1.01] border border-dashed focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
             style={{
               backgroundColor: 'rgba(255,255,255,0.02)',
               borderColor: 'rgba(255,255,255,0.1)',
