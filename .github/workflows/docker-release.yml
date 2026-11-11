@@ -58,14 +58,23 @@ jobs:
       - name: Check startup and database health
         run: |
           cleanup() {
-            docker logs bazingad-smoke
+            docker logs bazingad-smoke || true
             docker rm -f bazingad-smoke
           }
           trap cleanup EXIT
           docker run --detach --name bazingad-smoke --publish 127.0.0.1::3000 bazingad:smoke-test
           address=$(docker port bazingad-smoke 3000/tcp)
-          curl --fail --silent --show-error --retry 45 --retry-delay 2 --retry-connrefused \
-            "http://$address/api/health"
+          for attempt in {1..45}; do
+            if curl --fail --silent --max-time 2 "http://$address/api/health"; then
+              exit 0
+            fi
+            if [[ "$(docker inspect --format '{{.State.Running}}' bazingad-smoke)" != true ]]; then
+              break
+            fi
+            sleep 2
+          done
+          echo "::error::BazingaD did not become healthy."
+          exit 1
 
   publish:
     name: Publish to GHCR
