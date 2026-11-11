@@ -113,14 +113,18 @@ function normalizeLeaders(
   competitor: Record<string, unknown>
 ): TeamLeader[] {
   const leaders = (competitor.leaders as Record<string, unknown>[]) || [];
+  const seen = new Set<string>();
   const result: TeamLeader[] = [];
   for (const category of leaders) {
     const categoryName = String(
       category.shortDisplayName || category.displayName || category.name || ''
     );
+    if (!categoryName || seen.has(categoryName)) continue;
+    seen.add(categoryName);
+
     const categoryLeaders = (category.leaders as Record<string, unknown>[]) || [];
     const top = categoryLeaders[0];
-    if (!top || !categoryName) continue;
+    if (!top) continue;
     const athlete = (top.athlete as Record<string, unknown>) || {};
     result.push({
       category: categoryName,

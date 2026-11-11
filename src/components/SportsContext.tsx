@@ -55,6 +55,24 @@ export function SportsProvider({ children }: { children: React.ReactNode }) {
 
   const shouldFetch = interestCount > 0 || pinned.length > 0;
 
+  const refresh = useCallback(async () => {
+    if (!shouldFetch) return;
+    setLoading(true);
+    setError(null);
+    try {
+      const params = new URLSearchParams();
+      params.set('leagues', enabledLeagues.join(','));
+      const res = await fetch(`/api/sports/scores?${params.toString()}`);
+      if (!res.ok) throw new Error('Failed to fetch scores');
+      const data = (await res.json()) as { events?: SportEvent[] };
+      setEvents(data.events || []);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Error loading scores');
+    } finally {
+      setLoading(false);
+    }
+  }, [shouldFetch, enabledLeagues]);
+
   // Load persisted preferences on the client after hydration
   useEffect(() => {
     try {
@@ -98,43 +116,30 @@ export function SportsProvider({ children }: { children: React.ReactNode }) {
     }
   }, [pinned, hydrated]);
 
-  // Fetch live scores
+  // Fetch live scores on a schedule
   useEffect(() => {
     if (!shouldFetch) return;
 
-    let cancelled = false;
+    refresh();
+    const interval = setInterval(refresh, REFRESH_INTERVAL_MS);
+    return () => clearInterval(interval);
+  }, [shouldFetch, refresh]);
 
-    const fetchScores = async () => {
-      setLoading(true);
-      setError(null);
-      try {
-        const params = new URLSearchParams();
-        params.set('leagues', enabledLeagues.join(','));
-        const res = await fetch(`/api/sports/scores?${params.toString()}`);
-        if (!res.ok) throw new Error('Failed to fetch scores');
-        const data = (await res.json()) as { events?: SportEvent[] };
-        if (!cancelled) {
-          setEvents(data.events || []);
-        }
-      } catch (err) {
-        if (!cancelled) {
-          setError(err instanceof Error ? err.message : 'Error loading scores');
-        }
-      } finally {
-        if (!cancelled) {
-          setLoading(false);
-        }
+  // Refresh immediately when the tab becomes visible again.
+  // Browsers throttle setInterval in background tabs, so a page left open
+  // can look stale until it regains focus.
+  useEffect(() => {
+    if (!shouldFetch || typeof document === 'undefined') return;
+
+    const handleVisibility = () => {
+      if (document.visibilityState === 'visible') {
+        refresh();
       }
     };
 
-    fetchScores();
-    const interval = setInterval(fetchScores, REFRESH_INTERVAL_MS);
-
-    return () => {
-      cancelled = true;
-      clearInterval(interval);
-    };
-  }, [shouldFetch, enabledLeagues]);
+    document.addEventListener('visibilitychange', handleVisibility);
+    return () => document.removeEventListener('visibilitychange', handleVisibility);
+  }, [shouldFetch, refresh]);
 
   // Sync pinned matches with fresh data and auto-unpin finished games
   useEffect(() => {
