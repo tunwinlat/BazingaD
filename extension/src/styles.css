@@ -1,0 +1,65 @@
+:root {
+  color-scheme: dark;
+  font: 100%/1.5 system-ui, sans-serif;
+  background: #0f0f1a;
+  color: #f1f1fa;
+}
+
+body {
+  margin: 0;
+  padding: 2rem;
+}
+
+.dashboard {
+  box-sizing: border-box;
+  min-height: 100vh;
+  display: grid;
+  grid-template-rows: 1fr auto;
+  text-align: center;
+}
+
+.dashboard main {
+  align-self: center;
+}
+
+h1 {
+  overflow-wrap: anywhere;
+}
+
+.settings {
+  max-width: 30rem;
+  margin: 3rem auto;
+}
+
+fieldset {
+  display: grid;
+  gap: 0.75rem;
+  padding: 0;
+  margin: 0;
+  border: 0;
+}
+
+input,
+button,
+footer a {
+  border: 1px solid #555575;
+  border-radius: 0.5rem;
+  background: #202038;
+  color: inherit;
+  font: inherit;
+  padding: 0.5rem 0.85rem;
+}
+
+footer a {
+  display: inline-block;
+  text-decoration: none;
+}
+
+a {
+  color: #c1bdff;
+}
+
+:focus-visible {
+  outline: 2px solid #b4adff;
+  outline-offset: 3px;
+}

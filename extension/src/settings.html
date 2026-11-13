@@ -1,0 +1,24 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>BazingaD Settings</title>
+    <link rel="stylesheet" href="styles.css">
+    <script type="module" src="settings.js"></script>
+  </head>
+  <body>
+    <main class="settings">
+      <h1>Settings</h1>
+      <form>
+        <fieldset disabled>
+          <label for="dashboard-title">Dashboard title</label>
+          <input id="dashboard-title" name="title" maxlength="80" required>
+          <button type="submit">Save settings</button>
+        </fieldset>
+      </form>
+      <p id="status" role="status"></p>
+      <a href="new-tab.html">Open dashboard</a>
+    </main>
+  </body>
+</html>
