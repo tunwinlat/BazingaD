@@ -81,8 +81,12 @@ export interface NewsArticle {
 
 export interface NewsSettings {
   enabled: boolean;
-  apiKey: string | null;
+  apiKey: string | null; // Masked for admins, null for public callers
+  endpoint: string | null;
+  model: string | null;
+  apiFormat: import('@/lib/ai-config').AIFormat | null;
   checkIntervalMinutes: number;
   unreadRetentionHours: number;
   readRetentionHours: number;
+  maxArticleAgeHours: number;
 }

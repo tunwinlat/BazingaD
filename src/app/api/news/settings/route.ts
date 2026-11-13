@@ -4,6 +4,9 @@ import { verifyAuth } from '@/lib/auth';
 import { newsSettingsSchema } from '@/lib/validation';
 import { ZodError } from 'zod';
 import { newsCache } from '@/lib/cache';
+import { DEFAULT_AI_ENDPOINT, MASKED_API_KEY } from '@/lib/ai-config';
+import { serializeNewsSettings } from '@/lib/news-settings';
+import type { Prisma } from '@prisma/client';
 
 const MAX_BODY_SIZE = 1024 * 1024;
 
@@ -12,14 +15,7 @@ export async function GET() {
     const auth = await verifyAuth();
     const settings = await prisma.settings.findFirst();
 
-    return NextResponse.json({
-      enabled: settings?.newsEnabled ?? false,
-      apiKey: auth ? settings?.newsApiKey : null,
-      checkIntervalMinutes: settings?.newsCheckIntervalMinutes ?? 60,
-      unreadRetentionHours: settings?.newsUnreadRetentionHours ?? 24,
-      readRetentionHours: settings?.newsReadRetentionHours ?? 8,
-      maxArticleAgeHours: settings?.newsMaxArticleAgeHours ?? 24,
-    });
+    return NextResponse.json(serializeNewsSettings(settings, !!auth));
   } catch (error) {
     console.error('News settings fetch error:', error);
     return NextResponse.json({ error: 'Failed to fetch news settings' }, { status: 500 });
@@ -48,10 +44,21 @@ export async function PUT(request: Request) {
     const validatedData = newsSettingsSchema.parse(body);
 
     let settings = await prisma.settings.findFirst();
-    const updateData: Record<string, unknown> = {};
+    // Validate the effective configuration as partial updates may change only one field.
+    newsSettingsSchema.parse({
+      newsApiEndpoint: settings?.newsApiEndpoint ?? DEFAULT_AI_ENDPOINT,
+      newsApiFormat: settings?.newsApiFormat ?? 'auto',
+      ...validatedData,
+    });
+    const updateData: Prisma.SettingsCreateInput = {};
 
     if (validatedData.newsEnabled !== undefined) updateData.newsEnabled = validatedData.newsEnabled;
-    if (validatedData.newsApiKey !== undefined) updateData.newsApiKey = validatedData.newsApiKey;
+    if (validatedData.newsApiKey !== undefined && validatedData.newsApiKey !== MASKED_API_KEY) {
+      updateData.newsApiKey = validatedData.newsApiKey || null;
+    }
+    if (validatedData.newsApiEndpoint !== undefined) updateData.newsApiEndpoint = validatedData.newsApiEndpoint;
+    if (validatedData.newsApiModel !== undefined) updateData.newsApiModel = validatedData.newsApiModel;
+    if (validatedData.newsApiFormat !== undefined) updateData.newsApiFormat = validatedData.newsApiFormat;
     if (validatedData.newsCheckIntervalMinutes !== undefined) updateData.newsCheckIntervalMinutes = validatedData.newsCheckIntervalMinutes;
     if (validatedData.newsUnreadRetentionHours !== undefined) updateData.newsUnreadRetentionHours = validatedData.newsUnreadRetentionHours;
     if (validatedData.newsReadRetentionHours !== undefined) updateData.newsReadRetentionHours = validatedData.newsReadRetentionHours;
@@ -60,28 +67,12 @@ export async function PUT(request: Request) {
     if (settings) {
       settings = await prisma.settings.update({ where: { id: settings.id }, data: updateData });
     } else {
-      settings = await prisma.settings.create({
-        data: {
-          newsEnabled: validatedData.newsEnabled ?? false,
-          newsCheckIntervalMinutes: validatedData.newsCheckIntervalMinutes ?? 60,
-          newsUnreadRetentionHours: validatedData.newsUnreadRetentionHours ?? 24,
-          newsReadRetentionHours: validatedData.newsReadRetentionHours ?? 8,
-          newsMaxArticleAgeHours: validatedData.newsMaxArticleAgeHours ?? 24,
-          ...(validatedData.newsApiKey && { newsApiKey: validatedData.newsApiKey }),
-        },
-      });
+      settings = await prisma.settings.create({ data: updateData });
     }
 
     newsCache.delete('current_articles');
 
-    return NextResponse.json({
-      enabled: settings.newsEnabled,
-      apiKey: settings.newsApiKey,
-      checkIntervalMinutes: settings.newsCheckIntervalMinutes,
-      unreadRetentionHours: settings.newsUnreadRetentionHours,
-      readRetentionHours: settings.newsReadRetentionHours,
-      maxArticleAgeHours: settings.newsMaxArticleAgeHours,
-    });
+    return NextResponse.json(serializeNewsSettings(settings, true));
   } catch (error) {
     if (error instanceof ZodError) {
       return NextResponse.json(

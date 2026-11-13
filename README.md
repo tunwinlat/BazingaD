@@ -18,7 +18,7 @@ Built with Next.js, TypeScript, Prisma, and SQLite.
 
 </div>
 
-BazingaD replaces your browser's new-tab page with a personal dashboard. Organize links into categorized blocks, watch the health of your self-hosted services, follow live scores from a dozen sports leagues, skim AI-summarized news from your own RSS feeds, and check the weather and your commute—all from a single page, with your data staying on your own server.
+BazingaD replaces your browser's new-tab page with a personal dashboard. Organize links into categorized blocks, watch the health of your self-hosted services, follow live scores from a dozen sports leagues, skim AI-summarized news from your own RSS feeds, and check the weather and your commute—all from a single self-hosted page. Dashboard data stays in your database; enabled integrations send requests to their configured providers, including article titles and excerpts sent to your chosen AI endpoint.
 
 ## Features
 
@@ -28,7 +28,7 @@ BazingaD replaces your browser's new-tab page with a personal dashboard. Organiz
 | Unified search | Search across all blocks with full keyboard navigation (`/` to focus, arrow keys, Enter, Esc) and an accessible combobox pattern. |
 | Service monitoring | Per-block health checks with online/offline status indicators and a status dock for monitored services. |
 | Sports | Live scores from 12 leagues (NFL, NBA, MLB, NHL, Premier League, La Liga, Bundesliga, Serie A, Ligue 1, MLS, Champions League, FIFA World Cup) via the public ESPN API—no API key required. Pin matches (persisted in the browser), view match facts with team stats, leaders, and event timelines, per-league collapsing, and auto-refresh when the tab becomes visible. |
-| News | RSS feed aggregation with AI-generated titles and summaries (MiniMax), topic filtering, read/unread state with configurable retention, a news ticker, a dedicated `/news` page, and a cron-protected refresh job. |
+| News | RSS feed aggregation with AI-generated titles and summaries through configurable OpenAI Chat Completions or Anthropic Messages endpoints (including MiniMax), topic filtering, read/unread state with configurable retention, a news ticker, a dedicated `/news` page, and a cron-protected refresh job. |
 | Weather | Current conditions via Open-Meteo (free, no API key) with location search and metric/imperial units. |
 | Traffic | Commute times between home and work via Google Routes or TomTom (bring your own API key), with travel-mode selection, color-coded status, 30-minute caching, and fetch-only-while-visible to conserve quota. |
 | Gadget bar | Configurable left/right gadget bars, including a password generator and a sports scoreboard. |
@@ -46,9 +46,9 @@ BazingaD replaces your browser's new-tab page with a personal dashboard. Organiz
 | Data | Prisma 6, SQLite |
 | Authentication | bcryptjs password hashing, TOTP 2FA with `otpauth` and QR-code enrollment |
 | Validation | Zod |
-| Integrations | ESPN (sports), Open-Meteo (weather/geocoding), Google Routes or TomTom (traffic), MiniMax (news AI), RSS via `rss-parser` |
+| Integrations | ESPN (sports), Open-Meteo (weather/geocoding), Google Routes or TomTom (traffic), OpenAI-/Anthropic-compatible endpoints including MiniMax (news AI), RSS via `rss-parser` |
 | UI | Lucide icons, `sonner` toasts, `rate-limiter-flexible` |
-| Testing | Node.js test runner (`node --test`) |
+| Testing | Vitest (unit, API settings, and news integration tests) |
 | Deployment | Docker (multi-stage, non-root), Docker Compose |
 
 ## Quick start
@@ -115,7 +115,7 @@ Open [http://localhost:3000](http://localhost:3000) and complete the setup wizar
 | `DATABASE_URL` | Required | SQLite connection URL, e.g. `file:./data/dev.db` locally or `file:/app/data/prod.db` in Docker. |
 | `CRON_SECRET` | Optional | Shared secret protecting the `POST /api/jobs/news` refresh endpoint. When set, callers must send it in the `x-cron-secret` header. |
 
-All other credentials—Google Routes / TomTom traffic keys and the MiniMax news key—are entered in the admin UI and stored in the database, not in environment variables. They are never exposed back to the client in full.
+All other credentials—Google Routes / TomTom traffic keys and the news AI key—are entered in the admin UI and stored in the database, not in environment variables. Saved keys are masked in settings responses, including for admins. Back up and restrict access to the database: provider keys are stored there, not encrypted at rest.
 
 ### Admin settings
 
@@ -124,8 +124,48 @@ Visit `/admin` to manage:
 - **Blocks & Categories** — links, icons, monitoring, ordering
 - **General** — site title, favicon, theme, default view, link behavior, navigation transitions
 - **Security** — password change, TOTP 2FA enrollment, active sessions, dashboard protection
-- **Integrations** — weather location/units, traffic provider and addresses, news feeds and AI key
+- **Integrations** — weather location/units, traffic provider and addresses, news feeds/topics, AI endpoint/key/model, and retention
 - **Gadgets** — left/right gadget bar composition
+
+### Configuring news AI
+
+In `/admin`, open **Integrations**, expand **RSS News & Summarization**, enable news, and enter these three values under **AI API Configuration**:
+
+1. **Endpoint URL** — a full API endpoint or API base URL reachable from the BazingaD server.
+2. **API Key** — the key issued by that endpoint's provider.
+3. **Model ID** — the exact model identifier supported by that endpoint and your account.
+
+Save the news settings. Both automatic background refreshes and `POST /api/jobs/news` use this configuration. No provider SDK, environment variable, or code change is required.
+
+| Service / protocol | Example endpoint | Model ID |
+| --- | --- | --- |
+| MiniMax (existing default) | `https://api.minimax.io/v1/chat/completions` | `MiniMax-M3` |
+| OpenAI Chat Completions | `https://api.openai.com/v1/chat/completions` or `https://api.openai.com/v1` | A Chat Completions model available to your account |
+| Anthropic Messages | `https://api.anthropic.com/v1/messages` or `https://api.anthropic.com` | A Messages model available to your account |
+| OpenAI-compatible gateway / local server | `https://gateway.example/v1/chat/completions` or `http://localhost:11434/v1` | The gateway's exact model ID |
+| Anthropic-compatible gateway | `https://gateway.example/v1/messages` | The gateway's exact model ID |
+
+**API Format** is optional and defaults to **Auto-detect**. A full URL ending in `/messages`, the hostname `api.anthropic.com`, or a proxy path containing `/anthropic` selects Anthropic Messages. Other URLs select OpenAI Chat Completions. For an ambiguous custom Anthropic base URL, either use its full `/v1/messages` endpoint or select **Anthropic Messages** explicitly. An explicit format must match a full endpoint's path.
+
+For base URLs, a bare origin gains `/v1`; OpenAI bases then gain `/chat/completions`. Anthropic bases gain `/v1/messages`, or just `/messages` if the base already ends in a version such as `/v1`. Full endpoints keep their path (with trailing slashes removed) and query string. OpenAI uses Bearer authentication; Anthropic uses `x-api-key` and `anthropic-version: 2023-06-01`. These are non-streaming text APIs; OpenAI Responses-only endpoints and services requiring a different authentication scheme are not supported.
+
+Existing installations keep their saved MiniMax key and receive the previous endpoint/model as migration defaults. The saved key displays as `********`: leaving it unchanged preserves it, entering a new key replaces it, and clearing it removes it. Changing providers usually requires replacing all three values. Refreshing requires news to be enabled and a saved key; removing the key stops new AI summaries without deleting existing articles.
+
+Only configure endpoints you trust: the server sends the key, article title, and up to 3,000 characters of article content there. Local/private HTTP endpoints are intentionally allowed for self-hosted inference; use HTTPS for remote services. In Docker, `localhost` refers to the BazingaD container, not your host. Requests time out after 30 seconds and redirects are rejected to avoid forwarding credentials. Provider HTTP failures are logged by status without their response bodies; check server logs for authentication, rate-limit, or model errors. AI requests remain spaced at least five seconds apart.
+
+### Upgrading an existing installation
+
+Back up the SQLite database first. Docker deployments apply migrations automatically on startup. For a source deployment, stop the app, install dependencies, apply migrations to the existing database, regenerate the client, and rebuild:
+
+```bash
+npm ci
+npx prisma migrate deploy
+npm run db:generate
+npm run build
+npm run start
+```
+
+Keep `DATABASE_URL` pointing to the same persistent database. The AI migration only adds settings columns; it does not reset keys, feeds, or articles.
 
 ### Resetting a forgotten admin password
 
@@ -157,23 +197,24 @@ flowchart LR
     Services --> ESPN[ESPN scoreboard API]
     Services --> OpenMeteo[Open-Meteo weather & geocoding]
     Services --> Traffic[Google Routes / TomTom]
-    Services --> MiniMax[MiniMax AI]
+    Services --> AI[Configured OpenAI / Anthropic-compatible AI]
     Services --> Feeds[RSS feeds]
 ```
 
-External responses are cached in memory (sports scores, weather, traffic) to respect provider quotas, and mutations to settings or content invalidate their caches. Third-party API keys are stored server-side only.
+External responses are cached in memory (sports scores, weather, traffic) to respect provider quotas, and mutations to settings or content invalidate their caches. Third-party API keys are stored in the server-side database and masked in settings responses. News AI endpoint/model/format settings are available only to authenticated admins.
 
 ### Repository layout
 
 ```text
 BazingaD/
+├── extension/              # Standalone offline browser extension (see its README)
 ├── prisma/                 # Schema, migrations, and seed data
 ├── public/                 # Static assets
 ├── scripts/                # CLI utilities (password reset, news seeding)
 ├── src/
 │   ├── app/                # Dashboard, /news, /admin, /setup, and /api routes
 │   ├── components/         # Dashboard, sports, news, gadget, and admin UI
-│   ├── lib/                # Auth, cache, rate limiting, sports, news, themes, validation
+│   ├── lib/                # AI adapters/config, auth, cache, rate limiting, sports, news, themes, validation
 │   └── types/              # Shared TypeScript types
 ├── Dockerfile              # Multi-stage production image
 ├── docker-compose.yml      # Compose deployment
@@ -188,7 +229,9 @@ BazingaD/
 | `npm run build` | Create a production build. |
 | `npm run start` | Start the production server. |
 | `npm run lint` | Run ESLint. |
-| `npm run test` | Run the test suite (`node --test`). |
+| `npm run test` | Run the Vitest suite. |
+| `npx tsc --noEmit` | Check TypeScript types (generate Prisma Client first). |
+| `npx prisma migrate deploy` | Apply committed migrations to an existing database. |
 | `npm run db:migrate` | Run Prisma migrations in development. |
 | `npm run db:seed` | Seed starter categories, blocks, and news feeds. |
 | `npm run db:generate` | Regenerate Prisma Client. |

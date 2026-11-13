@@ -7,6 +7,7 @@ import { toast } from 'sonner';
 import { ArrowLeft, Plus, Trash2, Edit, X, RefreshCw, LogOut, Shield, Key, QrCode, Copy, Check, AlertTriangle, Lock, Settings2, Cloud, MapPin, Thermometer, Globe, Upload, RotateCcw, Loader2, Eye, EyeOff, ChevronDown, ChevronUp, GripVertical, Newspaper, Radio, Tag, Clock, LayoutGrid } from 'lucide-react';
 import type { Category, Block, CategoryFormData, BlockFormData } from '@/types';
 import GadgetSettingsPanel from '@/components/admin/GadgetSettingsPanel';
+import { DEFAULT_AI_ENDPOINT, DEFAULT_AI_MODEL, MASKED_API_KEY, type AIFormat } from '@/lib/ai-config';
 
 // Convert hours to best unit for display
 const hoursToDisplay = (hours: number): { value: number; unit: 'hours' | 'days' | 'months' } => {
@@ -199,6 +200,9 @@ function AdminPage() {
   const [newsSettings, setNewsSettings] = useState({
     enabled: false,
     apiKey: '',
+    endpoint: DEFAULT_AI_ENDPOINT,
+    model: DEFAULT_AI_MODEL,
+    apiFormat: 'auto' as AIFormat,
     checkIntervalMinutes: 60,
     unreadRetentionHours: 24,
     readRetentionHours: 8,
@@ -466,6 +470,9 @@ function AdminPage() {
         setNewsSettings({
           enabled: data.enabled ?? false,
           apiKey: data.apiKey || '',
+          endpoint: data.endpoint ?? DEFAULT_AI_ENDPOINT,
+          model: data.model ?? DEFAULT_AI_MODEL,
+          apiFormat: data.apiFormat ?? 'auto',
           checkIntervalMinutes: data.checkIntervalMinutes ?? 60,
           unreadRetentionHours: data.unreadRetentionHours ?? 24,
           readRetentionHours: data.readRetentionHours ?? 8,
@@ -914,6 +921,9 @@ function AdminPage() {
         body: JSON.stringify({
           newsEnabled: newsSettings.enabled,
           newsApiKey: newsSettings.apiKey || null,
+          newsApiEndpoint: newsSettings.endpoint,
+          newsApiModel: newsSettings.model,
+          newsApiFormat: newsSettings.apiFormat,
           newsCheckIntervalMinutes: newsSettings.checkIntervalMinutes,
           newsUnreadRetentionHours: newsSettings.unreadRetentionHours,
           newsReadRetentionHours: newsSettings.readRetentionHours,
@@ -926,7 +936,7 @@ function AdminPage() {
         fetchNewsSettings();
       } else {
         const errorData = await response.json();
-        toast.error(errorData.error || 'Failed to save news settings');
+        toast.error(errorData.details?.[0]?.message || errorData.error || 'Failed to save news settings');
       }
     } catch (error) {
       console.error('News settings save error:', error);
@@ -2333,20 +2343,36 @@ function AdminPage() {
 
                 {newsSettings.enabled && (
                   <>
-                    {/* API Key */}
+                    {/* AI Configuration */}
                     <div className="p-4 rounded-lg space-y-4" style={{ backgroundColor: 'rgba(255,255,255,0.03)' }}>
                       <h4 className="font-medium flex items-center gap-2">
                         <Key className="w-4 h-4" />
-                        MiniMax API Configuration
+                        AI API Configuration
                       </h4>
+                      <p className="text-sm text-white/50">Enter an OpenAI- or Anthropic-compatible endpoint, API key, and model ID. MiniMax remains supported.</p>
                       <div>
-                        <label className="block text-sm text-white/70 mb-1">API Key</label>
+                        <label htmlFor="news-ai-endpoint" className="block text-sm text-white/70 mb-1">Endpoint URL</label>
+                        <input
+                          id="news-ai-endpoint"
+                          type="url"
+                          value={newsSettings.endpoint}
+                          onChange={(e) => setNewsSettings({ ...newsSettings, endpoint: e.target.value })}
+                          placeholder="https://api.openai.com/v1/chat/completions"
+                          className="w-full px-3 py-2 rounded-lg border outline-none focus:border-indigo-500 text-sm"
+                          style={{ backgroundColor: 'rgba(255,255,255,0.05)', borderColor: 'rgba(255,255,255,0.1)', color: 'white' }}
+                        />
+                        <p className="text-xs text-white/40 mt-1">Use a full /chat/completions or /messages URL, or an API base URL. Local HTTP endpoints are allowed; only use servers you trust.</p>
+                      </div>
+                      <div>
+                        <label htmlFor="news-ai-key" className="block text-sm text-white/70 mb-1">API Key</label>
                         <div className="relative">
                           <input
+                            id="news-ai-key"
                             type={showNewsApiKey ? 'text' : 'password'}
+                            autoComplete="off"
                             value={newsSettings.apiKey}
                             onChange={(e) => setNewsSettings({ ...newsSettings, apiKey: e.target.value })}
-                            placeholder="Enter your MiniMax API key"
+                            placeholder="Enter your AI provider API key"
                             className="w-full pl-3 pr-10 py-2 rounded-lg border outline-none focus:border-indigo-500 text-sm"
                             style={{ backgroundColor: 'rgba(255,255,255,0.05)', borderColor: 'rgba(255,255,255,0.1)', color: 'white' }}
                           />
@@ -2359,6 +2385,36 @@ function AdminPage() {
                             {showNewsApiKey ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                           </button>
                         </div>
+                        {newsSettings.apiKey === MASKED_API_KEY && (
+                          <p className="text-xs text-white/40 mt-1">A key is saved. Leave unchanged to keep it, replace to update, or clear to remove it.</p>
+                        )}
+                      </div>
+                      <div>
+                        <label htmlFor="news-ai-model" className="block text-sm text-white/70 mb-1">Model ID</label>
+                        <input
+                          id="news-ai-model"
+                          type="text"
+                          value={newsSettings.model}
+                          onChange={(e) => setNewsSettings({ ...newsSettings, model: e.target.value })}
+                          placeholder="Enter the exact model ID from your provider"
+                          className="w-full px-3 py-2 rounded-lg border outline-none focus:border-indigo-500 text-sm"
+                          style={{ backgroundColor: 'rgba(255,255,255,0.05)', borderColor: 'rgba(255,255,255,0.1)', color: 'white' }}
+                        />
+                      </div>
+                      <div>
+                        <label htmlFor="news-ai-format" className="block text-sm text-white/70 mb-1">API Format (optional)</label>
+                        <select
+                          id="news-ai-format"
+                          value={newsSettings.apiFormat}
+                          onChange={(e) => setNewsSettings({ ...newsSettings, apiFormat: e.target.value as AIFormat })}
+                          className="w-full px-3 py-2 rounded-lg border outline-none focus:border-indigo-500 text-sm"
+                          style={{ backgroundColor: '#1a1a2e', borderColor: 'rgba(255,255,255,0.1)', color: 'white' }}
+                        >
+                          <option value="auto">Auto-detect (recommended)</option>
+                          <option value="openai">OpenAI Chat Completions</option>
+                          <option value="anthropic">Anthropic Messages</option>
+                        </select>
+                        <p className="text-xs text-white/40 mt-1">Auto uses Anthropic for /messages endpoints, api.anthropic.com, or /anthropic proxy paths; otherwise OpenAI. Override for a custom base URL if needed.</p>
                       </div>
                     </div>
 

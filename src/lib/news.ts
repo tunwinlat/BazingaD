@@ -1,6 +1,9 @@
 import { prisma } from './prisma';
 import Parser from 'rss-parser';
 import { newsCache } from './cache';
+import { requestAIText } from './ai';
+import type { AIConfig, AIFormat } from './ai-config';
+import { serializeNewsSettings } from './news-settings';
 
 const rssParser = new Parser({
   timeout: 15000,
@@ -327,7 +330,7 @@ function isGarbageSummary(summary: string): boolean {
   return garbagePatterns.some(p => p.test(summary));
 }
 
-async function summarizeWithAI(title: string, content: string, apiKey: string): Promise<{ aiTitle: string; summary: string }> {
+async function summarizeWithAI(title: string, content: string, config: AIConfig): Promise<{ aiTitle: string; summary: string }> {
   await aiRateLimiter.acquire();
 
   const prompt = `You are a helpful news assistant. Given an article title and content excerpt, create:
@@ -341,27 +344,7 @@ SUMMARY: <your summary here>
 Article Title: ${title}
 Content: ${content.slice(0, 3000)}`;
 
-  const response = await fetch('https://api.minimax.io/v1/chat/completions', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${apiKey}`,
-    },
-    body: JSON.stringify({
-      model: 'MiniMax-M3',
-      messages: [{ role: 'user', content: prompt }],
-      max_tokens: 600,
-      temperature: 0.2,
-    }),
-  });
-
-  if (!response.ok) {
-    const text = await response.text();
-    throw new Error(`AI API error: ${response.status} ${text}`);
-  }
-
-  const data = await response.json();
-  const rawContent = data.choices?.[0]?.message?.content || data.content?.[0]?.text || '';
+  const rawContent = await requestAIText(prompt, config);
 
   const cleaned = cleanAIResponse(rawContent);
 
@@ -511,7 +494,12 @@ export async function fetchAndProcessFeeds(): Promise<{ fetched: number; newArti
   // Summarize articles with AI (rate limited)
   for (const article of articlesToSummarize) {
     try {
-      const { aiTitle, summary } = await summarizeWithAI(article.title, article.content, settings.newsApiKey!);
+      const { aiTitle, summary } = await summarizeWithAI(article.title, article.content, {
+        endpoint: settings.newsApiEndpoint,
+        model: settings.newsApiModel,
+        apiFormat: settings.newsApiFormat as AIFormat,
+        apiKey: settings.newsApiKey!,
+      });
 
       const expiresAt = new Date(
         article.publishedAt.getTime() + settings.newsUnreadRetentionHours * 60 * 60 * 1000
@@ -632,14 +620,7 @@ export async function getCurrentArticles(): Promise<
 
 export async function getNewsSettings() {
   const settings = await prisma.settings.findFirst();
-  return {
-    enabled: settings?.newsEnabled ?? false,
-    apiKey: settings?.newsApiKey ?? null,
-    checkIntervalMinutes: settings?.newsCheckIntervalMinutes ?? 60,
-    unreadRetentionHours: settings?.newsUnreadRetentionHours ?? 24,
-    readRetentionHours: settings?.newsReadRetentionHours ?? 8,
-    maxArticleAgeHours: settings?.newsMaxArticleAgeHours ?? 24,
-  };
+  return serializeNewsSettings(settings);
 }
 
 export async function canDisableDefaultFeeds(): Promise<boolean> {
