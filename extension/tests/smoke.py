@@ -8,7 +8,9 @@ from tempfile import TemporaryDirectory
 from zipfile import ZipFile
 
 from selenium import webdriver
-from selenium.webdriver.chrome.service import Service
+from selenium.webdriver.chrome.service import Service as ChromeService
+from selenium.webdriver.edge.service import Service as EdgeService
+from selenium.webdriver.firefox.service import Service as FirefoxService
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support import expected_conditions as conditions
 from selenium.webdriver.support.ui import WebDriverWait
@@ -22,13 +24,20 @@ screenshots.mkdir(exist_ok=True)
 def start_browser(directory):
     if browser == "firefox":
         options = webdriver.FirefoxOptions()
-        driver = webdriver.Firefox(options=options)
+        if binary := os.environ.get("FIREFOX_TEST_BINARY"):
+            options.binary_location = binary
+        # Current Firefox treats extension pages as privileged browsing contexts.
+        service = FirefoxService(
+            service_args=["--allow-system-access"],
+            log_output=str(screenshots / "firefox-driver.log"),
+        )
+        driver = webdriver.Firefox(service=service, options=options)
         try:
             package = Path(directory, "bazingad.zip")
             with ZipFile(package, "w") as archive:
                 for path in extension.iterdir():
                     archive.write(path, path.name)
-            driver.install_addon(str(package), temporary=True)
+            driver.install_web_extension(str(package), permanent=False)
         except Exception:
             driver.quit()
             raise
@@ -36,14 +45,27 @@ def start_browser(directory):
 
     options = webdriver.ChromeOptions() if browser == "chrome" else webdriver.EdgeOptions()
     options.add_argument("--no-first-run")
+    options.add_argument("--disable-dev-shm-usage")
+    # Ubuntu runners restrict sandbox namespaces for downloaded browser binaries.
+    # Only disable the sandbox in the disposable CI test session.
+    if os.environ.get("CI") == "true":
+        options.add_argument("--no-sandbox")
     options.add_argument(f"--load-extension={extension}")
     options.add_experimental_option(
         "prefs", {"homepage_is_newtabpage": True, "browser.show_home_button": True}
     )
     if browser == "chrome":
         options.binary_location = os.environ["CHROME_TEST_BINARY"]
-        return webdriver.Chrome(service=Service(), options=options)
-    return webdriver.Edge(options=options)
+        service = ChromeService(
+            executable_path=os.environ.get("CHROME_TEST_DRIVER"),
+            service_args=["--verbose"],
+            log_output=str(screenshots / "chrome-driver.log"),
+        )
+        return webdriver.Chrome(service=service, options=options)
+    service = EdgeService(
+        service_args=["--verbose"], log_output=str(screenshots / "edge-driver.log")
+    )
+    return webdriver.Edge(service=service, options=options)
 
 
 def browser_key(*keys):
@@ -88,6 +110,9 @@ with TemporaryDirectory() as directory:
             driver.save_screenshot(str(screenshots / f"{browser}-home.png"))
             print("New Tab, password-free settings, title persistence, and Home passed.", flush=True)
         except Exception:
-            print(f"Last browser URL: {driver.current_url}", flush=True)
-            driver.save_screenshot(str(screenshots / f"{browser}-failure.png"))
+            try:
+                print(f"Last browser URL: {driver.current_url}", flush=True)
+                driver.save_screenshot(str(screenshots / f"{browser}-failure.png"))
+            except Exception as error:
+                print(f"Could not capture failure diagnostics: {error}", flush=True)
             raise
