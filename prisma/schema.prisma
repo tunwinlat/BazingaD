@@ -82,7 +82,10 @@ model Settings {
 
   // News settings
   newsEnabled              Boolean  @default(false)
-  newsApiKey               String?  // MiniMax API key
+  newsApiKey               String?  // AI provider API key
+  newsApiEndpoint          String   @default("https://api.minimax.io/v1/chat/completions")
+  newsApiModel             String   @default("MiniMax-M3")
+  newsApiFormat            String   @default("auto") // auto, openai, anthropic
   newsCheckIntervalMinutes Int      @default(60)
   newsUnreadRetentionHours Int      @default(24)
   newsReadRetentionHours   Int      @default(8)

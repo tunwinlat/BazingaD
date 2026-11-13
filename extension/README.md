@@ -1,6 +1,6 @@
 # BazingaD browser extension
 
-The extension replaces the browser's New Tab page. Use **Settings** at the bottom of the dashboard or the browser's extension options to edit the dashboard title. Settings stay in the current browser profile, with access provided by the browser. The extension works offline and requires no BazingaD server.
+The extension replaces the browser's New Tab page. Use **Settings** at the bottom of the dashboard or the browser's extension options to edit the dashboard title. Settings stay in the current browser profile, with access provided by the browser. The extension works offline and requires no BazingaD server. It does not include the self-hosted app's RSS/news AI integration. To configure OpenAI-, Anthropic-, or MiniMax-compatible news summarization, use the self-hosted app's `/admin` → **Integrations** → **RSS News & Summarization** settings; see the [main README](../README.md#configuring-news-ai).
 
 ## Build and load
 

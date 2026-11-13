@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { isSafeUrl } from './security';
+import { isValidAIEndpoint, resolveAIEndpoint } from './ai-config';
 
 // Password validation schema with strong requirements
 export const passwordSchema = z.string()
@@ -164,11 +165,23 @@ export const passwordChangeSchema = z.object({
 // News validation schemas
 export const newsSettingsSchema = z.object({
   newsEnabled: z.boolean().optional(),
-  newsApiKey: z.string().max(255).optional().nullable(),
+  newsApiKey: z.string().trim().max(4096).optional().nullable(),
+  newsApiEndpoint: z.string().trim().min(1).max(2048)
+    .refine(isValidAIEndpoint, 'AI endpoint must be an HTTP(S) URL without credentials or a fragment').optional(),
+  newsApiModel: z.string().trim().min(1).max(255).optional(),
+  newsApiFormat: z.enum(['auto', 'openai', 'anthropic']).optional(),
   newsCheckIntervalMinutes: z.number().int().min(5).max(1440).optional(),
   newsUnreadRetentionHours: z.number().int().min(1).max(168).optional(),
   newsReadRetentionHours: z.number().int().min(1).max(168).optional(),
   newsMaxArticleAgeHours: z.number().int().min(1).max(168).optional(),
+}).superRefine((data, ctx) => {
+  if (data.newsApiEndpoint && isValidAIEndpoint(data.newsApiEndpoint)) {
+    try {
+      resolveAIEndpoint(data.newsApiEndpoint, data.newsApiFormat);
+    } catch (error) {
+      ctx.addIssue({ code: 'custom', path: ['newsApiEndpoint'], message: (error as Error).message });
+    }
+  }
 });
 
 export const newsFeedCreateSchema = z.object({
